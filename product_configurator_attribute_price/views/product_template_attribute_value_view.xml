@@ -1,0 +1,12 @@
+<odoo>
+    <record id="view_product_template_attribute_value_form_inherit" model="ir.ui.view">
+        <field name="name">product.template.attribute.value.form.inherit</field>
+        <field name="model">product.template.attribute.value</field>
+        <field name="inherit_id" ref="product.product_template_attribute_value_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='price_extra']" position="after">
+                <field name="price_formula" string="Fórmula de Precio" placeholder="Ejemplo: x * 10"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
