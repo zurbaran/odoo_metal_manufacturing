@@ -1,12 +1,16 @@
- 
 {
     'name': 'Product Configurator Attribute Price',
-    'version': '16.0.1.0.0',
-    'summary': 'Configurador de productos con cálculo de precio personalizado',
-    'description': 'Este módulo permite configurar productos individualmente, asignarles una fórmula matemática a un atributo para calcular el precio, una medida.',
+    'version': '16.0.2.0.0',
+    'summary': 'Extiende la configuración de atributos en productos con cálculos dinámicos de precios',
+    'description': '''
+        Permite configurar productos con incrementos de precio basados en fórmulas:
+        - Atributos personalizados (custom_value)
+        - Incrementos fijos nativos (price_extra)
+        - Incrementos acumulativos (price_so_far)
+    ''',
     'author': 'Antonio Caballero',
-    'maintainer':'Antonio Caballero',
-    'website':'https://github.com/zurbaran/odoo_metal_manufacturing',
+    'maintainer': 'Antonio Caballero',
+    'website': 'https://github.com/zurbaran/odoo_metal_manufacturing',
     'depends': ['sale', 'sale_product_configurator', 'product'],
     'data': [
         'views/product_template_attribute_value_view.xml',
@@ -14,7 +18,5 @@
         'security/ir.model.access.csv',
     ],
     'installable': True,
-    'auto_install': False,
     'license': 'AGPL-3',
-
 }

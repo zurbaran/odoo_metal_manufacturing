@@ -2,7 +2,6 @@
     <record id="view_sale_order_line_form_inherit" model="ir.ui.view">
         <field name="name">sale.order.line.form.inherit.product.configurator</field>
         <field name="model">sale.order.line</field>
-        <!-- Asegúrate de usar el identificador correcto de la vista -->
         <field name="inherit_id" ref="sale.view_order_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='order_line']/form/sheet/group/field[@name='price_unit']" position="after">

@@ -5,7 +5,7 @@
         <field name="inherit_id" ref="product.product_template_attribute_value_view_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='price_extra']" position="after">
-                <field name="price_formula" string="Fórmula de Precio" placeholder="Ejemplo: x * 10"/>
+                <field name="price_formula" string="Fórmula de Precio" placeholder="Ejemplos: (math.ceil(custom_value / 50) * 50 - 950) // 50 * 4 o (price_so_far * 0.2)"/>
             </xpath>
         </field>
     </record>
