@@ -1,1 +1,3 @@
 # odoo_metal_manufacturing
+
+product_configurator_attribute_price
