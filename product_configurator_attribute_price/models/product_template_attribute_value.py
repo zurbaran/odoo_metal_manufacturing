@@ -8,6 +8,7 @@ _logger = logging.getLogger(__name__)
 class ProductTemplateAttributeValue(models.Model):
     _inherit = 'product.template.attribute.value'
 
+    # Campo para definir una fórmula de precio
     price_formula = fields.Char(
         string="Price Formula",
         help="Define a formula to calculate the price variation dynamically. Use 'custom_value' and 'price_so_far' as variables."
@@ -44,6 +45,7 @@ class ProductTemplateAttributeValue(models.Model):
             allowed_names = {"__builtins__": None}
             allowed_names.update(variables)
 
+            # Evaluar la fórmula
             increment = eval(self.price_formula, {"__builtins__": None}, allowed_names)
             _logger.info(f"Result of formula evaluation: {increment}")
 
