@@ -1,0 +1,14 @@
+<odoo>
+    <data noupdate="1">
+        <!-- Acción de servidor para generar planos dinámicos -->
+        <record id="product_blueprint_manager.action_generate_blueprints_temp" model="ir.actions.server">
+            <field name="name">Generate Dynamic Blueprints</field>
+            <field name="model_id" ref="product.model_product_template"/>
+            <field name="state">code</field>
+            <field name="code">
+                for product in records:
+                    product.generate_dynamic_blueprint()
+            </field>
+        </record>
+    </data>
+</odoo>
