@@ -1,0 +1,5 @@
+<odoo>
+    <menuitem id="menu_product_blueprints_root" name="Product Blueprints"/>
+    <menuitem id="menu_product_blueprints" name="Blueprints" parent="menu_product_blueprints_root"/>
+    <menuitem id="menu_product_formulas" name="Formulas" parent="menu_product_blueprints_root"/>
+</odoo>
