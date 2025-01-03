@@ -1,3 +1,5 @@
 # odoo_metal_manufacturing
 
 product_configurator_attribute_price
+
+product_blueprint_manager

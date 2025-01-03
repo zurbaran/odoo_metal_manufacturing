@@ -1,0 +1,19 @@
+<odoo>
+    <record id="action_report_blueprint_template" model="ir.actions.report">
+        <field name="name">Previsualización del Blueprint</field>
+        <field name="model">product.template</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">product_blueprint_manager.report_blueprint_template</field>
+        <field name="report_file">product_blueprint_manager.report_blueprint_template</field>
+        <field name="print_report_name">'Blueprint - %s' % (object.name)</field>
+    </record>
+
+    <record id="action_report_final_blueprint" model="ir.actions.report">
+        <field name="name">Blueprint Final</field>
+        <field name="model">product.template</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">product_blueprint_manager.report_final_blueprint</field>
+        <field name="report_file">product_blueprint_manager.report_final_blueprint</field>
+        <field name="print_report_name">'Blueprint Final - %s' % (object.name)</field>
+    </record>
+</odoo>
