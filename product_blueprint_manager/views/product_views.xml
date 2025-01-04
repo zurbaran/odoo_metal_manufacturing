@@ -12,48 +12,42 @@
             <!-- Insertar una nueva pestaña dentro del notebook -->
             <xpath expr="//sheet/notebook" position="inside">
                 <page string="Blueprints y Fórmulas">
-                    <!-- Configuración de Blueprints -->
                     <group string="Blueprints">
-                        <field name="blueprint_ids" string="Blueprints">
+                        <field name="blueprint_ids">
                             <tree>
-                                <field name="name" string="Name"/>
-                                <field name="filename" string="Filename"/>
+                                <field name="name"/>
+                                <field name="filename"/>
                             </tree>
                             <form>
                                 <sheet>
                                     <group>
-                                        <field name="name" string="Name"/>
-                                        <field name="filename" string="Filename"/>
-                                        <field name="file" filename="filename" string="File"/>
-                                        <!-- Añadir campos de ancho y alto -->
-                                        <field name="width" string="Width" readonly="1"/>
-                                        <field name="height" string="Height" readonly="1"/>
-                                        <!-- Añadir una ventana de previsualización -->
-                                        <field name="file" widget="image" class="oe_inline" string="File Preview"/>
+                                        <field name="name"/>
+                                        <field name="filename"/>
+                                        <field name="file" widget="image" string="File Preview"/>
                                     </group>
                                 </sheet>
                             </form>
                         </field>
                     </group>
-                    <separator string="Fórmulas"/>
-                    <!-- Configuración de Fórmulas -->
                     <group string="Fórmulas">
-                        <field name="formula_ids" string="Formulas">
+                        <field name="formula_ids">
                             <tree>
-                                <field name="name" string="Name"/>
-                                <field name="formula_expression" string="Formula Expression"/>
-                                <field name="blueprint_id" string="Blueprint"/>
+                                <field name="name"/>
+                                <field name="blueprint_id"/>
+                                <field name="formula_expression"/>
                             </tree>
                             <form>
                                 <sheet>
                                     <group>
-                                        <field name="name" string="Name"/>
-                                        <!-- Mostrar los atributos disponibles -->
-                                        <field name="available_attributes" readonly="1" string="Available Attributes"/>
-                                        <field name="formula_expression" string="Formula Expression"/>
-                                        <field name="blueprint_id" string="Blueprint"/>
-                                        <field name="position_x" string="Position X"/>
-                                        <field name="position_y" string="Position Y"/>
+                                        <field name="name"/>
+                                        <field name="available_attributes"/>
+                                        <field name="formula_expression"/>
+                                        <field name="blueprint_id"/>
+                                        <field name="position_x"/>
+                                        <field name="position_y"/>
+                                    </group>
+                                    <group>
+                                        <field name="blueprint_svg" widget="image" string="Blueprint Preview" readonly="1"/>
                                     </group>
                                 </sheet>
                             </form>
