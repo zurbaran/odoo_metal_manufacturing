@@ -8,20 +8,16 @@ _logger = logging.getLogger(__name__)
 class SaleOrderLine(models.Model):
     _inherit = 'sale.order.line'
 
+    blueprint_custom_values = fields.Char(compute='_capture_blueprint_custom_values', string='Blueprint Custom Values')
+
     @api.depends('product_id', 'product_custom_attribute_value_ids')
     def _capture_blueprint_custom_values(self):
+        hook = self.env['product.blueprint.attribute.hook']
         for line in self:
-            blueprint_custom_values = {}
-            for custom_attribute in line.product_custom_attribute_value_ids:
-                attribute_value = custom_attribute.custom_product_template_attribute_value_id
-                if attribute_value:
-                    custom_value = custom_attribute.custom_value
-                    blueprint_custom_values[attribute_value.name] = custom_value
+            blueprint_custom_values = hook.get_attribute_values_for_blueprint(line)  # Usar hook para obtener valores
             self.blueprint_custom_values = blueprint_custom_values
             if hasattr(self.product_id.product_tmpl_id, 'evaluate_formulas'):
                 self.product_id.product_tmpl_id.evaluate_formulas(blueprint_custom_values)
-
-    blueprint_custom_values = fields.Char(compute='_capture_blueprint_custom_values', string='Blueprint Custom Values')
 
     def generate_blueprint_document(self):
         for line in self:

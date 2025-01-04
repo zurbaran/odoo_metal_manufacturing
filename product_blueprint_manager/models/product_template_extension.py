@@ -31,10 +31,17 @@ class ProductTemplate(models.Model):
                 svg_data = base64.b64decode(blueprint.file)
                 root = etree.fromstring(svg_data)
 
+                # Mostrar fórmulas como texto sin evaluar
                 for formula in product.formula_ids.filtered(lambda f: f.blueprint_id == blueprint):
                     try:
-                        text_element = etree.Element("text", x=str(formula.position_x), y=str(formula.position_y))
-                        text_element.text = f'{{{{ {formula.formula_expression} }}}}'
+                        text_element = etree.Element(
+                            "text",
+                            x=str(formula.position_x),
+                            y=str(formula.position_y),
+                            fill="gray",  # Gris para indicar fórmula sin evaluar
+                            style="font-size:10px; font-family:Arial;"
+                        )
+                        text_element.text = f"{{{{ {formula.formula_expression} }}}}"
                         root.append(text_element)
                     except Exception as e:
                         _logger.error(f"Error al añadir la fórmula para {product.name}: {e}")
@@ -52,16 +59,15 @@ class ProductTemplate(models.Model):
         svg_data = base64.b64decode(blueprint.file)
         root = etree.fromstring(svg_data)
 
+        # Visualizar la fórmula con su nombre y expresión
         for formula in self.formula_ids.filtered(lambda f: f.blueprint_id == blueprint):
             try:
-                # Añadir el nombre de la fórmula
                 name_element = etree.Element("text", x=str(formula.position_x), y=str(formula.position_y - 10), fill="blue")
-                name_element.text = f'Name: {formula.name}'
+                name_element.text = f"Name: {formula.name}"
                 root.append(name_element)
 
-                # Añadir la fórmula sin evaluar
                 formula_element = etree.Element("text", x=str(formula.position_x), y=str(formula.position_y), fill="red")
-                formula_element.text = f'Formula: {formula.formula_expression}'
+                formula_element.text = f"Formula: {formula.formula_expression}"
                 root.append(formula_element)
             except Exception as e:
                 _logger.error(f"Error al procesar la fórmula para {self.name}: {e}")
