@@ -20,6 +20,11 @@
         #'data/product_blueprint_demo.xml',
         'security/ir.model.access.csv',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'product_blueprint_manager/static/src/js/blueprint_editor.js',
+        ],
+    },
     'installable': True,
     'application': True,
     'license': 'AGPL-3',
