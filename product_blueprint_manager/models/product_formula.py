@@ -1,5 +1,4 @@
 from odoo import models, fields, api
-import base64
 
 class ProductFormula(models.Model):
     _name = 'product.formula'
@@ -12,18 +11,27 @@ class ProductFormula(models.Model):
     position_x = fields.Float('Position X', required=True, help="La coordenada X para posicionar la fórmula en el plano.")
     position_y = fields.Float('Position Y', required=True, help="La coordenada Y para posicionar la fórmula en el plano.")
 
-    blueprint_svg = fields.Binary(
-        compute="_compute_blueprint_svg", 
-        string="Blueprint SVG", 
-        store=False, 
-        help="Vista previa del blueprint."
-    )
-
     available_attributes = fields.Char(
         string="Available Attributes", 
         compute="_compute_available_attributes", 
         store=False
     )
+
+    # # Restaurar los campos no editables para el tamaño del SVG
+    # blueprint_width = fields.Float(
+    #     related='blueprint_id.width', 
+    #     string='Blueprint Width', 
+    #     readonly=True, 
+    #     store=False
+    # )
+    # blueprint_height = fields.Float(
+    #     related='blueprint_id.height', 
+    #     string='Blueprint Height', 
+    #     readonly=True, 
+    #     store=False
+    # )
+
+
 
     @api.depends('product_id')
     def _compute_available_attributes(self):
@@ -33,8 +41,3 @@ class ProductFormula(models.Model):
                 record.available_attributes = ', '.join(variable_names)
             else:
                 record.available_attributes = ''
-
-    @api.depends('blueprint_id.file')
-    def _compute_blueprint_svg(self):
-        for record in self:
-            record.blueprint_svg = record.blueprint_id.file

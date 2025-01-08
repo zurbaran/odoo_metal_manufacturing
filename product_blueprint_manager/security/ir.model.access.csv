@@ -2,3 +2,4 @@ id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_product_blueprint,access.product.blueprint,model_product_blueprint,,1,1,1,1
 access_product_formula,access.product.formula,model_product_formula,,1,1,1,1
 access_product_formula_expression,access.product.formula.expression,model_product_formula_expression,,1,1,1,1
+access_product_blueprint_hook,access.product.blueprint.attribute.hook,model_product_blueprint_attribute_hook,base.group_system,1,1,0,0

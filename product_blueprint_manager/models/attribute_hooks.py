@@ -10,4 +10,3 @@ class ProductBlueprintAttributeHook(models.AbstractModel):
         This method should be overridden by other modules (if present).
         """
         return {}  # Default empty implementation
-
