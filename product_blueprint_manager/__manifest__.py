@@ -11,7 +11,7 @@
     'author': 'Antonio Caballero',
     'maintainer': 'Antonio Caballero',
     'website': 'https://github.com/zurbaran/odoo_metal_manufacturing',
-    'depends': ['product', 'sale'],
+    'depends': ['product', 'sale'],# 'product_configurator_attribute_price'],
     'data': [
         'views/product_views.xml',
         'views/menu_views.xml',
@@ -19,11 +19,6 @@
         'data/blueprint_report_data.xml',
         'security/ir.model.access.csv',
     ],
-    'assets': {
-        'web.assets_backend': [
-            'product_blueprint_manager/static/src/js/blueprint_editor.js',
-        ],
-    },
     'installable': True,
     'application': True,
     'license': 'AGPL-3',
