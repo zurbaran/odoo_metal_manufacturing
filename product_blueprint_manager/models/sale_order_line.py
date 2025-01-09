@@ -14,47 +14,57 @@ class SaleOrderLine(models.Model):
     def _capture_blueprint_custom_values(self):
         hook = self.env['product.blueprint.attribute.hook']
         for line in self:
-            blueprint_custom_values = hook.get_attribute_values_for_blueprint(line)  # Usar hook para obtener valores
+            blueprint_custom_values = hook.get_attribute_values_for_blueprint(line)
             self.blueprint_custom_values = blueprint_custom_values
-            if hasattr(self.product_id.product_tmpl_id, 'evaluate_formulas'):
-                self.product_id.product_tmpl_id.evaluate_formulas(blueprint_custom_values)
 
     def generate_blueprint_document(self):
+        attachment_ids = []
         for line in self:
-            if not line.product_id:
-                _logger.warning(f"Producto no definido en la línea de pedido.")
+            product = line.product_id.product_tmpl_id
+            if not product or not product.blueprint_ids:
                 continue
 
-            product = line.product_id.product_tmpl_id
-
             for blueprint in product.blueprint_ids:
-                if not blueprint.file:
-                    _logger.warning(f"Blueprint sin archivo SVG para el producto: {product.name}")
-                    continue
+                try:
+                    blueprint_svg = line._generate_evaluated_blueprint_svg(blueprint)
+                    if blueprint_svg:
+                        pdf_content = self.env['ir.actions.report']._run_wkhtmltopdf([blueprint_svg])
+                        attachment = self.env['ir.attachment'].create({
+                            'name': f"{line.order_id.name}_{product.name}_blueprint.pdf",
+                            'type': 'binary',
+                            'datas': base64.b64encode(pdf_content),
+                            'res_model': 'sale.order',
+                            'res_id': line.order_id.id,
+                        })
+                        attachment_ids.append(attachment.id)
+                except Exception as e:
+                    _logger.error(f"Error generating blueprint for {product.name}: {e}")
+        return attachment_ids
 
-                svg_data = base64.b64decode(blueprint.file)
-                root = etree.fromstring(svg_data)
 
-                for formula in product.formula_ids.filtered(lambda f: f.blueprint_id == blueprint):
-                    try:
-                        formula_result = eval(formula.formula_expression, {}, line.blueprint_custom_values)
-                        text_element = etree.Element("text", x=str(formula.position_x), y=str(formula.position_y))
-                        text_element.text = str(formula_result)
-                        root.append(text_element)
-                    except Exception as e:
-                        _logger.error(f"Error al procesar la fórmula para {product.name}: {e}")
-                        continue
+    def _get_evaluated_variables(self, line):
+        """Retrieve evaluated variables for formula computation."""
+        variables = {}
+        for attr in line.product_custom_attribute_value_ids:
+            variables[attr.attribute_id.name] = attr.custom_value or attr.name
+        return variables
 
-                svg_content = etree.tostring(root).decode('utf-8')
-                pdf_content = self.env['ir.actions.report']._run_wkhtmltopdf([svg_content])
-                pdf_base64 = base64.b64encode(pdf_content)
+    def _attach_blueprints_to_report(self):
+        """Generates and attaches blueprints before printing sale orders or invoices."""
+        for line in self:
+            line.generate_blueprint_document()
 
-                attachment = self.env['ir.attachment'].create({
-                    'name': f"{product.name}_blueprint.pdf",
-                    'type': 'binary',
-                    'datas': pdf_base64,
-                    'res_model': 'sale.order',
-                    'res_id': self.order_id.id,
-                })
+class SaleOrder(models.Model):
+    _inherit = 'sale.order'
 
-                _logger.info(f"Documento de blueprint generado y adjuntado al pedido de venta.")
+    def action_quotation_send(self):
+        """Generate and attach blueprints when sending quotations."""
+        for order in self:
+            order.order_line._attach_blueprints_to_report()
+        return super().action_quotation_send()
+
+    def action_confirm(self):
+        """Generate blueprints on confirmation."""
+        for order in self:
+            order.order_line._attach_blueprints_to_report()
+        return super().action_confirm()

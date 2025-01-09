@@ -1,0 +1,27 @@
+<odoo>
+    <template id="sale_report_blueprint_inherit" inherit_id="sale.report_saleorder_document">
+        <!-- Añadir un salto de página con contenido del blueprint -->
+        <xpath expr="//div[@class='page']" position="after">
+            <div t-if="doc.order_line" class="page">
+                <div class="text-center">
+                    <h2>Blueprints Evaluados</h2>
+                    <p>Cliente: <span t-field="doc.partner_id.name"/></p>
+                    <p>Presupuesto/Factura/Pedido: <span t-field="doc.name"/></p>
+                    <p>Fecha: <span t-field="doc.date_order" t-options="{'widget': 'date'}"/></p>
+                </div>
+                <t t-foreach="doc.order_line" t-as="line">
+                    <t t-if="line.product_id.product_tmpl_id.blueprint_ids">
+                        <t t-foreach="line.product_id.product_tmpl_id.blueprint_ids" t-as="blueprint">
+                            <t t-if="blueprint.file">
+                                <div style="page-break-after:always;">
+                                    <p><strong>Producto:</strong> <span t-field="line.product_id"/></p>
+                                    <img t-att-src="'data:image/svg+xml;base64,' + blueprint.file.decode()" style="width:100%; height:auto;"/>
+                                </div>
+                            </t>
+                        </t>
+                    </t>
+                </t>
+            </div>
+        </xpath>
+    </template>
+</odoo>

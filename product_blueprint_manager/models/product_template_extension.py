@@ -31,9 +31,9 @@ class ProductTemplate(models.Model):
 
                 svg_data = base64.b64decode(blueprint.file)
                 root = etree.fromstring(svg_data)
-                
+
                 # Limpiar elementos de texto de fórmulas existentes
-                for element in root.xpath('//text[contains(text(), "{") or contains(text(), "Formula") or contains(text(), "{{")]'):
+                for element in root.xpath('//text[contains(text(), "Name: ") or contains(text(), "Formula: ") or contains(text(), "{{")]'):
                     parent = element.getparent()
                     if parent is not None:
                         parent.remove(element)
@@ -113,7 +113,7 @@ class ProductTemplate(models.Model):
         svg_data = base64.b64decode(blueprint.file)
         root = etree.fromstring(svg_data)
 
-        # Visualizar la fórmula con su nombre y expresión
+        # Mostrar la fórmula evaluada
         for formula in self.formula_ids.filtered(lambda f: f.blueprint_id == blueprint):
             try:
                 formula_result = eval(formula.formula_expression, {}, self.get_custom_attribute_values(sale_order_line))
