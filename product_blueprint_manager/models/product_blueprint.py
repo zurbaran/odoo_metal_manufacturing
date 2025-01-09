@@ -5,7 +5,7 @@ class ProductBlueprint(models.Model):
     _description = 'Product Blueprint'
 
     name = fields.Char('Blueprint Name', required=True)
-    file = fields.Binary('Blueprint File', required=True)
+    file = fields.Binary('Blueprint File', required=True,  attachment=True)
     filename = fields.Char('Filename', compute='_compute_filename', store=True)
     
     @api.depends('file')
