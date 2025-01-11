@@ -37,7 +37,8 @@ class ProductFormula(models.Model):
     def _compute_available_attributes(self):
         for record in self:
             if record.product_id:
-                variable_names = record.product_id.get_attribute_variable_names()
+                custom_attribute_values = record.product_id.valid_product_template_attribute_line_ids.mapped('attribute_id.value_ids').filtered(lambda v: v.is_custom)
+                variable_names = [value.name for value in custom_attribute_values]
                 record.available_attributes = ', '.join(variable_names)
             else:
                 record.available_attributes = ''
