@@ -5,13 +5,12 @@
         <field name="inherit_id" ref="product.product_template_only_form_view"/>
         <field name="arch" type="xml">
             <xpath expr="//header" position="inside">
-                <button name="generate_dynamic_blueprint" string="Generate Blueprint" type="object" class="oe_highlight"/>
-                <button name="preview_blueprint_template" string="Preview Blueprint Template" type="object"/>
+                <button name="generate_blueprint_report" string="Generar / Previsualizar Plano" type="object" class="oe_highlight"/>
             </xpath>
             <xpath expr="//sheet/notebook" position="inside">
-                <page string="Blueprints y Fórmulas">
-                    <group string="Blueprints">
-                        <field name="blueprint_ids">
+                <page string="Planos y Fórmulas">
+                    <group string="Planos">
+                        <field name="blueprint_ids" mode="kanban,tree,form">
                             <tree>
                                 <field name="name"/>
                                 <field name="filename"/>
@@ -21,14 +20,14 @@
                                     <group>
                                         <field name="name"/>
                                         <field name="filename"/>
-                                        <field name="file" widget="image" string="File Preview"/>
+                                        <field name="file" widget="image" string="Previsualización del Archivo"/>
                                     </group>
                                 </sheet>
                             </form>
                         </field>
                     </group>
                     <group string="Fórmulas">
-                        <field name="formula_ids">
+                        <field name="formula_ids" string="Fórmulas">
                             <tree>
                                 <field name="name"/>
                                 <field name="blueprint_id"/>
@@ -36,18 +35,16 @@
                             </tree>
                             <form>
                                 <sheet>
-                                    <group>
+                                    <group string="Fórmulas">
                                         <field name="name"/>
+                                        <field name="blueprint_id" string="Plano" required="1"/>
                                         <field name="available_attributes"/>
                                         <field name="formula_expression"/>
-                                        <field name="blueprint_id"/>
                                         <field name="position_x"/>
                                         <field name="position_y"/>
+                                        <field name="font_size"/>
+                                        <field name="font_color"/>
                                     </group>
-                                    <!--<group>
-                                        <field name="blueprint_width" readonly="1"/>
-                                        <field name="blueprint_height" readonly="1"/>
-                                    </group>-->
                                 </sheet>
                             </form>
                         </field>

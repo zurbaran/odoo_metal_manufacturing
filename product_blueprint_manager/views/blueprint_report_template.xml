@@ -3,18 +3,8 @@
         <t t-call="web.external_layout">
             <div class="page">
                 <main>
-                    <h2>Previsualización del Blueprint</h2>
-                    <img t-att-src="'data:image/svg+xml;base64,' + blueprint_svg" style="width:100%; height:auto;"/>
-                </main>
-            </div>
-        </t>
-    </template>
-
-    <template id="report_final_blueprint">
-        <t t-call="web.external_layout">
-            <div class="page">
-                <main>
-                    <h2>Blueprint Final</h2>
+                    <h2 t-if="mode == 'preview'">Previsualización del Blueprint</h2>
+                    <h2 t-if="mode == 'final'">Blueprint Final</h2>
                     <img t-att-src="'data:image/svg+xml;base64,' + blueprint_svg" style="width:100%; height:auto;"/>
                 </main>
             </div>
