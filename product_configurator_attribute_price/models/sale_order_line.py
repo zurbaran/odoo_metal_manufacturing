@@ -32,6 +32,8 @@ class SaleOrderLine(models.Model):
                             attribute_value.price_formula,
                             {"custom_value": custom_value, "price_so_far": price_so_far, "math": math}
                         )
+                        if increment <0: 
+                            increment = 0
                         price_so_far += increment
                         _logger.info(f"[Line {line.id}] Incremento por custom_value ({attribute_value.name}): {increment}")
                     except Exception as e:
@@ -46,6 +48,8 @@ class SaleOrderLine(models.Model):
                             no_variant_attribute.price_formula,
                             {"price_so_far": price_so_far, "math": math}
                         )
+                        if increment < 0:
+                            increment = 0
                         price_so_far += increment
                         _logger.info(f"[Line {line.id}] Incremento por price_so_far ({no_variant_attribute.name}): {increment}")
                     except Exception as e:
