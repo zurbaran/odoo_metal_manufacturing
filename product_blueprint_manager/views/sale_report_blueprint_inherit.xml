@@ -21,7 +21,8 @@
                             <t t-if="blueprint.file">
                                 <div style="page-break-after:always;">
                                     <p><strong>Producto:</strong> <span t-field="line.product_id.name"/></p>
-                                    <t t-set="custom_values" t-value="line._get_evaluated_variables(line) or {}"/>
+                                    <!-- TODO: en caso de que no consiga incrustar las formulas en el plano, hacer que "Resultado de la formula" sustituir formula por el nombre de la formula y añadir configurar colores, de forma que sea una lista con los resultados de las formulas en distintos colores segun necesidad"-->
+                                    <!--<t t-set="custom_values" t-value="line._get_evaluated_variables(line) or {}"/>
                                     <t t-foreach="line.product_id.product_tmpl_id.formula_ids.filtered(lambda f: f.blueprint_id == blueprint)" t-as="formula">
                                         <p><strong>Resultado de la Fórmula:</strong></p>
                                         <t t-if="formula.formula_expression and custom_values">
@@ -33,7 +34,7 @@
                                             </t>
                                         </t>
                                         <t t-else="'N/A'"/>
-                                    </t>
+                                    </t>-->
                                     <img t-att-src="'data:image/svg+xml;base64,' + blueprint.file.decode()" style="width:100%; height:auto;"/>
                                 </div>
                             </t>
