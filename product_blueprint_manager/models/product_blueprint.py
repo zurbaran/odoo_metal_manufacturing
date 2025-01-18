@@ -43,13 +43,12 @@ class ProductBlueprintFormula(models.Model):
 
     @api.depends('product_id')
     def _compute_available_attributes(self):
+        """Compute available attributes for use in the formula."""
         for record in self:
             if record.product_id:
-                # Obtiene todos los atributos personalizados para la plantilla de producto
-                custom_attributes = record.product_id.attribute_line_ids.filtered(
-                    lambda line: line.attribute_id.create_variant == 'no_variant'
-                ).mapped('attribute_id')
-                record.available_attributes = ', '.join(custom_attributes.mapped('name'))
+                custom_attribute_values = record.product_id.valid_product_template_attribute_line_ids.mapped('attribute_id.value_ids').filtered(lambda v: v.is_custom)
+                variable_names = [value.name for value in custom_attribute_values]
+                record.available_attributes = ', '.join(variable_names)
             else:
                 record.available_attributes = ''
 
