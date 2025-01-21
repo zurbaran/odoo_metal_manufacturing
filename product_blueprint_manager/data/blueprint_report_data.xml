@@ -8,7 +8,7 @@
     </record>
 
     <record id="action_report_sale_order_blueprint" model="ir.actions.report">
-        <field name="name">Plano de orden de venta</field>
+        <field name="name">Plano Orden de Venta</field>
         <field name="model">sale.order</field>
         <field name="report_type">qweb-pdf</field>
         <field name="report_name">product_blueprint_manager.report_sale_order_blueprint</field>
