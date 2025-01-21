@@ -1,7 +1,4 @@
-from odoo import models
-import base64
-import io
-from PyPDF2 import PdfReader, PdfWriter
+from odoo import models, fields, api
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -9,50 +6,27 @@ _logger = logging.getLogger(__name__)
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
 
-    def action_quotation_send(self):
-        """Override the action_quotation_send method to attach blueprint documents to the quotation."""
+    def action_print_blueprint(self):
+        """Acción para imprimir el reporte de blueprints."""
         self.ensure_one()
-        _logger.info(f"[Blueprint] Enviando presupuesto: {self.name}")
-        blueprint_attachments = []
-        for line in self.order_line:
-            _logger.info(f"[Blueprint] Procesando línea de pedido: {line.id} para adjuntar blueprints")
-            _logger.info(f"[Blueprint] Variables pasadas para la evaluación del blueprint '{blueprint.name}' en modo 'final': {variables}")
-            attachments = line.generate_blueprint_document()
-            if attachments:
-                blueprint_attachments.extend(attachments)
-                _logger.info(f"[Blueprint] Adjuntos añadidos: {len(attachments)}")
-            else:
-                _logger.info(f"[Blueprint] No se encontraron adjuntos para la linea: {line.id}")
+        _logger.info(f"[Blueprint] Imprimiendo blueprints para el pedido: {self.name}")
 
-        main_report_pdf = io.BytesIO(self.env.ref('sale.action_report_saleorder')._render_qweb_pdf(self.id)[0])
-        writer = PdfWriter()
-        try:
-            writer.append(PdfReader(main_report_pdf))
-        except Exception as e:
-            _logger.info(f"[Blueprint] Error al leer el PDF principal: {e}")
-            return super().action_quotation_send() #Si falla el pdf principal enviamos el original
+        return self.env.ref('product_blueprint_manager.action_report_sale_order_blueprint').report_action(self)
 
-        for attachment_id in blueprint_attachments:
-            try:
-                attachment = self.env['ir.attachment'].browse(attachment_id)
-                if attachment.datas:
-                    blueprint_pdf = io.BytesIO(base64.b64decode(attachment.datas))
-                    writer.append(PdfReader(blueprint_pdf))
-            except Exception as e:
-                _logger.info(f"[Blueprint] Error al procesar un adjunto: {e}")
+    def _get_report_base_filename(self):
+        """Sobreescribe el nombre base del reporte para el nuevo informe de blueprints."""
+        self.ensure_one()
+        if self.env.context.get('active_model') == 'sale.order' and self.env.context.get('active_id') == self.id:
+            report = self.env.context.get('report')
+            if report == 'product_blueprint_manager.report_sale_order_blueprint_document':
+                return f"Blueprints_{self.name}"
+        return super(SaleOrder, self)._get_report_base_filename()
 
-        combined_pdf = io.BytesIO()
-        writer.write(combined_pdf)
-        combined_pdf.seek(0)
-
-        final_attachment = self.env['ir.attachment'].create({
-            'name': f"{self.name}_with_blueprints.pdf",
-            'type': 'binary',
-            'datas': base64.b64encode(combined_pdf.read()),
-            'res_model': 'sale.order',
-            'res_id': self.id,
-        })
-        _logger.info(f"[Blueprint] Archivo combinado creado: {final_attachment.name}")
-        return super().action_quotation_send()
-    
-    # Método action_confirm incompleto, se removió del código original.
+    def _get_sale_order_report_data(self, report_name):
+        """Devuelve los datos necesarios para el reporte de blueprints."""
+        data = {}
+        if report_name == 'product_blueprint_manager.action_report_sale_order_blueprint':
+            data['doc_ids'] = self.ids
+            data['doc_model'] = 'sale.order'
+            data['docs'] = self
+        return data

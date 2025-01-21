@@ -24,6 +24,10 @@ class SaleOrderLine(models.Model):
         """Genera el SVG con resultados de fórmulas evaluadas o nombres para previsualización."""
         _logger.info(f"[Blueprint] Generando SVG para blueprint: {blueprint.name}, Modo: {mode}")
 
+        # Factores de escalado para las fórmulas (ajústalos según sea necesario)
+        FORMULA_POSITION_SCALE_FACTOR = 100
+        FORMULA_FONT_SIZE_SCALE_FACTOR = 36.45
+
         try:
             svg_data = base64.b64decode(blueprint.file)
             root = etree.fromstring(svg_data)
@@ -48,14 +52,31 @@ class SaleOrderLine(models.Model):
                         result = self.safe_evaluate_formula(formula.formula_expression, variables)
                         _logger.info(f"[Blueprint] Resultado evaluado para la fórmula '{formula.name}': {result}")
 
-                    font_size = formula.font_size or 12
-                    font_color = formula.font_color or 'black'
-                    style_string = f"font-size:{font_size}px; font-family:Arial; fill:{font_color};"
+                    # El tamaño de la fuente ya está en mm, no necesita conversión
+                    font_size_str = formula.font_size
+                    try:
+                        font_size = float(font_size_str)
+                    except ValueError:
+                        _logger.warning(f"[Blueprint] No se pudo convertir el tamaño de la fuente '{font_size_str}' a un número. Usando 4 como valor predeterminado.")
+                        font_size = 4.0
 
+                    # Las coordenadas ya están en mm, no necesitan escalado
+                    x_coord = formula.position_x
+                    y_coord = formula.position_y
+
+                    # Aplicar el factor de escalado a las coordenadas y al tamaño de fuente
+                    scaled_x_coord = x_coord * FORMULA_POSITION_SCALE_FACTOR
+                    scaled_y_coord = y_coord * FORMULA_POSITION_SCALE_FACTOR
+                    scaled_font_size = font_size * FORMULA_FONT_SIZE_SCALE_FACTOR
+
+                    font_color = formula.font_color or 'black'
+                    style_string = f"font-size:{scaled_font_size}mm; font-family:Arial; fill:{font_color};"
+
+                    # Crear el elemento de texto
                     result_element = etree.Element(
                         "text",
-                        x=str(formula.position_x * 10),  # Escalar por 10 para posicionamiento correcto
-                        y=str(formula.position_y * 10),
+                        x=str(scaled_x_coord),
+                        y=str(scaled_y_coord),
                         style=style_string
                     )
                     result_element.text = str(result)
@@ -66,6 +87,7 @@ class SaleOrderLine(models.Model):
                 except Exception as e:
                     _logger.exception(f"[Blueprint] Error al procesar la fórmula '{formula.name}': {e}")
 
+            # NO SE REALIZA NINGUNA MODIFICACIÓN AL SVG ORIGINAL
             blueprint_svg = etree.tostring(root, encoding='unicode')
             _logger.info(f"[Blueprint] SVG final generado para '{blueprint.name}' (primeros 200 caracteres): {blueprint_svg[:200]}...")
 
@@ -80,49 +102,6 @@ class SaleOrderLine(models.Model):
         except Exception as e:
             _logger.exception(f"[Blueprint] Error al procesar el SVG para el blueprint '{blueprint.name}': {e}")
             return blueprint.file
-
-
-    def generate_blueprint_document(self):
-        attachment_ids = []
-        _logger.info(f"[Blueprint] Comenzando generación de documentos para la línea {self.id}")
-        product = self.product_id.product_tmpl_id
-        if not product or not product.blueprint_ids:
-            _logger.warning(f"[Blueprint] El producto '{self.product_id.name if self.product_id else 'Ninguno'}' no tiene blueprints definidos.")
-            return []
-
-        _logger.info(f"[Blueprint] Comenzando generación de documentos para la línea {self.id}")
-        for blueprint in product.blueprint_ids:
-            try:
-                _logger.info(f"[Blueprint] Procesando blueprint '{blueprint.name}' del producto '{product.name}'")
-                variables = self._get_evaluated_variables(self)
-                _logger.info(f"[Blueprint] Variables pasadas para la evaluación del blueprint '{blueprint.name}' en modo 'final': {variables}")
-                blueprint_svg_final = self._generate_evaluated_blueprint_svg(blueprint, 'final', variables)
-                blueprint_svg_preview = self._generate_evaluated_blueprint_svg(blueprint, 'preview')
-
-                if blueprint_svg_final and blueprint_svg_preview:
-                    _logger.info(f"[Blueprint] SVG para blueprint '{blueprint.name}' generado en modo 'final'.")
-                    _logger.info(f"[Blueprint] Generando PDF para el blueprint '{blueprint.name}' del producto '{product.name}'")
-                    pdf_content = self.env['ir.actions.report']._run_wkhtmltopdf([blueprint_svg_final])
-                    if pdf_content:
-                        attachment = self.env['ir.attachment'].create({
-                            'name': f"{self.order_id.name}_{product.name}_blueprint.pdf",
-                            'type': 'binary',
-                            'datas': base64.b64encode(pdf_content),
-                            'res_model': 'sale.order',
-                            'res_id': self.order_id.id,
-                        })
-                        attachment_ids.append(attachment.id)
-                        _logger.info(f"[Blueprint] Documento adjuntado: {attachment.name}")
-                    else:
-                        _logger.warning(f"[Blueprint] No se pudo generar el PDF para el blueprint '{blueprint.name}'")
-                else:
-                    _logger.warning(f"[Blueprint] No se generó SVG para el blueprint '{blueprint.name}' en modo 'final'.")
-                    _logger.warning(f"[Blueprint] No se pudo generar el SVG para el blueprint '{blueprint.name}'")
-
-            except Exception as e:
-                _logger.exception(f"[Blueprint] Error generando el blueprint '{blueprint.name}' para '{product.name}': {e}")
-
-        return attachment_ids
 
     def safe_evaluate_formula(self, expression, variables):
         """Evalúa de manera segura la fórmula."""
