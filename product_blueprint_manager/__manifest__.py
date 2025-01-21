@@ -17,7 +17,7 @@
         'views/product_views.xml',
         'views/menu_views.xml',
         'views/blueprint_report_template.xml',
-        'views/sale_report_blueprint_inherit.xml',
+        'views/sale_report_blueprint_final.xml',
         'data/blueprint_report_data.xml',
     ],
     'installable': True,

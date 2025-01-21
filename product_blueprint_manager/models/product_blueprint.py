@@ -1,4 +1,5 @@
 from odoo import models, fields, api
+from odoo.exceptions import ValidationError
 
 class ProductBlueprint(models.Model):
     _name = 'product.blueprint'
@@ -10,11 +11,14 @@ class ProductBlueprint(models.Model):
     product_id = fields.Many2one('product.template', string='Producto', required=True)
     formula_ids = fields.One2many('product.blueprint.formula', 'blueprint_id', string='Fórmulas')
 
-    @api.depends('file')
+    @api.depends('file', 'name')
     def _compute_filename(self):
         """Compute the filename based on the blueprint name."""
         for record in self:
-            record.filename = record.name + ".svg" if record.file else ''
+            if record.file and record.name:
+                record.filename = record.name + ".svg"
+            else:
+                record.filename = ''
 
 class ProductBlueprintFormula(models.Model):
     _name = 'product.blueprint.formula'
@@ -35,10 +39,10 @@ class ProductBlueprintFormula(models.Model):
     formula_expression = fields.Char('Expresión de la Fórmula', required=True)
     product_id = fields.Many2one('product.template', string='Producto', required=True)
     blueprint_id = fields.Many2one('product.blueprint', string='Plano', required=True, help="El plano al que pertenece esta fórmula.", ondelete='cascade')
-    position_x = fields.Float('Posición X', required=True, help="La coordenada X para posicionar la fórmula en el plano.")
-    position_y = fields.Float('Posición Y', required=True, help="La coordenada Y para posicionar la fórmula en el plano.")
+    position_x = fields.Float('Posición X (mm)', required=True, help="La coordenada X en milímetros para posicionar la fórmula en el plano.")
+    position_y = fields.Float('Posición Y (mm)', required=True, help="La coordenada Y en milímetros para posicionar la fórmula en el plano.")
     available_attributes = fields.Char(string="Atributos Disponibles", compute="_compute_available_attributes", store=False, help="Atributos disponibles para usar en la fórmula (separados por comas).")
-    font_size = fields.Char('Tamaño de la fuente', default='24px')
+    font_size = fields.Char('Tamaño de la fuente (mm)', default='4')
     font_color = fields.Selection(COLOR_OPTIONS, string='Color de la Fuente', default='black', help="Nombre del color de la fuente.")
 
     @api.depends('product_id')
