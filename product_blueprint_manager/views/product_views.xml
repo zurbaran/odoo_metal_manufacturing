@@ -5,7 +5,7 @@
         <field name="inherit_id" ref="product.product_template_only_form_view"/>
         <field name="arch" type="xml">
             <xpath expr="//header" position="inside">
-                <button name="generate_blueprint_report" string="Generar / Previsualizar Plano" type="object" class="oe_highlight"/>
+                <button name="generate_blueprint_report" string="Generar / Previsualizar Plano" type="object" class="oe_highlight" context="{'mode': 'preview'}"/>
             </xpath>
             <xpath expr="//sheet/notebook" position="inside">
                 <page string="Planos y Fórmulas">
