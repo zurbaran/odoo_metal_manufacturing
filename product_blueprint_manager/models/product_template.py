@@ -24,22 +24,26 @@ class ProductTemplate(models.Model):
     def generate_blueprint_report(self, sale_order_line=None, mode='preview'):
         """Genera un reporte de blueprint."""
         self.ensure_one()
-        blueprint = self.blueprint_ids[:1]
-        if not blueprint or not blueprint.file:
-            _logger.warning(f"[Blueprint] No hay blueprint para el producto: {self.name}")
+        if mode == 'preview':
+            blueprint = self.blueprint_ids[:1]
+            if not blueprint or not blueprint.file:
+                _logger.warning(f"[Blueprint] No hay blueprint para el producto: {self.name}")
+                return False
+
+            blueprint_svg = self.env['sale.order.line']._generate_evaluated_blueprint_svg(blueprint, mode, variables=None)
+
+            if blueprint_svg:
+                report_action = self.env['ir.actions.report']._get_report_from_name('product_blueprint_manager.report_blueprint_template')
+                blueprint_svg_b64 = blueprint_svg
+                return report_action.report_action(self, data={'blueprint_svg': blueprint_svg_b64, 'mode': mode})
             return False
+        elif mode == 'final':
+            if not sale_order_line:
+                _logger.error("Sale order line is required for 'final' mode.")
+                return False
 
-        if sale_order_line:
-            variables = self.get_custom_attribute_values(sale_order_line)
+            report_action = self.env['ir.actions.report']._get_report_from_name('product_blueprint_manager.action_report_sale_order_blueprint')
+            return report_action.report_action(sale_order_line.order_id)
         else:
-            variables = None
-
-        _logger.info(f"[Blueprint] Variables pasadas para la evaluación del blueprint '{blueprint.name}' en modo 'final': {variables}")
-        blueprint_svg = self.env['sale.order.line']._generate_evaluated_blueprint_svg(blueprint, mode, variables)
-
-        if blueprint_svg:
-            report_template = 'product_blueprint_manager.report_blueprint_template' if mode == 'preview' else 'product_blueprint_manager.report_final_blueprint'
-            report_action = self.env['ir.actions.report']._get_report_from_name(report_template)
-            blueprint_svg_b64 = blueprint_svg
-            return report_action.report_action(self, data={'blueprint_svg': blueprint_svg_b64, 'mode': mode})
-        return False
+            _logger.warning(f"Unknown mode: {mode}")
+            return False
