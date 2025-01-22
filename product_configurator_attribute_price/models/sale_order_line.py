@@ -1,16 +1,22 @@
-from odoo import models, api
+from odoo import models, api, fields
 import math
 import logging
 
 _logger = logging.getLogger(__name__)
 
+
 class SaleOrderLine(models.Model):
+    """
+    Hereda de sale.order.line para modificar el cálculo del precio unitario
+    considerando las fórmulas de los atributos.
+    """
     _inherit = 'sale.order.line'
 
     @api.depends('product_id', 'product_custom_attribute_value_ids', 'product_no_variant_attribute_value_ids')
     def _compute_price_unit(self):
         """
-        Calcula el precio unitario, aplicando fórmulas y ajustes específicos para atributos configurables.
+        Calcula el precio unitario, aplicando fórmulas y ajustes específicos
+        para atributos configurables.
         """
         for line in self:
             if not line.product_id:
@@ -28,11 +34,14 @@ class SaleOrderLine(models.Model):
                 if attribute_value and attribute_value.price_formula and 'custom_value' in attribute_value.price_formula:
                     try:
                         custom_value = float(custom_attribute.custom_value or 0)
+                        # Evaluar la formula de manera segura:
                         increment = eval(
                             attribute_value.price_formula,
+                            {"__builtins__": None},  # Evitar el uso de funciones incorporadas peligrosas
                             {"custom_value": custom_value, "price_so_far": price_so_far, "math": math}
                         )
-                        if increment <0: 
+
+                        if increment < 0:
                             increment = 0
                         price_so_far += increment
                         _logger.info(f"[Line {line.id}] Incremento por custom_value ({attribute_value.name}): {increment}")
@@ -46,6 +55,7 @@ class SaleOrderLine(models.Model):
                     try:
                         increment = eval(
                             no_variant_attribute.price_formula,
+                            {"__builtins__": None},
                             {"price_so_far": price_so_far, "math": math}
                         )
                         if increment < 0:
