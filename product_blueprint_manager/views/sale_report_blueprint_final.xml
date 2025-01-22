@@ -1,0 +1,48 @@
+<odoo>
+    <template id="report_sale_order_blueprint_document">
+        <t t-call="web.external_layout">
+            <t t-set="doc" t-value="doc.with_context(lang=doc.partner_id.lang)" />
+            <div class="page">
+                <div class="oe_structure"/>
+                <div class="container">
+                    <h2>Informe de Planos: <t t-esc="doc.name"/></h2>
+                    <p>Cliente: <span t-field="doc.partner_id.name"/></p>
+                    <p>
+                        <t t-if="doc.state in ['draft', 'sent']">Presupuesto</t>
+                        <t t-elif="env.context.get('proforma', False) or is_pro_forma">Proforma</t>
+                        <t t-elif="doc.state == 'sale'">Pedido</t>
+                        <t t-elif="doc.state == 'done'">Pedido Confirmado</t>
+                        <t t-else="">Documento de Venta</t>
+                        #: <span t-field="doc.name"/>
+                    </p>
+                    <p>Fecha: <span t-field="doc.date_order" t-options="{'widget': 'date'}"/></p>
+                    <t t-foreach="doc.order_line" t-as="line">
+                        <t t-if="line.product_id.product_tmpl_id.blueprint_ids">
+                            <t t-foreach="line.product_id.product_tmpl_id.blueprint_ids" t-as="blueprint">
+                                <div style="page-break-inside: avoid;">
+                                    <h3>Producto: <t t-esc="line.product_id.name"/></h3>
+                                    <h4>Plano: <t t-esc="blueprint.name"/></h4>
+                                    <t t-set="variables" t-value="line._get_evaluated_variables(line)"/>
+                                    <t t-set="blueprint_svg" t-value="line._generate_evaluated_blueprint_svg(blueprint, 'final', variables)"/>
+                                    <img t-if="blueprint_svg" t-att-src="'data:image/svg+xml;base64,' + blueprint_svg" style="width:100%; height:auto;"/>
+                                    <p t-else="">Error al generar el plano.</p>
+                                </div>
+                            </t>
+                        </t>
+                    </t>
+                </div>
+                <div class="oe_structure"/>
+            </div>
+        </t>
+    </template>
+
+    <template id="report_sale_order_blueprint">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="product_blueprint_manager.report_sale_order_blueprint_document" t-lang="doc.partner_id.lang">
+                    <t t-set="doc" t-value="doc" />
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>
