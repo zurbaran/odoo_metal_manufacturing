@@ -5,6 +5,7 @@
         <field name="report_type">qweb-pdf</field>
         <field name="report_name">product_blueprint_manager.report_blueprint_template</field>
         <field name="print_report_name">'Blueprint Preview - %s' % (object.name)</field>
+        <!--<field name="paperformat_id" ref="product_blueprint_manager.paperformat_blueprint_reports"/>-->
     </record>
 
     <record id="action_report_sale_order_blueprint" model="ir.actions.report">
@@ -16,6 +17,18 @@
         <field name="binding_model_id" ref="sale.model_sale_order"/>
         <field name="binding_type">report</field>
         <field name="binding_view_types">list,form</field>
-        <field name="paperformat_id" eval="False"/>
+        <!--<field name="paperformat_id" ref="product_blueprint_manager.paperformat_blueprint_reports"/>-->
+    </record>
+
+    <record id="product_blueprint_action" model="ir.actions.act_window">
+        <field name="name">Blueprints</field>
+        <field name="res_model">product.blueprint</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <record id="product_blueprint_formula_action" model="ir.actions.act_window">
+        <field name="name">Formulas</field>
+        <field name="res_model">product.blueprint.formula</field>
+        <field name="view_mode">tree,form</field>
     </record>
 </odoo>
