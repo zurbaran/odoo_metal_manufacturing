@@ -1,13 +1,4 @@
 <odoo>
-    <record id="action_report_blueprint_template" model="ir.actions.report">
-        <field name="name">Blueprint Preview</field>
-        <field name="model">product.template</field>
-        <field name="report_type">qweb-pdf</field>
-        <field name="report_name">product_blueprint_manager.report_blueprint_template</field>
-        <field name="print_report_name">'Blueprint Preview - %s' % (object.name)</field>
-        <!--<field name="paperformat_id" ref="product_blueprint_manager.paperformat_blueprint_reports"/>-->
-    </record>
-
     <record id="action_report_sale_order_blueprint" model="ir.actions.report">
         <field name="name">Plano Orden de Venta</field>
         <field name="model">sale.order</field>
@@ -17,8 +8,7 @@
         <field name="binding_model_id" ref="sale.model_sale_order"/>
         <field name="binding_type">report</field>
         <field name="binding_view_types">list,form</field>
-        <!--<field name="paperformat_id" ref="product_blueprint_manager.paperformat_blueprint_reports"/>-->
-    </record>
+        </record>
 
     <record id="product_blueprint_action" model="ir.actions.act_window">
         <field name="name">Blueprints</field>
