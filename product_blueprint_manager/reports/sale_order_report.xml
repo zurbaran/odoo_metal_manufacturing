@@ -23,7 +23,7 @@
                                     <h3>Producto: <t t-esc="line.product_id.name"/></h3>
                                     <h4>Plano: <t t-esc="blueprint.name"/></h4>
                                     <t t-set="variables" t-value="line._get_evaluated_variables(line)"/>
-                                    <t t-set="blueprint_svg" t-value="line._generate_evaluated_blueprint_svg(blueprint, 'final', variables)"/>
+                                    <t t-set="blueprint_svg" t-value="line._generate_evaluated_blueprint_svg(blueprint, variables)"/>
                                     <img t-if="blueprint_svg" t-att-src="'data:image/svg+xml;base64,' + blueprint_svg" style="width:100%; height:auto;"/>
                                     <p t-else="">Error al generar el plano.</p>
                                 </div>
