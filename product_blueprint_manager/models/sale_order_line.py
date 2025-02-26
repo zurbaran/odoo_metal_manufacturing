@@ -2,14 +2,12 @@ from odoo import models, fields, api, _
 import base64
 from lxml import etree
 import logging
-import tempfile
+import ast
+import math
 
 _logger = logging.getLogger(__name__)
 
-
 class SaleOrderLine(models.Model):
-    """Extensión del modelo sale.order.line para la gestión de blueprints en líneas de pedido."""
-
     _inherit = "sale.order.line"
 
     blueprint_custom_values = fields.Char(
@@ -19,167 +17,94 @@ class SaleOrderLine(models.Model):
 
     @api.depends("product_id", "product_custom_attribute_value_ids")
     def _capture_blueprint_custom_values(self):
-        """Captura los valores personalizados para el blueprint."""
         hook = self.env["product.blueprint.hook"]
         for line in self:
-            _logger.info(
-                f"[Blueprint] Capturando valores personalizados para la línea de pedido: {line.id}, Producto: {line.product_id.name if line.product_id else 'Ninguno'}"
-            )
+            _logger.info(f"[Blueprint] Capturando valores para la línea de pedido {line.id}")
             blueprint_custom_values = hook.get_attribute_values_for_blueprint(line)
-            _logger.info(
-                f"[Blueprint] Valores personalizados capturados (hook): {blueprint_custom_values}"
-            )
             line.blueprint_custom_values = str(blueprint_custom_values)
 
-    def _generate_evaluated_blueprint_svg(self, blueprint, mode="final", variables=None):
+    def _generate_evaluated_blueprint_svg(self, blueprint, variables=None):
         """
-        Genera el SVG con resultados de fórmulas evaluadas o nombres para previsualización.
-
-        Args:
-            blueprint (recordset): El plano a generar.
-            mode (str): El modo de generación ('final' o 'preview').
-            variables (dict): Las variables para la evaluación de fórmulas.
-
-        Returns:
-            str: El SVG generado en base64 o el SVG original si hay un error.
+        Genera un SVG con los resultados de las fórmulas evaluadas.
+        No modifica el archivo original del plano.
         """
-        _logger.info(
-            f"[Blueprint] Generando SVG para blueprint: {blueprint.name}, Modo: {mode}"
-        )
-
-        # Factores de escalado para las fórmulas (ajústalos según sea necesario)
-        FORMULA_POSITION_SCALE_FACTOR = 100
-        FORMULA_FONT_SIZE_SCALE_FACTOR = 36.45
+        _logger.info(f"[Blueprint] Generando SVG para el plano '{blueprint.name}'.")
 
         try:
+            # Cargar el SVG original sin modificarlo
             svg_data = base64.b64decode(blueprint.file)
             root = etree.fromstring(svg_data)
 
-            if mode not in ["final", "preview"]:
-                _logger.warning(
-                    f"[Blueprint] Modo desconocido: {mode}. Por favor, use 'final' o 'preview'."
-                )
+            # Detectar espacio de nombres (namespace)
+            nsmap = {'svg': root.nsmap.get(None, 'http://www.w3.org/2000/svg')}
+            _logger.debug(f"[Blueprint] Espacios de nombres detectados: {nsmap}")
 
-            formulas = blueprint.formula_ids
-            _logger.info(
-                f"[Blueprint] Se encontraron {len(formulas)} fórmula(s) para el blueprint '{blueprint.name}'."
-            )
+            # Buscar y reemplazar las etiquetas <text class="odoo-formula">
+            for text_element in root.xpath("//svg:text[contains(@class, 'odoo-formula')]", namespaces=nsmap):
+                formula_name = "".join(text_element.xpath("string(.)", namespaces=nsmap)).strip()
+                _logger.info(f"[Blueprint] Procesando etiqueta: '{formula_name}'")
 
-            for formula in formulas:
-                _logger.info(
-                    f"[Blueprint] Procesando fórmula: '{formula.name}' (Expr: '{formula.formula_expression}'), "
-                    f"Posición: ({formula.position_x}, {formula.position_y}), "
-                    f"Color: {formula.font_color}, Tamaño de Fuente: {formula.font_size}"
-                )
+                # Buscar la fórmula asociada
+                formula = blueprint.formula_ids.filtered(lambda f: f.name.name == formula_name)
+                if not formula:
+                    _logger.warning(f"[Blueprint] No se encontró fórmula asociada a '{formula_name}'.")
+                    continue
 
                 try:
-                    if mode == "preview":
-                        result = formula.name
-                        _logger.info(
-                            f"[Blueprint] Modo 'preview': Usando el nombre de la fórmula '{formula.name}' como resultado."
-                        )
-                    else:
-                        _logger.info(
-                            f"[Blueprint] Modo 'final': Evaluando la fórmula '{formula.formula_expression}' para la fórmula '{formula.name}'."
-                        )
-                        result = self.safe_evaluate_formula(
-                            formula.formula_expression, variables
-                        )
-                        _logger.info(
-                            f"[Blueprint] Resultado evaluado para la fórmula '{formula.name}': {result}"
-                        )
+                    # Evaluar la fórmula
+                    result = self.safe_evaluate_formula(formula.formula_expression, variables)
+                    _logger.info(f"[Blueprint] Resultado para '{formula_name}': {result}")
 
-                    # El tamaño de la fuente ya está en mm, no necesita conversión
-                    font_size_str = formula.font_size
-                    try:
-                        font_size = float(font_size_str)
-                    except ValueError:
-                        _logger.warning(
-                            f"[Blueprint] No se pudo convertir el tamaño de la fuente '{font_size_str}' a un número. Usando 4 como valor predeterminado."
-                        )
-                        font_size = 4.0
-
-                    # Las coordenadas ya están en mm, no necesitan escalado
-                    x_coord = formula.position_x
-                    y_coord = formula.position_y
-
-                    # Aplicar el factor de escalado a las coordenadas y al tamaño de fuente
-                    scaled_x_coord = x_coord * FORMULA_POSITION_SCALE_FACTOR
-                    scaled_y_coord = y_coord * FORMULA_POSITION_SCALE_FACTOR
-                    scaled_font_size = font_size * FORMULA_FONT_SIZE_SCALE_FACTOR
-
-                    font_color = formula.font_color or "black"
-                    style_string = (
-                        f"font-size:{scaled_font_size}mm; font-family:Arial; fill:{font_color};"
-                    )
-
-                    # Crear el elemento de texto
-                    result_element = etree.Element(
-                        "text",
-                        x=str(scaled_x_coord),
-                        y=str(scaled_y_coord),
-                        style=style_string,
-                    )
-                    result_element.text = str(result)
-                    root.append(result_element)
-
-                    _logger.info(
-                        f"[Blueprint] Elemento SVG creado para '{formula.name}': {etree.tostring(result_element, pretty_print=True, encoding='unicode')}"
-                    )
+                    # Reemplazar el contenido del texto sin perder el formato
+                    for tspan in text_element.xpath(".//svg:tspan", namespaces=nsmap):
+                        tspan.text = str(result)
+                    if not text_element.xpath(".//svg:tspan", namespaces=nsmap):
+                        text_element.text = str(result)
 
                 except Exception as e:
-                    _logger.exception(
-                        f"[Blueprint] Error al procesar la fórmula '{formula.name}': {e}"
-                    )
+                    _logger.exception(f"[Blueprint] Error al evaluar la fórmula '{formula_name}': {e}")
+                    text_element.text = "Error"
 
-            # NO SE REALIZA NINGUNA MODIFICACIÓN AL SVG ORIGINAL
-            blueprint_svg = etree.tostring(root, encoding="unicode")
-            #_logger.info(
-            #    f"[Blueprint] SVG final generado para '{blueprint.name}' (primeros 200 caracteres): {blueprint_svg[:200]}..."
-            #)
-
-            # Depuración: guardar el SVG en un archivo temporal
-            with tempfile.NamedTemporaryFile(
-                delete=False, suffix=".svg"
-            ) as temp_svg_file:
-                temp_svg_file.write(blueprint_svg.encode("utf-8"))
-                temp_svg_file_path = temp_svg_file.name
-                _logger.info(
-                    f"[Blueprint] SVG generado guardado temporalmente en: {temp_svg_file_path}"
-                )
-
-            return base64.b64encode(blueprint_svg.encode("utf-8")).decode()
+            # Convertir el SVG modificado en base64 para el PDF
+            final_svg = etree.tostring(root, encoding="utf-8").decode()
+            _logger.info(f"[Blueprint] SVG generado con éxito para '{blueprint.name}'.")
+            return base64.b64encode(final_svg.encode()).decode()
 
         except Exception as e:
-            _logger.exception(
-                f"[Blueprint] Error al procesar el SVG para el blueprint '{blueprint.name}': {e}"
-            )
+            _logger.exception(f"[Blueprint] Error al procesar el SVG: {e}")
             return blueprint.file
 
     def safe_evaluate_formula(self, expression, variables):
         """
-        Evalúa de manera segura la fórmula.
+        Evalúa de manera segura la fórmula usando solo las variables permitidas.
 
         Args:
-            expression (str): La expresión a evaluar.
-            variables (dict): Las variables para la evaluación.
+            expression (str): La expresión matemática a evaluar (ej. "mmA * 2").
+            variables (dict): Diccionario con los valores de las variables (ej. {"mmA": 1500}).
 
         Returns:
-            str: El resultado de la evaluación o 'Error en fórmula' si hay un error.
+            str: Resultado de la evaluación o 'Error' si ocurre un problema.
         """
-        _logger.info(
-            f"[Blueprint] Evaluando expresión: '{expression}' con variables: {variables}"
-        )
-        try:
-            result = eval(expression, {"__builtins__": None}, variables)
-            _logger.info(f"[Blueprint] Resultado de la evaluación: {result}")
-            return result
-        except Exception as e:
-            _logger.exception(
-                f"[Blueprint] Error al evaluar la fórmula '{expression}': {e}"
-            )
-            return "Error en fórmula"
+        _logger.info(f"[Blueprint] Evaluando expresión: '{expression}' con variables: {variables}")
 
+        try:
+            # Crear entorno seguro con funciones matemáticas permitidas
+            allowed_names = {k: v for k, v in math.__dict__.items() if not k.startswith("__")}
+            allowed_names.update(variables)  # Agregar variables de la línea de venta
+
+            # Analizar la expresión de forma segura
+            tree = ast.parse(expression, mode='eval')
+            compiled = compile(tree, "<string>", "eval")
+
+            result = eval(compiled, {"__builtins__": {}}, allowed_names)
+
+            _logger.info(f"[Blueprint] Resultado de la evaluación: {result}")
+            return str(result)  # Convertimos a string para evitar errores con tipos de datos
+
+        except Exception as e:
+            _logger.exception(f"[Blueprint] Error al evaluar la fórmula '{expression}': {e}")
+            return "Error"
+        
     def _get_evaluated_variables(self, sale_order_line):
         """
         Devuelve un diccionario con los nombres de las variables personalizadas y sus valores correspondientes.
