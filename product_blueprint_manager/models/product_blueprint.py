@@ -30,54 +30,75 @@ class ProductBlueprint(models.Model):
     def create(self, vals):
         """Crear el plano y extraer las etiquetas una vez creado."""
         blueprint = super(ProductBlueprint, self).create(vals)
-        if "file" in vals and vals["file"]:
-            blueprint._extract_svg_formulas()
+        _logger.info(f"[Blueprint] Creando blueprint '{blueprint.name}'")
+
+        # FORZAMOS la extracción de fórmulas
+        _logger.info(f"[Blueprint] Intentando extraer fórmulas inmediatamente después de la creación...")
+        blueprint._extract_svg_formulas()
+
         return blueprint
 
     def write(self, vals):
         """Extraer las fórmulas después de escribir en el plano."""
+        _logger.info(f"[Blueprint] Modificando blueprint '{self.name}'")
         result = super(ProductBlueprint, self).write(vals)
-        if "file" in vals and vals["file"]:
-            self._extract_svg_formulas()
+
+        # FORZAMOS la extracción de fórmulas
+        _logger.info(f"[Blueprint] Intentando extraer fórmulas después de la modificación...")
+        self._extract_svg_formulas()
+
         return result
 
     def _extract_svg_formulas(self):
-        """Extrae etiquetas <text> con class='odoo-formula' del archivo SVG, manejando espacios de nombres."""
+        """
+        Extrae los trayectos <path> con class='odoo-formula' y las evalúa como fórmulas.
+        """
+        _logger.info(f"[Blueprint] Iniciando extracción de fórmulas para '{self.name}'")
         if not self.file:
-            _logger.warning(f"[Blueprint] No hay archivo SVG para el plano '{self.name}'.")
+            _logger.info(f"[Blueprint] No hay archivo SVG para el plano '{self.name}'.")
             return []
 
         try:
-            # Eliminar registros previos asociados al plano
+            # Eliminar registros previos de fórmulas asociadas al plano
             self.env["product.blueprint.formula.name"].search([("blueprint_id", "=", self.id)]).unlink()
 
-            # Decodificar y analizar el archivo SVG
+            # Decodificar el archivo SVG desde base64
             svg_data = base64.b64decode(self.file)
             root = etree.fromstring(svg_data)
 
-            # Detectar espacio de nombres (namespace)
+            # Obtener namespaces (importante para XML con `xmlns`)
             nsmap = {'svg': root.nsmap.get(None, 'http://www.w3.org/2000/svg')}
-            _logger.debug(f"[Blueprint] Espacios de nombres detectados: {nsmap}")
+            _logger.info(f"[Blueprint] Namespace detectado: {nsmap}")
 
-            # Buscar etiquetas <text> con la clase 'odoo-formula' usando el namespace
             formulas = []
-            for text_element in root.xpath("//svg:text[contains(@class, 'odoo-formula')]", namespaces=nsmap):
-                formula_name = "".join(text_element.xpath(".//text()", namespaces=nsmap)).strip()
+            found_any = False
 
-                if formula_name:
-                    _logger.info(f"[Blueprint] Etiqueta detectada: '{formula_name}' en {etree.tostring(text_element).decode()}")
-                    # Crear el registro con el ID válido del plano
+            # Buscar todos los elementos <path> con class="odoo-formula"
+            paths = root.xpath(".//svg:path[contains(@class, 'odoo-formula')]", namespaces=nsmap)
+            _logger.info(f"[Blueprint] Se encontraron {len(paths)} trayectos con 'odoo-formula' en el plano.")
+
+            for path in paths:
+                formula_text = path.get("aria-label", "").strip()  # Extraer la fórmula original
+                path_id = path.get("id", "sin ID")  # Identificar el elemento
+                #path_d = path.get("d", "").strip()  # Coordenadas del trayecto
+
+                _logger.info(f"[Blueprint] Encontrado trayecto con ID={path_id} y fórmula='{formula_text}'")
+
+                if formula_text:
+                    found_any = True
                     self.env["product.blueprint.formula.name"].create({
-                        "name": formula_name,
+                        "name": formula_text,
                         "blueprint_id": self.id
                     })
-                    formulas.append(formula_name)
-                else:
-                    _logger.warning(f"[Blueprint] Etiqueta sin contenido en: {etree.tostring(text_element).decode()}")
+                    formulas.append({"id": path_id, "formula": formula_text})#, "path": path_d})
 
-            _logger.info(f"[Blueprint] Se encontraron {len(formulas)} etiquetas 'odoo-formula' para el plano '{self.name}'.")
+            if not found_any:
+                _logger.info(f"[Blueprint] NO se encontraron fórmulas en el plano '{self.name}'.")
+            else:
+                _logger.info(f"[Blueprint] Se extrajeron {len(formulas)} fórmulas de '{self.name}'.")
+
             return formulas
 
         except Exception as e:
-            _logger.exception(f"[Blueprint] Error al procesar el archivo SVG: {e}")
+            _logger.info(f"[Blueprint] Error al procesar el archivo SVG: {e}")
             raise ValidationError(f"Error al procesar el archivo SVG: {str(e)}")

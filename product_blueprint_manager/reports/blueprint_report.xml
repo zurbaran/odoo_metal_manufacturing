@@ -1,2 +1,13 @@
 <odoo>
-    </odoo>
+    <template id="report_blueprint_template">
+        <t t-call="web.external_layout">
+            <div class="page">
+                <main>
+                    <h2>Blueprint</h2>
+                    <t t-set="evaluated_blueprint" t-value="doc.order_line[0]._get_evaluated_blueprint()"/>
+                    <img t-att-src="'data:image/svg+xml;base64,' + evaluated_blueprint" style="width:100%; height:auto;"/>
+                </main>
+            </div>
+        </t>
+    </template>
+</odoo>
