@@ -1,9 +1,14 @@
 from odoo import models, fields, api, _
+from odoo.exceptions import ValidationError
 import base64
 from lxml import etree
 import logging
 import ast
 import math
+import tempfile
+import subprocess
+import uuid
+import os
 
 _logger = logging.getLogger(__name__)
 
@@ -15,6 +20,8 @@ class SaleOrderLine(models.Model):
         string="Blueprint Custom Values",
     )
 
+    blueprint_attachment_id = fields.Many2one("ir.attachment", string="Blueprint Attachment")
+
     @api.depends("product_id", "product_custom_attribute_value_ids")
     def _capture_blueprint_custom_values(self):
         hook = self.env["product.blueprint.hook"]
@@ -23,56 +30,95 @@ class SaleOrderLine(models.Model):
             blueprint_custom_values = hook.get_attribute_values_for_blueprint(line)
             line.blueprint_custom_values = str(blueprint_custom_values)
 
-    def _generate_evaluated_blueprint_svg(self, blueprint, variables=None):
+    def _generate_evaluated_blueprint_svg(self, blueprint, evaluated_variables): # Changed parameter name
         """
-        Genera un SVG con los resultados de las fórmulas evaluadas.
-        No modifica el archivo original del plano.
+        Evalúa las fórmulas en el plano y genera un nuevo SVG con textos en lugar de trayectorias.
         """
-        _logger.info(f"[Blueprint] Generando SVG para el plano '{blueprint.name}'.")
+        _logger.info(f"[Blueprint] Generando SVG evaluado para el blueprint '{blueprint.name}'")
+
+        if not blueprint.file:
+            raise ValidationError("No hay archivo SVG en el blueprint.")
 
         try:
-            # Cargar el SVG original sin modificarlo
+            # Decodificar SVG desde base64
             svg_data = base64.b64decode(blueprint.file)
             root = etree.fromstring(svg_data)
 
-            # Detectar espacio de nombres (namespace)
             nsmap = {'svg': root.nsmap.get(None, 'http://www.w3.org/2000/svg')}
-            _logger.debug(f"[Blueprint] Espacios de nombres detectados: {nsmap}")
+            _logger.info(f"[Blueprint] Espacios de nombres detectados: {nsmap}")
 
-            # Buscar y reemplazar las etiquetas <text class="odoo-formula">
-            for text_element in root.xpath("//svg:text[contains(@class, 'odoo-formula')]", namespaces=nsmap):
-                formula_name = "".join(text_element.xpath("string(.)", namespaces=nsmap)).strip()
-                _logger.info(f"[Blueprint] Procesando etiqueta: '{formula_name}'")
+            # NO necesitamos formula_mapping aquí.  Usamos evaluated_variables directamente.
 
-                # Buscar la fórmula asociada
-                formula = blueprint.formula_ids.filtered(lambda f: f.name.name == formula_name)
-                if not formula:
-                    _logger.warning(f"[Blueprint] No se encontró fórmula asociada a '{formula_name}'.")
-                    continue
+            # Buscar todos los elementos <path> con class="odoo-formula"
+            paths = root.xpath(".//svg:path[contains(@class, 'odoo-formula')]", namespaces=nsmap)
+            _logger.info(f"[Blueprint] Se encontraron {len(paths)} trayectos con fórmulas.")
 
-                try:
-                    # Evaluar la fórmula
-                    result = self.safe_evaluate_formula(formula.formula_expression, variables)
-                    _logger.info(f"[Blueprint] Resultado para '{formula_name}': {result}")
+            for path in paths:
+                formula_name = path.get("aria-label", "").strip()  # Identificador del path
+                path_id = path.get("id", "sin ID")
 
-                    # Reemplazar el contenido del texto sin perder el formato
-                    for tspan in text_element.xpath(".//svg:tspan", namespaces=nsmap):
-                        tspan.text = str(result)
-                    if not text_element.xpath(".//svg:tspan", namespaces=nsmap):
-                        text_element.text = str(result)
+                if formula_name in evaluated_variables: # Usamos evaluated_variables
+                    evaluated_value = evaluated_variables[formula_name] # Usamos evaluated_variables
+                    _logger.info(f"[Blueprint] Sustituyendo '{formula_name}' → '{evaluated_value}' en ID={path_id}")
 
-                except Exception as e:
-                    _logger.exception(f"[Blueprint] Error al evaluar la fórmula '{formula_name}': {e}")
-                    text_element.text = "Error"
+                    # Extraer información visual del path
+                    transform = path.get("transform", "")
+                    style = path.get("style", "")
 
-            # Convertir el SVG modificado en base64 para el PDF
-            final_svg = etree.tostring(root, encoding="utf-8").decode()
-            _logger.info(f"[Blueprint] SVG generado con éxito para '{blueprint.name}'.")
-            return base64.b64encode(final_svg.encode()).decode()
+                    # Extraer tamaño de fuente y color
+                    font_size = "12px"
+                    fill_color = "black"
+                    for style_attr in style.split(";"):
+                        if "font-size" in style_attr:
+                            font_size = style_attr.split(":")[1].strip()
+                        elif "fill" in style_attr:
+                            fill_color = style_attr.split(":")[1].strip()
+
+                    # IMPORTANTE: Extraer la posición correcta
+                    x, y = "0", "0"
+                    if "d" in path.attrib:
+                        try:
+                            path_commands = path.attrib["d"].split(" ")
+                            x = path_commands[1].split(",")[0] if len(path_commands) > 1 else "0"
+                            y = path_commands[1].split(",")[1] if len(path_commands) > 1 else "0"
+                        except Exception:
+                            _logger.info(f"[Blueprint] No se pudo obtener la posición de {path_id}, usando (0,0)")
+
+                    # Crear un nuevo elemento <text> con el resultado evaluado
+                    text_element = etree.Element("text", {
+                        "x": x,
+                        "y": y,
+                        "style": f"font-size:{font_size}; fill:{fill_color};",
+                        "transform": transform
+                    })
+                    text_element.text = str(evaluated_value)  # Asegurarse de que sea una cadena
+
+                    # Reemplazar el <path> por el <text>
+                    path.getparent().replace(path, text_element)
+
+                else:
+                    _logger.info(f"[Blueprint] No hay fórmula configurada para '{formula_name}', se mantiene sin cambios en el SVG.")
+
+            # Convertir el nuevo SVG de vuelta a base64
+            new_svg_data = etree.tostring(root, pretty_print=True, encoding="utf-8").decode("utf-8")
+            new_svg_base64 = base64.b64encode(new_svg_data.encode("utf-8"))
+
+            # Guardar el nuevo archivo como adjunto en Odoo
+            attachment = self.env["ir.attachment"].create({
+                "name": f"{blueprint.name}_evaluated.svg",
+                "datas": new_svg_base64,
+                "res_model": "sale.order.line",
+                "res_id": self.id,
+                "mimetype": "image/svg+xml",
+            })
+
+            _logger.info(f"[Blueprint] SVG evaluado guardado como adjunto ID={attachment.id}")
+
+            return attachment.id
 
         except Exception as e:
-            _logger.exception(f"[Blueprint] Error al procesar el SVG: {e}")
-            return blueprint.file
+            _logger.exception(f"[Blueprint] Error en la evaluación del plano") # Usar logger.exception
+            raise ValidationError(f"Error procesando el SVG: {str(e)}")
 
     def safe_evaluate_formula(self, expression, variables):
         """
@@ -102,9 +148,9 @@ class SaleOrderLine(models.Model):
             return str(result)  # Convertimos a string para evitar errores con tipos de datos
 
         except Exception as e:
-            _logger.exception(f"[Blueprint] Error al evaluar la fórmula '{expression}': {e}")
+            _logger.exception(f"[Blueprint] Error al evaluar la fórmula '{expression}'") # Usar logger.exception
             return "Error"
-        
+
     def _get_evaluated_variables(self, sale_order_line):
         """
         Devuelve un diccionario con los nombres de las variables personalizadas y sus valores correspondientes.
@@ -131,7 +177,7 @@ class SaleOrderLine(models.Model):
             not sale_order_line.product_id
             or not sale_order_line.product_id.product_tmpl_id
         ):
-            _logger.warning(
+            _logger.info(
                 f"[Blueprint] Producto o plantilla de producto no encontrado para la línea {sale_order_line.id}."
             )
             return {}
@@ -147,13 +193,13 @@ class SaleOrderLine(models.Model):
             )
 
             if not formula.formula_expression:
-                _logger.warning(
+                _logger.info(
                     f"[Blueprint] Fórmula sin expresión para '{formula.name}' en la línea {sale_order_line.id}."
                 )
                 continue
 
             if not formula.available_attributes:
-                _logger.warning(
+                _logger.info(
                     f"[Blueprint] La fórmula '{formula.name}' no tiene atributos disponibles definidos."
                 )
                 continue
@@ -176,16 +222,16 @@ class SaleOrderLine(models.Model):
                         variable_mapping[attribute_name] = attribute_values[
                             attribute_name
                         ]
-                        _logger.warning(
+                        _logger.info(
                             f"[Blueprint] Atributo '{attribute_name}' no es un número. Se usará como cadena: '{attribute_values[attribute_name]}'"
                         )
                 else:
-                    _logger.warning(
+                    _logger.info(
                         f"[Blueprint] Atributo '{attribute_name}' no encontrado en los valores de atributos para la línea {sale_order_line.id}."
                     )
 
         if not variable_mapping:
-            _logger.warning(
+            _logger.info(
                 f"[Blueprint] No se mapearon variables para la línea {sale_order_line.id}."
             )
         else:
@@ -197,3 +243,38 @@ class SaleOrderLine(models.Model):
             f"[Blueprint] Finalizada la captura de variables para la línea {sale_order_line.id}."
         )
         return variable_mapping
+
+    def _get_evaluated_blueprint(self):
+        self.ensure_one()
+        if not self.product_id or not self.product_id.product_tmpl_id.blueprint_ids:
+            _logger.info(f"[Blueprint] No hay blueprint asociado a {self.product_id.name}")
+            return ""
+
+        blueprint = self.product_id.product_tmpl_id.blueprint_ids[0]
+
+        # Obtener variables correctamente usando `_get_evaluated_variables()`
+        variables = self._get_evaluated_variables(self)
+
+        _logger.info(f"[Blueprint] Variables evaluadas para {self.product_id.name}: {variables}")
+
+        # Evaluar fórmulas con las variables correctas, UNA SOLA VEZ
+        evaluated_variables = {}
+        for formula in blueprint.formula_ids:
+             if formula.name and formula.formula_expression:
+                evaluated_value = self.safe_evaluate_formula(formula.formula_expression, variables)
+                evaluated_variables[formula.name.name] = evaluated_value # Usar formula.name.name
+
+        _logger.info(f"[Blueprint] Variables con valores evaluados: {evaluated_variables}")
+
+
+        # Generar el SVG evaluado con las fórmulas ya resueltas
+        evaluated_attachment_id = self._generate_evaluated_blueprint_svg(blueprint, evaluated_variables) # Pasamos evaluated_variables
+        new_attachment = self.env["ir.attachment"].browse(evaluated_attachment_id)
+
+        if new_attachment and new_attachment.datas:
+            svg_data = base64.b64decode(new_attachment.datas).decode("utf-8")
+            _logger.info(f"[Blueprint] SVG evaluado obtenido correctamente para {self.product_id.name}")
+            return base64.b64encode(svg_data.encode()).decode()
+
+        _logger.info(f"[Blueprint] No se pudo obtener el blueprint evaluado para {self.product_id.name}")
+        return ""
