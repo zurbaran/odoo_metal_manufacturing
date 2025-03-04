@@ -32,11 +32,14 @@ class ProductBlueprintFormula(models.Model):
 
     @api.onchange("blueprint_id")
     def _onchange_blueprint_id(self):
-        """Actualiza las opciones disponibles basadas en las etiquetas del plano."""
+        """Actualizar las opciones de nombres de fórmula cuando se cambia el plano."""
         if self.blueprint_id:
             formula_names = self.env["product.blueprint.formula.name"].search([("blueprint_id", "=", self.blueprint_id.id)]).mapped("name")
             _logger.info(f"[Blueprint][Formula] Etiquetas disponibles para el plano '{self.blueprint_id.name}': {formula_names}")
+
+            self.name = False  # Resetear selección si cambiamos de plano
             return {"domain": {"name": [("name", "in", formula_names)]}}
         else:
-            _logger.warning(f"[Blueprint][Formula] No se ha seleccionado ningún plano.")
+            _logger.info(f"[Blueprint][Formula] No se ha seleccionado ningún plano.")
+            self.name = False
             return {"domain": {"name": []}}
