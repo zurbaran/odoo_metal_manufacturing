@@ -30,7 +30,7 @@ class SaleOrderLine(models.Model):
             blueprint_custom_values = hook.get_attribute_values_for_blueprint(line)
             line.blueprint_custom_values = str(blueprint_custom_values)
 
-    def _generate_evaluated_blueprint_svg(self, blueprint, evaluated_variables): # Changed parameter name
+    def _generate_evaluated_blueprint_svg(self, blueprint, evaluated_variables):
         """
         Evalúa las fórmulas en el plano y genera un nuevo SVG con textos en lugar de trayectorias.
         """
@@ -59,7 +59,14 @@ class SaleOrderLine(models.Model):
 
                 if formula_name in evaluated_variables: # Usamos evaluated_variables
                     evaluated_value = evaluated_variables[formula_name] # Usamos evaluated_variables
-                    _logger.info(f"[Blueprint] Sustituyendo '{formula_name}' → '{evaluated_value}' en ID={path_id}")
+
+                    # APLICAR REDONDEO AQUÍ:
+                    try:
+                        rounded_value = str(round(float(evaluated_value)))  # Convertir a float, redondear, volver a string
+                    except ValueError:
+                        rounded_value = str(evaluated_value) #Si no se puede convertir a float, no redondeamos
+                    _logger.info(f"[Blueprint] Sustituyendo '{formula_name}' → '{rounded_value}' en ID={path_id}")
+
 
                     # Extraer información visual del path
                     transform = path.get("transform", "")
@@ -91,7 +98,7 @@ class SaleOrderLine(models.Model):
                         "style": f"font-size:{font_size}; fill:{fill_color};",
                         "transform": transform
                     })
-                    text_element.text = str(evaluated_value)  # Asegurarse de que sea una cadena
+                    text_element.text = rounded_value  # Usar el valor redondeado
 
                     # Reemplazar el <path> por el <text>
                     path.getparent().replace(path, text_element)
