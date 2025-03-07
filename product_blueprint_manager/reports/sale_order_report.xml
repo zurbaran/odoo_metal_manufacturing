@@ -21,9 +21,7 @@
                         <t t-if="evaluated_blueprint">
                             <div style="page-break-inside: avoid;">
                                 <h3>Producto: <t t-esc="line.product_id.name"/></h3>
-                                <t t-if="line.blueprint_attachment_id and line.blueprint_attachment_id.res_model == 'sale.order.line' and line.blueprint_attachment_id.res_id == line.id">
-                                    <h4>Plano: <t t-esc="line.product_id.product_tmpl_id.blueprint_ids[0].name"/></h4>
-                                </t>
+                                <h4>Plano: <t t-esc="line.product_id.product_tmpl_id.blueprint_ids[0].name"/></h4>
                                 <img t-att-src="'data:image/svg+xml;base64,' + evaluated_blueprint"
                                     style="width:100%; height:auto;"/>
                             </div>
