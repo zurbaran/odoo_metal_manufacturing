@@ -251,37 +251,42 @@ class SaleOrderLine(models.Model):
         )
         return variable_mapping
 
-    def _get_evaluated_blueprint(self):
+    def _get_evaluated_blueprints(self):
+        """Genera y devuelve todos los blueprints evaluados para este producto."""
         self.ensure_one()
+
         if not self.product_id or not self.product_id.product_tmpl_id.blueprint_ids:
-            _logger.info(f"[Blueprint] No hay blueprint asociado a {self.product_id.name}")
-            return ""
+            _logger.info(f"[Blueprint] No hay blueprints asociados a {self.product_id.name}")
+            return []
 
-        blueprint = self.product_id.product_tmpl_id.blueprint_ids[0]
+        evaluated_blueprints = []
 
-        # Obtener variables correctamente usando `_get_evaluated_variables()`
-        variables = self._get_evaluated_variables(self)
+        for blueprint in self.product_id.product_tmpl_id.blueprint_ids:
+            _logger.info(f"[Blueprint] Procesando blueprint: {blueprint.name}")
 
-        _logger.info(f"[Blueprint] Variables evaluadas para {self.product_id.name}: {variables}")
+            # Obtener variables correctamente usando `_get_evaluated_variables()`
+            variables = self._get_evaluated_variables(self)
+            _logger.info(f"[Blueprint] Variables evaluadas: {variables}")
 
-        # Evaluar fórmulas con las variables correctas, UNA SOLA VEZ
-        evaluated_variables = {}
-        for formula in blueprint.formula_ids:
-             if formula.name and formula.formula_expression:
-                evaluated_value = self.safe_evaluate_formula(formula.formula_expression, variables)
-                evaluated_variables[formula.name.name] = evaluated_value # Usar formula.name.name
+            # Evaluar fórmulas con las variables correctas
+            evaluated_variables = {}
+            for formula in blueprint.formula_ids:
+                if formula.name and formula.formula_expression:
+                    evaluated_value = self.safe_evaluate_formula(formula.formula_expression, variables)
+                    evaluated_variables[formula.name.name] = evaluated_value
+            _logger.info(f"[Blueprint] Variables con valores evaluados: {evaluated_variables}")
 
-        _logger.info(f"[Blueprint] Variables con valores evaluados: {evaluated_variables}")
+            # Generar el SVG evaluado con las fórmulas ya resueltas
+            evaluated_attachment_id = self._generate_evaluated_blueprint_svg(blueprint, evaluated_variables)
+            new_attachment = self.env["ir.attachment"].browse(evaluated_attachment_id)
 
+            if new_attachment and new_attachment.datas:
+                svg_data = base64.b64decode(new_attachment.datas).decode("utf-8")
+                evaluated_blueprints.append(base64.b64encode(svg_data.encode()).decode())
 
-        # Generar el SVG evaluado con las fórmulas ya resueltas
-        evaluated_attachment_id = self._generate_evaluated_blueprint_svg(blueprint, evaluated_variables) # Pasamos evaluated_variables
-        new_attachment = self.env["ir.attachment"].browse(evaluated_attachment_id)
+        if not evaluated_blueprints:
+            _logger.info(f"[Blueprint] No se pudieron obtener blueprints evaluados para {self.product_id.name}")
+        else:
+            _logger.info(f"[Blueprint] Se generaron {len(evaluated_blueprints)} blueprints evaluados.")
 
-        if new_attachment and new_attachment.datas:
-            svg_data = base64.b64decode(new_attachment.datas).decode("utf-8")
-            _logger.info(f"[Blueprint] SVG evaluado obtenido correctamente para {self.product_id.name}")
-            return base64.b64encode(svg_data.encode()).decode()
-
-        _logger.info(f"[Blueprint] No se pudo obtener el blueprint evaluado para {self.product_id.name}")
-        return ""
+        return evaluated_blueprints
