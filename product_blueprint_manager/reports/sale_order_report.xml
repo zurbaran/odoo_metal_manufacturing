@@ -17,14 +17,20 @@
                     </p>
                     <p>Fecha: <span t-field="doc.date_order" t-options="{'widget': 'date'}"/></p>
                     <t t-foreach="doc.order_line" t-as="line">
-                        <t t-set="evaluated_blueprint" t-value="line._get_evaluated_blueprint()"/>
-                        <t t-if="evaluated_blueprint">
-                            <div style="page-break-inside: avoid;">
-                                <h3>Producto: <t t-esc="line.product_id.name"/></h3>
-                                <h4>Plano: <t t-esc="line.product_id.product_tmpl_id.blueprint_ids[0].name"/></h4>
-                                <img t-att-src="'data:image/svg+xml;base64,' + evaluated_blueprint"
-                                    style="width:100%; height:auto;"/>
-                            </div>
+                        <t t-set="evaluated_blueprints" t-value="line._get_evaluated_blueprints()"/>
+                        <t t-if="evaluated_blueprints">
+                            <t t-set="counter" t-value="0"/>
+                            <t t-foreach="evaluated_blueprints" t-as="blueprint">
+                                <div style="page-break-inside: avoid;">
+                                    <h3>Producto: <t t-esc="line.product_id.name"/></h3>
+                                    <h4>Plano: 
+                                        <t t-esc="line.product_id.product_tmpl_id.blueprint_ids[counter].name"/>
+                                    </h4>
+                                    <img t-att-src="'data:image/svg+xml;base64,' + blueprint"
+                                        style="width:100%; height:auto;"/>
+                                </div>
+                                <t t-set="counter" t-value="counter + 1"/>
+                            </t>
                         </t>
                     </t>
                 </div>
