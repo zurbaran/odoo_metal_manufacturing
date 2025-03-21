@@ -16,6 +16,7 @@
                         #: <span t-field="doc.name"/>
                     </p>
                     <p>Fecha: <span t-field="doc.date_order" t-options="{'widget': 'date'}"/></p>
+
                     <t t-foreach="doc.order_line" t-as="line">
                         <t t-set="evaluated_blueprints" t-value="line._get_evaluated_blueprints()"/>
                         <t t-if="evaluated_blueprints">
