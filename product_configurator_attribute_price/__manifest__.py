@@ -1,6 +1,6 @@
 {
     'name': 'Product Configurator Attribute Price',
-    'version': '17.0.3.0.0',
+    'version': '16.0.3.0.0',
     'category': 'Manufacturing',
     'summary': 'Extiende la configuración de atributos en productos con cálculos dinámicos de precios',
     'description': '''
@@ -12,7 +12,7 @@
     'author': 'Antonio Caballero',
     'maintainer': 'Antonio Caballero',
     'website': 'https://github.com/zurbaran/odoo_metal_manufacturing',
-    'depends': ['sale', 'sale_product_configurator', 'product'], #'product_blueprint_manager'],
+    'depends': ['sale', 'sale_product_configurator', 'product'], 
     'data': [
         'views/product_template_attribute_value_view.xml',
         'views/sale_order_line_view.xml',
