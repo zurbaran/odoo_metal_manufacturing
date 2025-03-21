@@ -19,7 +19,7 @@
 
                     <t t-foreach="doc.order_line" t-as="line">
                         <t t-set="evaluated_blueprints" t-value="line._get_evaluated_blueprints()"/>
-                        <t t-if="evaluated_blueprints">
+                        <t t-if="evaluated_blueprints and len(evaluated_blueprints) > 0">
                             <t t-set="counter" t-value="0"/>
                             <t t-foreach="evaluated_blueprints" t-as="blueprint">
                                 <div style="page-break-inside: avoid;">
@@ -32,6 +32,12 @@
                                 </div>
                                 <t t-set="counter" t-value="counter + 1"/>
                             </t>
+                        </t>
+                        <t t-else="">
+                            <div style="page-break-inside: avoid;">
+                                <h3>Producto: <t t-esc="line.product_id.name"/></h3>
+                                <p>No hay planos disponibles para este producto.</p>
+                            </div>
                         </t>
                     </t>
                 </div>
