@@ -9,6 +9,7 @@ import tempfile
 import subprocess
 import uuid
 import os
+from markupsafe import Markup
 
 _logger = logging.getLogger(__name__)
 
@@ -111,17 +112,22 @@ class SaleOrderLine(models.Model):
             new_svg_base64 = base64.b64encode(new_svg_data.encode("utf-8"))
 
             # Guardar el nuevo archivo como adjunto en Odoo
+            # Creamos el adjunto en Odoo
             attachment = self.env["ir.attachment"].create({
-                "name": f"{blueprint.name}_evaluated.svg",
-                "datas": new_svg_base64,
-                "res_model": "sale.order.line",
-                "res_id": self.id,
-                "mimetype": "image/svg+xml",
+                'name': f"blueprint_{blueprint.id}_line_{self.id}_evaluated.svg",
+                'type': 'binary',
+                'datas': base64.b64encode(new_svg_data.encode("utf-8")),
+                'res_model': 'sale.order.line',
+                'res_id': self.id,
+                'mimetype': 'image/svg+xml',
             })
 
-            _logger.info(f"[Blueprint] SVG evaluado guardado como adjunto ID={attachment.id}")
+            _logger.info(f"[Blueprint] Adjunto creado: ID={attachment.id}, Nombre={attachment.name}, Res_model={attachment.res_model}, Res_id={attachment.res_id}")
 
-            return attachment.id
+            return {
+                'attachment_id': attachment.id,
+                'svg_markup': Markup(new_svg_data),
+            }
 
         except Exception as e:
             _logger.exception(f"[Blueprint] Error en la evaluación del plano") # Usar logger.exception
@@ -252,36 +258,57 @@ class SaleOrderLine(models.Model):
         return variable_mapping
 
     def _get_evaluated_blueprint(self):
+        """Genera los planos evaluados para esta línea de pedido (puede ser 0, 1 o varios)."""
         self.ensure_one()
+
+        _logger.info(f"[Blueprint] Iniciando generación de planos evaluados para la línea {self.id} (Producto: {self.product_id.name})")
+
+        # Paso 1: Limpiar adjuntos anteriores
+        old_attachments = self.env["ir.attachment"].search([
+            ("res_model", "=", "sale.order.line"),
+            ("res_id", "=", self.id),
+            ("name", "ilike", f"blueprint_%_line_{self.id}_evaluated.svg"),
+        ])
+        if old_attachments:
+            _logger.info(f"[Blueprint] Eliminando {len(old_attachments)} adjuntos antiguos para la línea {self.id}")
+            old_attachments.unlink()
+
         if not self.product_id or not self.product_id.product_tmpl_id.blueprint_ids:
-            _logger.info(f"[Blueprint] No hay blueprint asociado a {self.product_id.name}")
-            return ""
+            _logger.info(f"[Blueprint] No hay blueprints configurados para el producto {self.product_id.name}")
+            return []
 
-        blueprint = self.product_id.product_tmpl_id.blueprint_ids[0]
+        evaluated_svgs = []
 
-        # Obtener variables correctamente usando `_get_evaluated_variables()`
-        variables = self._get_evaluated_variables(self)
+        for blueprint in self.product_id.product_tmpl_id.blueprint_ids:
+            _logger.info(f"[Blueprint] Procesando plano: {blueprint.name} (ID: {blueprint.id})")
 
-        _logger.info(f"[Blueprint] Variables evaluadas para {self.product_id.name}: {variables}")
+            # Obtener variables evaluadas
+            variables = self._get_evaluated_variables(self)
+            _logger.info(f"[Blueprint] Variables obtenidas para evaluación: {variables}")
 
-        # Evaluar fórmulas con las variables correctas, UNA SOLA VEZ
-        evaluated_variables = {}
-        for formula in blueprint.formula_ids:
-             if formula.name and formula.formula_expression:
-                evaluated_value = self.safe_evaluate_formula(formula.formula_expression, variables)
-                evaluated_variables[formula.name.name] = evaluated_value # Usar formula.name.name
+            # Evaluar fórmulas con esas variables
+            evaluated_values = {}
+            for formula in blueprint.formula_ids:
+                if formula.name and formula.formula_expression:
+                    formula_key = formula.name.name
+                    evaluated_values[formula_key] = self.safe_evaluate_formula(
+                        formula.formula_expression, variables
+                    )
+                    _logger.info(f"[Blueprint] Fórmula '{formula_key}' → '{evaluated_values[formula_key]}'")
 
-        _logger.info(f"[Blueprint] Variables con valores evaluados: {evaluated_variables}")
+            _logger.info(f"[Blueprint] Resultados evaluados finales para el plano '{blueprint.name}': {evaluated_values}")
 
+            # Generar SVG evaluado
+            result = self._generate_evaluated_blueprint_svg(blueprint, evaluated_values)
+            attachment_id = result['attachment_id']
+            svg_markup = result['svg_markup']
 
-        # Generar el SVG evaluado con las fórmulas ya resueltas
-        evaluated_attachment_id = self._generate_evaluated_blueprint_svg(blueprint, evaluated_variables) # Pasamos evaluated_variables
-        new_attachment = self.env["ir.attachment"].browse(evaluated_attachment_id)
+            evaluated_svgs.append({
+                'attachment_id': attachment_id,
+                'markup': svg_markup
+            })
 
-        if new_attachment and new_attachment.datas:
-            svg_data = base64.b64decode(new_attachment.datas).decode("utf-8")
-            _logger.info(f"[Blueprint] SVG evaluado obtenido correctamente para {self.product_id.name}")
-            return base64.b64encode(svg_data.encode()).decode()
+        if not evaluated_svgs:
+            _logger.warning(f"[Blueprint] No se generó ningún SVG evaluado para la línea {self.id}")
 
-        _logger.info(f"[Blueprint] No se pudo obtener el blueprint evaluado para {self.product_id.name}")
-        return ""
+        return evaluated_svgs
