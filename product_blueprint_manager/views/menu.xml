@@ -1,5 +1,5 @@
 <odoo>
-    <menuitem id="menu_product_blueprints_root" name="Product Blueprints" sequence="100"/>
+    <menuitem id="menu_product_blueprints_root" name="Product Blueprints" web_icon="product_blueprint_manager,static/description/icon.png" sequence="100"/>
     <menuitem id="menu_product_blueprints" name="Blueprints" parent="menu_product_blueprints_root" action="product_blueprint_manager.product_blueprint_action" sequence="10"/>
     <menuitem id="menu_product_blueprint_formulas" name="Formulas" parent="menu_product_blueprints_root" action="product_blueprint_manager.product_blueprint_formula_action" sequence="20"/>
 </odoo>
