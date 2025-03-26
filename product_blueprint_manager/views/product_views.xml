@@ -39,6 +39,10 @@
                                         <field name="formula_expression" required="1"/>
                                         <field name="available_attributes" readonly="1" string="Atributos Disponibles"/>
                                     </group>
+                                    <group string="Estilo Visual Detectado" col="2">
+                                        <field name="fill_color" string="Color del Texto" placeholder="#000000"/>
+                                        <field name="font_size" string="Tamaño de Fuente" placeholder="12px"/>
+                                    </group>
                                 </sheet>
                             </form>
                         </field>
