@@ -10,6 +10,7 @@ import subprocess
 import uuid
 import os
 from markupsafe import Markup
+import cairosvg
 
 _logger = logging.getLogger(__name__)
 
@@ -31,88 +32,116 @@ class SaleOrderLine(models.Model):
             blueprint_custom_values = hook.get_attribute_values_for_blueprint(line)
             line.blueprint_custom_values = str(blueprint_custom_values)
 
+    def _extract_formula_name_from_svg_element(self, elem):
+        candidates = [
+            elem.text,
+            elem.get("aria-label"),
+            elem.get("aria-text"),
+        ]
+        for child in elem.iterdescendants():
+            if child.text:
+                candidates.append(child.text)
+            if child.get("aria-label"):
+                candidates.append(child.get("aria-label"))
+            if child.get("aria-text"):
+                candidates.append(child.get("aria-text"))
+
+        for candidate in candidates:
+            if candidate and candidate.strip():
+                cleaned = candidate.replace("{{", "").replace("}}", "").strip()
+                _logger.debug(f"[Blueprint] Nombre de fórmula detectado en SVG: '{cleaned}'")
+                return cleaned
+
+        _logger.debug("[Blueprint] No se pudo determinar un nombre de fórmula para un nodo SVG.")
+        return None
+
     def _generate_evaluated_blueprint_svg(self, blueprint, evaluated_variables):
-        """
-        Evalúa las fórmulas en el plano y genera un nuevo SVG con textos en lugar de trayectorias.
-        """
         _logger.info(f"[Blueprint] Generando SVG evaluado para el blueprint '{blueprint.name}'")
 
         if not blueprint.file:
             raise ValidationError("No hay archivo SVG en el blueprint.")
 
         try:
-            # Decodificar SVG desde base64
             svg_data = base64.b64decode(blueprint.file)
             root = etree.fromstring(svg_data)
 
             nsmap = {'svg': root.nsmap.get(None, 'http://www.w3.org/2000/svg')}
             _logger.info(f"[Blueprint] Espacios de nombres detectados: {nsmap}")
 
-            # NO necesitamos formula_mapping aquí.  Usamos evaluated_variables directamente.
+            elements = root.xpath(".//*[@class and contains(@class, 'odoo-formula')]", namespaces=nsmap)
+            _logger.info(f"[Blueprint] Se encontraron {len(elements)} elementos con fórmulas.")
 
-            # Buscar todos los elementos <path> con class="odoo-formula"
-            paths = root.xpath(".//svg:path[contains(@class, 'odoo-formula')]", namespaces=nsmap)
-            _logger.info(f"[Blueprint] Se encontraron {len(paths)} trayectos con fórmulas.")
+            for elem in elements:
+                formula_name = self._extract_formula_name_from_svg_element(elem)
+                elem_id = elem.get("id", "sin ID")
 
-            for path in paths:
-                formula_name = path.get("aria-label", "").strip()  # Identificador del path
-                path_id = path.get("id", "sin ID")
-
-                if formula_name in evaluated_variables: # Usamos evaluated_variables
-                    evaluated_value = evaluated_variables[formula_name] # Usamos evaluated_variables
-
-                    # APLICAR REDONDEO AQUÍ:
+                if formula_name in evaluated_variables:
+                    evaluated_value = evaluated_variables[formula_name]
                     try:
-                        rounded_value = str(round(float(evaluated_value)))  # Convertir a float, redondear, volver a string
+                        rounded_value = str(round(float(evaluated_value)))
                     except ValueError:
-                        rounded_value = str(evaluated_value) #Si no se puede convertir a float, no redondeamos
-                    _logger.info(f"[Blueprint] Sustituyendo '{formula_name}' → '{rounded_value}' en ID={path_id}")
+                        rounded_value = str(evaluated_value)
+                    _logger.info(f"[Blueprint] Sustituyendo '{formula_name}' → '{rounded_value}' en ID={elem_id}")
 
-
-                    # Extraer información visual del path
-                    transform = path.get("transform", "")
-                    style = path.get("style", "")
-
-                    # Extraer tamaño de fuente y color
+                    # Extraer estilo original
+                    style = elem.get("style", "")
                     font_size = "12px"
-                    fill_color = "black"
-                    for style_attr in style.split(";"):
-                        if "font-size" in style_attr:
-                            font_size = style_attr.split(":")[1].strip()
-                        elif "fill" in style_attr:
-                            fill_color = style_attr.split(":")[1].strip()
+                    fill_color = None
 
-                    # IMPORTANTE: Extraer la posición correcta
+                    for attr in style.split(";"):
+                        if "font-size" in attr:
+                            font_size = attr.split(":")[1].strip()
+                        elif "fill" in attr:
+                            fill_color = attr.split(":")[1].strip()
+
+                    # Buscar atributos directos si no estaban en style
+                    if not fill_color and elem.get("fill"):
+                        fill_color = elem.get("fill")
+                    if elem.get("font-size"):
+                        font_size = elem.get("font-size")
+
+                    # Estilo final: usar valores configurados si existen
+                    final_style = ""
+                    formula_filtered = blueprint.formula_ids.filtered(lambda f: f.name.name == formula_name)
+                    formula_obj = formula_filtered[0] if formula_filtered else None
+                    if formula_obj:
+                        _logger.info(f"[Blueprint] Usando estilo configurado para '{formula_name}': fill={formula_obj.fill_color}, font_size={formula_obj.font_size}")
+                        font_size = formula_obj.font_size or font_size
+                        fill_color = formula_obj.fill_color or fill_color
+
+                    # Estilo final: solo lo necesario
+                    final_style = f"fill:{fill_color}; font-size:{font_size};"
+
+                    # Posición
+                    transform = elem.get("transform", "")
                     x, y = "0", "0"
-                    if "d" in path.attrib:
+                    if elem.tag.endswith("path") and "d" in elem.attrib:
                         try:
-                            path_commands = path.attrib["d"].split(" ")
+                            path_commands = elem.attrib["d"].split(" ")
                             x = path_commands[1].split(",")[0] if len(path_commands) > 1 else "0"
                             y = path_commands[1].split(",")[1] if len(path_commands) > 1 else "0"
                         except Exception:
-                            _logger.info(f"[Blueprint] No se pudo obtener la posición de {path_id}, usando (0,0)")
+                            _logger.info(f"[Blueprint] No se pudo obtener la posición de {elem_id}, usando (0,0)")
+                    else:
+                        x = elem.get("x", "0")
+                        y = elem.get("y", "0")
 
-                    # Crear un nuevo elemento <text> con el resultado evaluado
+                    # Crear nuevo nodo <text>
                     text_element = etree.Element("text", {
                         "x": x,
                         "y": y,
-                        "style": f"font-size:{font_size}; fill:{fill_color};",
+                        "style": final_style,
                         "transform": transform
                     })
-                    text_element.text = rounded_value  # Usar el valor redondeado
-
-                    # Reemplazar el <path> por el <text>
-                    path.getparent().replace(path, text_element)
-
+                    text_element.text = rounded_value
+                    elem.getparent().replace(elem, text_element)
                 else:
                     _logger.info(f"[Blueprint] No hay fórmula configurada para '{formula_name}', se mantiene sin cambios en el SVG.")
 
-            # Convertir el nuevo SVG de vuelta a base64
             new_svg_data = etree.tostring(root, pretty_print=True, encoding="utf-8").decode("utf-8")
             new_svg_base64 = base64.b64encode(new_svg_data.encode("utf-8"))
 
-            # Guardar el nuevo archivo como adjunto en Odoo
-            # Creamos el adjunto en Odoo
+            # Guardar adjunto SVG
             attachment = self.env["ir.attachment"].create({
                 'name': f"blueprint_{blueprint.id}_line_{self.id}_evaluated.svg",
                 'type': 'binary',
@@ -122,15 +151,20 @@ class SaleOrderLine(models.Model):
                 'mimetype': 'image/svg+xml',
             })
 
+            # Convertir a PNG
+            png_output = cairosvg.svg2png(bytestring=new_svg_data.encode("utf-8"))
+            png_base64 = base64.b64encode(png_output).decode("utf-8")
+
             _logger.info(f"[Blueprint] Adjunto creado: ID={attachment.id}, Nombre={attachment.name}, Res_model={attachment.res_model}, Res_id={attachment.res_id}")
 
             return {
                 'attachment_id': attachment.id,
                 'svg_markup': Markup(new_svg_data),
+                'png_base64': png_base64,
             }
 
         except Exception as e:
-            _logger.exception(f"[Blueprint] Error en la evaluación del plano") # Usar logger.exception
+            _logger.exception(f"[Blueprint] Error en la evaluación del plano")
             raise ValidationError(f"Error procesando el SVG: {str(e)}")
 
     def safe_evaluate_formula(self, expression, variables):
@@ -305,7 +339,8 @@ class SaleOrderLine(models.Model):
 
             evaluated_svgs.append({
                 'attachment_id': attachment_id,
-                'markup': svg_markup
+                'markup': svg_markup,
+                'png_base64': result['png_base64'],
             })
 
         if not evaluated_svgs:

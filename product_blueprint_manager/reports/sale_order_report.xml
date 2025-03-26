@@ -5,39 +5,34 @@
             <div class="page">
                 <div class="oe_structure"/>
                 <div class="container">
-                    <h2>Informe de Planos: <t t-esc="doc.name"/></h2>
-                    <p>Cliente: <span t-field="doc.partner_id.name"/></p>
-                    <p>
-                        <t t-if="doc.state in ['draft', 'sent']">Presupuesto</t>
-                        <t t-elif="env.context.get('proforma', False) or is_pro_forma">Proforma</t>
-                        <t t-elif="doc.state == 'sale'">Pedido</t>
-                        <t t-elif="doc.state == 'done'">Pedido Confirmado</t>
-                        <t t-else="">Documento de Venta</t>
-                        #: <span t-field="doc.name"/>
-                    </p>
-                    <p>Fecha: <span t-field="doc.date_order" t-options="{'widget': 'date'}"/></p>
-                    <t t-foreach="doc.order_line" t-as="line">
-                        <t t-set="evaluated_blueprints" t-value="line._get_evaluated_blueprint()"/>
-                        <t t-if="evaluated_blueprints and len(evaluated_blueprints) > 0">
-                            <t t-set="counter" t-value="0"/>
-                            <t t-foreach="evaluated_blueprints" t-as="blueprint">
-                                <div style="page-break-inside: avoid; page-break-after: always;">
-                                    <h3>Producto: <t t-esc="line.product_id.name"/></h3>
-                                    <h4>Plano:
-                                        <t t-esc="line.product_id.product_tmpl_id.blueprint_ids[counter].name"/>
-                                    </h4>
-                                    <t t-out="blueprint['markup']"/>
-                                </div>
-                                <t t-set="counter" t-value="counter + 1"/>
-                            </t>
-                        </t>
-                        <t t-else="">
-                            <div style="page-break-inside: avoid;">
+                <t t-foreach="doc.order_line" t-as="line">
+                    <t t-set="evaluated_blueprints" t-value="line._get_evaluated_blueprint()"/>
+                    <t t-if="evaluated_blueprints and len(evaluated_blueprints) > 0">
+                        <t t-set="counter" t-value="0"/>
+                        <t t-foreach="evaluated_blueprints" t-as="blueprint">
+                            <div style="page-break-inside: avoid; page-break-after: always;">
+                                <h2>Informe de Planos: <t t-esc="doc.name"/></h2>
+                                <p>Cliente: <span t-field="doc.partner_id.name"/></p>
+                                <p>
+                                    <t t-if="doc.state in ['draft', 'sent']">Presupuesto</t>
+                                    <t t-elif="env.context.get('proforma', False) or is_pro_forma">Proforma</t>
+                                    <t t-elif="doc.state == 'sale'">Pedido</t>
+                                    <t t-elif="doc.state == 'done'">Pedido Confirmado</t>
+                                    <t t-else="">Documento de Venta</t>
+                                    #: <span t-field="doc.name"/>
+                                </p>
+                                <p>Fecha: <span t-field="doc.date_order" t-options="{'widget': 'date'}"/></p>
                                 <h3>Producto: <t t-esc="line.product_id.name"/></h3>
-                                <p>No hay planos disponibles para este producto.</p>
+                                <h4>Plano:
+                                    <t t-esc="line.product_id.product_tmpl_id.blueprint_ids[counter].name"/>
+                                </h4>
+                                <img t-if="'png_base64' in blueprint" t-att-src="'data:image/png;base64,' + blueprint['png_base64']"
+                                    style="width:100%; height:auto;"/>
                             </div>
+                            <t t-set="counter" t-value="counter + 1"/>
                         </t>
                     </t>
+                </t>
                 </div>
                 <div class="oe_structure"/>
             </div>

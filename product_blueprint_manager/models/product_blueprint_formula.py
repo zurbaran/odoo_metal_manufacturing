@@ -11,7 +11,7 @@ class ProductBlueprintFormula(models.Model):
     name = fields.Many2one(
         "product.blueprint.formula.name",
         string="Nombre de la Fórmula",
-        # domain="[('blueprint_id', '=', blueprint_id)]",  # Dominio base, se modifica dinámicamente
+        domain="[('blueprint_id', '=', blueprint_id)]",
         required=True,
         help="Seleccione el nombre de la fórmula según las etiquetas del SVG."
     )
@@ -19,6 +19,8 @@ class ProductBlueprintFormula(models.Model):
     product_id = fields.Many2one("product.template", string="Producto", required=True)
     blueprint_id = fields.Many2one("product.blueprint", string="Plano", required=True, ondelete="cascade")
     available_attributes = fields.Char(string="Atributos Disponibles", compute="_compute_available_attributes", store=False)
+    fill_color = fields.Char(string="Color del Texto")
+    font_size = fields.Char(string="Tamaño de Fuente")
 
     @api.depends("product_id")
     def _compute_available_attributes(self):
@@ -30,44 +32,51 @@ class ProductBlueprintFormula(models.Model):
             else:
                 record.available_attributes = ""
 
+    @api.onchange("name")
+    def _onchange_name(self):
+        if self.name:
+            self.fill_color = self.name.fill_color
+            self.font_size = self.name.font_size
+            _logger.info("[Blueprint][Formula] Cargando estilos desde '%s': fill_color=%s, font_size=%s", self.name.name, self.fill_color, self.font_size)
+
+
     @api.onchange("blueprint_id")
     def _onchange_blueprint_id(self):
-        """Actualizar las opciones de nombres de fórmula cuando se cambia el plano."""
-        self.name = False  # Resetear selección si cambiamos de plano
-        return {'domain': {'name': self._get_available_formula_names_domain()}}
-    
-    def _get_available_formula_names_domain(self):
-        """Calcula el dominio para el campo name."""
+        self.name = False
         if self.blueprint_id:
-            # Obtener todos los nombres de fórmula posibles para el plano actual.
-            all_formula_names = self.env["product.blueprint.formula.name"].search([("blueprint_id", "=", self.blueprint_id.id)]).mapped("id")
-
-            # Obtener los nombres de fórmula YA USADOS en fórmulas *existentes* de este plano
-            # (usamos `search` en lugar de `self.blueprint_id.formula_ids` para incluir
-            #  todas las formulas, no solo las del record actual).
-            used_formula_names = self.env["product.blueprint.formula"].search([
-                ("blueprint_id", "=", self.blueprint_id.id),
-                ("id", "!=", self.id if self.id else False)  # Excluir la fórmula actual (si existe)
-                ]).mapped("name").mapped("id")
-
-            # Filtrar los nombres disponibles:  todos - los usados
-            available_formula_names = list(set(all_formula_names) - set(used_formula_names))
-
-            _logger.info(f"[Blueprint][Formula] Etiquetas disponibles (filtradas): {available_formula_names}")
-            return [("id", "in", available_formula_names)]  # Usar 'id' en el dominio
-
+            domain = self._get_available_formula_names_domain(self.blueprint_id)
+            _logger.info("[Blueprint][Formula] Dominio calculado para blueprint_id %s: %s", self.blueprint_id.id, domain)
+            return {'domain': {'name': domain}}
         else:
-            _logger.info(f"[Blueprint][Formula] No se ha seleccionado ningún plano.")
-            return [("id", "in", [])]
+            _logger.info("[Blueprint][Formula] No se ha seleccionado ningún plano.")
+            return {'domain': {'name': [('id', '=', False)]}}
 
-    @api.model
-    def default_get(self, fields):
-        """Establecer el dominio por defecto al crear un nuevo registro."""
-        res = super().default_get(fields)
-        if 'name' in fields:  # Solo si el campo 'name' se está inicializando
-            res.update({'domain_name': self._get_available_formula_names_domain()})  # Usar domain_name
-        return res
+    def _get_available_formula_names_domain(self, blueprint):
+        all_formula_names = self.env['product.blueprint.formula.name'].search([
+            ('blueprint_id', '=', blueprint.id)
+        ])
+        used_formula_names = self.env['product.blueprint.formula'].search([
+            ('blueprint_id', '=', blueprint.id)
+        ]).mapped('name')
 
+        available_ids = (all_formula_names - used_formula_names).ids
+        _logger.info("[Blueprint][Formula] Etiquetas disponibles (filtradas): %s", all_formula_names.mapped('name'))
+        return [('id', 'in', available_ids)]
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        _logger.info("[Blueprint][Formula] Creando nuevas fórmulas: %s", vals_list)
+        return super().create(vals_list)
+
+    def write(self, vals):
+        for rec in self:
+            _logger.info("[Blueprint][Formula] Modificando fórmula '%s' con valores: %s", rec.name.name if rec.name else '-', vals)
+        return super().write(vals)
+
+    def unlink(self):
+        for rec in self:
+            _logger.info("[Blueprint][Formula] Eliminando fórmula '%s' del plano ID %s", rec.name.name if rec.name else '-', rec.blueprint_id.id)
+        return super().unlink()
 
     _sql_constraints = [
         ('unique_formula_per_blueprint', 'unique(name, blueprint_id)', 'Ya existe una fórmula configurada para esta etiqueta en este plano.'),
