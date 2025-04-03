@@ -3,7 +3,7 @@
 COMMIT="$1"
 
 if [ -z "$COMMIT" ]; then
-  echo "Uso: ./tools/git-cp16.sh <commit_hash>"
+  echo "Uso: ./tools/git-cp17.sh <commit_hash>"
   exit 1
 fi
 
