@@ -19,12 +19,17 @@
                                         <field name="file" widget="image" string="Archivo SVG" required="1"/>
                                         <field name="product_id" required="1"/>
                                     </group>
+                                    <group string="Configuración del Plano">
+                                        <field name="type_blueprint"/>
+                                        <field name="attribute_filter_id"/>
+                                        <field name="attribute_value_ids" widget="many2many_tags"/>
+                                    </group>
                                 </sheet>
                             </form>
                         </field>
                     </group>
                     <group string="Fórmulas">
-                        <field name="formula_ids">
+                        <field name="formula_ids" context="{'reload_on_create': True}">
                             <tree>
                                 <field name="name"/>
                                 <field name="blueprint_id"/>
@@ -35,7 +40,13 @@
                                     <group>
                                         <field name="product_id" required="1"/>
                                         <field name="blueprint_id" required="1" options="{'no_create': True}"/>
-                                        <field name="name" required="1" domain="[('blueprint_id', '=', blueprint_id)]" options="{'no_create': True}"/>
+                                        <field name="available_name_ids" invisible="1"/>
+                                        <field name="name"
+                                            required="1"
+                                            options="{'no_create': True}"
+                                            force_save="1"
+                                            domain="[('id', 'in', available_name_ids)]"
+                                            context="{'blueprint_id': blueprint_id}"/>
                                         <field name="formula_expression" required="1"/>
                                         <field name="available_attributes" readonly="1" string="Atributos Disponibles"/>
                                     </group>
