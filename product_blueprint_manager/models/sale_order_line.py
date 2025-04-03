@@ -183,7 +183,7 @@ class SaleOrderLine(models.Model):
         try:
             # Crear entorno seguro con funciones matemáticas permitidas
             allowed_names = {k: v for k, v in math.__dict__.items() if not k.startswith("__")}
-            allowed_names.update(variables)  # Agregar variables de la línea de venta
+            allowed_names.update(variables)
 
             # Analizar la expresión de forma segura
             tree = ast.parse(expression, mode='eval')
@@ -192,10 +192,10 @@ class SaleOrderLine(models.Model):
             result = eval(compiled, {"__builtins__": {}}, allowed_names)
 
             _logger.info(f"[Blueprint] Resultado de la evaluación: {result}")
-            return str(result)  # Convertimos a string para evitar errores con tipos de datos
+            return str(result)
 
         except Exception as e:
-            _logger.exception(f"[Blueprint] Error al evaluar la fórmula '{expression}'") # Usar logger.exception
+            _logger.exception(f"[Blueprint] Error al evaluar la fórmula '{expression}'")
             return "Error"
 
     def _get_evaluated_variables(self, sale_order_line):
@@ -291,8 +291,8 @@ class SaleOrderLine(models.Model):
         )
         return variable_mapping
 
-    def _get_evaluated_blueprint(self):
         """Genera los planos evaluados para esta línea de pedido (puede ser 0, 1 o varios)."""
+    def _get_evaluated_blueprint(self, type_blueprint="manufacturing"):
         self.ensure_one()
 
         _logger.info(f"[Blueprint] Iniciando generación de planos evaluados para la línea {self.id} (Producto: {self.product_id.name})")
@@ -314,13 +314,57 @@ class SaleOrderLine(models.Model):
         evaluated_svgs = []
 
         for blueprint in self.product_id.product_tmpl_id.blueprint_ids:
+            if blueprint.type_blueprint != type_blueprint:
+                _logger.info(f"[Blueprint] Plano '{blueprint.name}' descartado por tipo no coincidente: {blueprint.type_blueprint}")
+                continue
+
+            if blueprint.attribute_filter_id:
+                blueprint_value_ids = blueprint.attribute_value_ids.ids
+                blueprint_value_names = blueprint.attribute_value_ids.mapped("name")
+                _logger.info(f"[Blueprint] Plano '{blueprint.name}' tiene filtro de atributo '{blueprint.attribute_filter_id.name}'")
+                _logger.info(f"[Blueprint] Valores esperados (IDs): {blueprint_value_ids}")
+                _logger.info(f"[Blueprint] Valores esperados (Nombres): {blueprint_value_names}")
+
+                # Recoger valores seleccionados por separado (evitando mezcla de modelos)
+                selected_ids_all = []
+                selected_names_all = []
+
+                for v in self.product_custom_attribute_value_ids:
+                    if (
+                        hasattr(v, 'custom_product_template_attribute_value_id') and
+                        v.custom_product_template_attribute_value_id and
+                        v.custom_product_template_attribute_value_id.attribute_id == blueprint.attribute_filter_id
+                    ):
+                        selected_ids_all.append(v.custom_product_template_attribute_value_id.product_attribute_value_id.id)
+                        selected_names_all.append(v.name)
+
+                for v in self.product_no_variant_attribute_value_ids:
+                    if v.attribute_id == blueprint.attribute_filter_id:
+                        selected_ids_all.append(v.id)
+                        selected_names_all.append(v.name)
+
+                for v in self.product_template_attribute_value_ids:
+                    if v.attribute_id == blueprint.attribute_filter_id:
+                        selected_ids_all.append(v.id)
+                        selected_names_all.append(v.name)
+
+                _logger.info(f"[Blueprint] Valores seleccionados en línea (IDs): {selected_ids_all}")
+                _logger.info(f"[Blueprint] Valores seleccionados en línea (Nombres): {selected_names_all}")
+
+                coincide_por_id = any(val_id in blueprint_value_ids for val_id in selected_ids_all)
+                coincide_por_nombre = any(name in blueprint_value_names for name in selected_names_all)
+
+                if not coincide_por_id and not coincide_por_nombre:
+                    _logger.info(f"[Blueprint] Plano '{blueprint.name}' descartado por no coincidir valor de atributo '{blueprint.attribute_filter_id.name}'")
+                    continue
+                else:
+                    _logger.info(f"[Blueprint] Plano '{blueprint.name}' aceptado por coincidencia de atributo condicional")
+
             _logger.info(f"[Blueprint] Procesando plano: {blueprint.name} (ID: {blueprint.id})")
 
-            # Obtener variables evaluadas
             variables = self._get_evaluated_variables(self)
             _logger.info(f"[Blueprint] Variables obtenidas para evaluación: {variables}")
 
-            # Evaluar fórmulas con esas variables
             evaluated_values = {}
             for formula in blueprint.formula_ids:
                 if formula.name and formula.formula_expression:
@@ -332,7 +376,6 @@ class SaleOrderLine(models.Model):
 
             _logger.info(f"[Blueprint] Resultados evaluados finales para el plano '{blueprint.name}': {evaluated_values}")
 
-            # Generar SVG evaluado
             result = self._generate_evaluated_blueprint_svg(blueprint, evaluated_values)
             attachment_id = result['attachment_id']
             svg_markup = result['svg_markup']
@@ -344,6 +387,6 @@ class SaleOrderLine(models.Model):
             })
 
         if not evaluated_svgs:
-            _logger.warning(f"[Blueprint] No se generó ningún SVG evaluado para la línea {self.id}")
+            _logger.info(f"[Blueprint] No se generó ningún SVG evaluado para la línea {self.id}")
 
         return evaluated_svgs
