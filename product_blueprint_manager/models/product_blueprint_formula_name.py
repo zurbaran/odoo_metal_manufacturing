@@ -32,3 +32,11 @@ class ProductBlueprintFormulaName(models.Model):
         for record in self:
             _logger.info(f"[Blueprint][Formula Name] Eliminando etiqueta '{record.name}' del plano ID {record.blueprint_id.id}.")
         return super(ProductBlueprintFormulaName, self).unlink()
+
+    @api.model
+    def name_search(self, name='', args=None, operator='ilike', limit=100):
+        args = args or []
+        blueprint_id = self.env.context.get('blueprint_id')
+        if blueprint_id:
+            args += [('blueprint_id', '=', blueprint_id)]
+        return super().name_search(name, args, operator=operator, limit=limit)

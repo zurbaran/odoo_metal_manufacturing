@@ -15,6 +15,23 @@ class ProductBlueprint(models.Model):
     product_id = fields.Many2one("product.template", string="Producto", required=True)
     formula_ids = fields.One2many("product.blueprint.formula", "blueprint_id", string="Fórmulas")
 
+    type_blueprint = fields.Selection([
+        ('manufacturing', 'Orden de Fabricación'),
+        ('purchase', 'Orden de Compra')
+    ], string="Tipo de Plano", default='manufacturing', required=True,
+       help="Determina si el plano se utiliza para una orden de fabricación o para una orden de compra.")
+
+    attribute_filter_id = fields.Many2one(
+        'product.attribute', string="Atributo Condicional",
+        help="Atributo del producto que se debe usar para condicionar este plano. Si no se define, el plano siempre aplica."
+    )
+
+    attribute_value_ids = fields.Many2many(
+        'product.attribute.value', string="Valores que activan este plano",
+        domain="[('attribute_id', '=', attribute_filter_id)]",
+        help="Valores del atributo que deben estar presentes para que este plano se aplique."
+    )
+
     def _extract_svg_formulas(self):
         """Busca fórmulas en el SVG y las registra si son nuevas."""
         for blueprint in self:
@@ -146,12 +163,13 @@ class ProductBlueprint(models.Model):
                 raise ValidationError("El nombre del plano debe ser único para cada producto.")
 
     @api.model_create_multi
-    def create(self, vals):
-        blueprint = super(ProductBlueprint, self).create(vals)
-        _logger.info(f"[Blueprint] Creando blueprint '{blueprint.name}'")
-        _logger.info(f"[Blueprint] Intentando extraer fórmulas inmediatamente después de la creación...")
-        blueprint._extract_svg_formulas()
-        return blueprint
+    def create(self, vals_list):
+        blueprints = super().create(vals_list)
+        for blueprint in blueprints:
+            _logger.info(f"[Blueprint] Creando blueprint '{blueprint.name}'")
+            _logger.info(f"[Blueprint] Intentando extraer fórmulas inmediatamente después de la creación...")
+            blueprint._extract_svg_formulas()
+        return blueprints
 
     def write(self, vals):
         _logger.info(f"[Blueprint] Modificando blueprint '{self.name}'")
