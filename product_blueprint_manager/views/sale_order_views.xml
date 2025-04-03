@@ -1,0 +1,20 @@
+<odoo>
+    <record id="view_order_form_inherit_blueprint_buttons" model="ir.ui.view">
+        <field name="name">sale.order.form.inherit.blueprint.buttons</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_print_blueprint"
+                        type="object"
+                        string="Plano Fabricación"
+                        class="oe_highlight"
+                        icon="fa-industry"/>
+                <button name="action_print_purchase_blueprint"
+                        type="object"
+                        string="Plano Compra"
+                        icon="fa-truck"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

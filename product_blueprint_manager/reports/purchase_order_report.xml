@@ -1,0 +1,44 @@
+<odoo>
+    <template id="report_purchase_order_blueprint_document">
+        <t t-call="web.basic_layout">
+            <div class="page">
+                <div class="header" style="text-align: center; margin-bottom: 20px;">
+                    <h2 t-esc="res_company.name"/>
+                    <p t-esc="res_company.partner_id.contact_address"/>
+                </div>
+                <div class="oe_structure"/>
+                <div class="container">
+                <t t-set="doc" t-value="doc"/>
+                <t t-foreach="doc.order_line" t-as="line">
+                    <t t-set="evaluated_blueprints" t-value="line._get_evaluated_blueprint(type_blueprint='purchase')"/>
+                    <t t-if="evaluated_blueprints and len(evaluated_blueprints) > 0">
+                        <t t-set="counter" t-value="0"/>
+                        <t t-foreach="evaluated_blueprints" t-as="blueprint">
+                            <div style="page-break-inside: avoid; page-break-after: always;">
+                                <h2>Plano Orden de Compra</h2>
+                                <p>Referencia de Pedido: <span t-field="doc.name"/></p>
+                                <p>Fecha: <span t-field="doc.date_order" t-options="{'widget': 'date'}"/></p>
+                                <h4>Plano:
+                                    <t t-esc="line.product_id.product_tmpl_id.blueprint_ids[counter].name"/>
+                                </h4>
+                                <img t-if="'png_base64' in blueprint" t-att-src="'data:image/png;base64,' + blueprint['png_base64']"
+                                    style="width:100%; height:auto;"/>
+                            </div>
+                            <t t-set="counter" t-value="counter + 1"/>
+                        </t>
+                    </t>
+                </t>
+                </div>
+                <div class="oe_structure"/>
+            </div>
+        </t>
+    </template>
+
+    <template id="report_purchase_order_blueprint">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="product_blueprint_manager.report_purchase_order_blueprint_document"/>
+            </t>
+        </t>
+    </template>
+</odoo>
