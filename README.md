@@ -9,48 +9,53 @@ TODO:
 Eliminar vulnerabilidad por inyeccion de codigo atraves de eval e intentar utilizar la libreria numexpr
 
 
-## 🔄 Sincronización entre ramas (`develop` → `16.0` y `17.0`)
+## 🔄 Sincronización entre ramas (`develop` → `17.0` y `16.0`)
 
-Este proyecto utiliza scripts para sincronizar cambios desde la rama `develop` a las ramas `16.0` y `17.0`, manteniendo compatibilidad entre versiones de Odoo.
+Este proyecto mantiene tres ramas principales:
 
-### 📁 Estructura
-- `develop`: rama de desarrollo principal (basada en Odoo 16)
-- `16.0`: versión estable para Odoo 16
-- `17.0`: versión para Odoo 17 (con `__manifest__.py` específicos)
+- `develop`: rama activa de desarrollo (base en Odoo 17)
+- `17.0`: rama de versión estable para Odoo 17 (**se mantiene totalmente sincronizada con `develop`**)
+- `16.0`: rama para Odoo 16 (**sincroniza parcialmente**, preservando `__manifest__.py`)
 
 ---
 
-### ⚙️ Scripts disponibles
+### ⚙️ Scripts de sincronización
 
 | Script                       | Acción                                                                 |
 |-----------------------------|------------------------------------------------------------------------|
-| `tools/sync-last-to-16.sh`  | Cherry-pick del último commit de `develop` a `16.0` y push automático |
-| `tools/sync-last-to-17.sh`  | Cherry-pick del último commit de `develop` a `17.0` (sin tocar manifests) |
-| `tools/sync-all.sh`         | Ejecuta ambos scripts anteriores en orden                             |
-
-Todos los scripts hacen `push` automático al finalizar.
+| `tools/sync-last-to-17.sh`  | Cherry-pick del último commit de `develop` a `17.0`, con `push` automático |
+| `tools/sync-last-to-16.sh`  | Cherry-pick del último commit de `develop` a `16.0`, **preservando `__manifest__.py`** |
+| `tools/sync-all.sh`         | Ejecuta ambos scripts anteriores en orden y vuelve a la rama de origen |
 
 ---
 
-### 🔐 Protección de los `__manifest__.py` en `17.0`
+### 🔐 Protección de `__manifest__.py` en `16.0`
 
-Al ejecutar `tools/sync-last-to-17.sh` o `tools/sync-all.sh`, se protege el contenido de estos archivos:
+El script `tools/sync-last-to-16.sh` protege los archivos:
 
 - `product_blueprint_manager/__manifest__.py`
 - `product_configurator_attribute_price/__manifest__.py`
 
-Esto significa que **los cambios hechos manualmente en estos archivos no serán sobrescritos** por los scripts de sincronización.
+Esto asegura que `develop` y `17.0` puedan evolucionar libremente para Odoo 17, mientras que `16.0` mantiene sus manifests específicos.
 
-✅ Puedes modificar los manifests directamente en `17.0`:
+Puedes modificar manualmente los manifests en `16.0` con:
 
 ```bash
-git checkout 17.0
-# editás uno o ambos manifests
+git checkout 16.0
+# Editar los manifests según sea necesario
 git add product_*/*__manifest__.py
-git commit -m "Actualización manual del manifest para Odoo 17"
-git push origin 17.0
+git commit -m "Actualización manual del manifest para Odoo 16"
+git push origin 16.0
 ```
 
-Estos cambios se mantendrán intactos en sincronizaciones futuras.
+Los scripts de sincronización **respetarán esos cambios**.
 
 ---
+
+### 🛠️ Ejemplo de uso
+
+```bash
+./tools/sync-all.sh
+```
+
+> Esto cherry-pickea el último commit de `develop` a `16.0` (sin modificar manifests) y luego a `17.0` (completo), con `push` incluido y retorno automático a tu rama actual.
