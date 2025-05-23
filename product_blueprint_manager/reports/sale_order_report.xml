@@ -2,37 +2,105 @@
     <template id="report_sale_order_blueprint_document">
         <t t-call="web.external_layout">
             <t t-set="doc" t-value="doc.with_context(lang=doc.partner_id.lang)" />
+
+            <!-- Estilos compactos -->
+            <style>
+                .compact-lines {
+                    line-height: 1.0;
+                }
+                .compact-lines p {
+                    margin: 0 0 4px 0;
+                }
+            </style>
+
             <div class="page">
                 <div class="oe_structure"/>
                 <div class="container">
-                <t t-foreach="doc.order_line" t-as="line">
-                    <t t-set="evaluated_blueprints" t-value="line._get_evaluated_blueprint()"/>
-                    <t t-if="evaluated_blueprints and len(evaluated_blueprints) > 0">
-                        <t t-set="counter" t-value="0"/>
-                        <t t-foreach="evaluated_blueprints" t-as="blueprint">
-                            <div style="page-break-inside: avoid; page-break-after: always;">
-                                <h2>Informe de Planos: <t t-esc="doc.name"/></h2>
-                                <p>Cliente: <span t-field="doc.partner_id.name"/></p>
-                                <p>
-                                    <t t-if="doc.state in ['draft', 'sent']">Presupuesto</t>
-                                    <t t-elif="env.context.get('proforma', False) or is_pro_forma">Proforma</t>
-                                    <t t-elif="doc.state == 'sale'">Pedido</t>
-                                    <t t-elif="doc.state == 'done'">Pedido Confirmado</t>
-                                    <t t-else="">Documento de Venta</t>
-                                    #: <span t-field="doc.name"/>
-                                </p>
-                                <p>Fecha: <span t-field="doc.date_order" t-options="{'widget': 'date'}"/></p>
-                                <h3>Producto: <t t-esc="line.product_id.name"/></h3>
-                                <h4>Plano:
-                                    <t t-esc="line.product_id.product_tmpl_id.blueprint_ids[counter].name"/>
-                                </h4>
-                                <img t-if="'png_base64' in blueprint" t-att-src="'data:image/png;base64,' + blueprint['png_base64']"
-                                    style="width:100%; height:auto;"/>
-                            </div>
-                            <t t-set="counter" t-value="counter + 1"/>
+                    <t t-foreach="doc.order_line" t-as="line">
+                        <t t-set="evaluated_blueprints" t-value="line._get_evaluated_blueprint()"/>
+                        <t t-if="evaluated_blueprints and len(evaluated_blueprints) > 0">
+                            <t t-set="counter" t-value="0"/>
+                            <t t-foreach="evaluated_blueprints" t-as="blueprint">
+                                <div style="page-break-inside: avoid; page-break-after: always;">
+                                    <h2>Informe de Planos: <t t-esc="doc.name"/></h2>
+
+                                    <!-- Tabla para dividir información -->
+                                    <table style="width: 100%; margin-bottom: 20px;">
+                                        <tr>
+                                            <!-- Columna izquierda: Información del documento -->
+                                            <td class="compact-lines" style="vertical-align: top; width: 50%;">
+                                                <p>Documento: 
+                                                    <t t-if="doc.state in ['draft', 'sent']">Presupuesto</t>
+                                                    <t t-elif="env.context.get('proforma', False) or is_pro_forma">Proforma</t>
+                                                    <t t-elif="doc.state == 'sale'">Pedido</t>
+                                                    <t t-elif="doc.state == 'done'">Pedido Confirmado</t>
+                                                    <t t-else="">Documento de Venta</t>
+                                                    #: <t t-esc="doc.name"/>
+                                                </p>
+                                                <p>Fecha: 
+                                                    <span t-field="doc.date_order" t-options="{'widget': 'date'}"/>
+                                                </p>
+                                                <p>Producto: 
+                                                    <t t-esc="line.product_id.name"/>
+                                                </p>
+                                                <p>Plano: 
+                                                    <t t-esc="line.product_id.product_tmpl_id.blueprint_ids[counter].name"/>
+                                                </p>
+                                            </td>
+
+                                            <!-- Columna derecha: Información del cliente -->
+                                            <td class="compact-lines" style="vertical-align: top; width: 50%;">
+                                                <p>Cliente: 
+                                                    <span t-field="doc.partner_id.name"/>
+                                                </p>
+                                                <p>Dirección:
+                                                    <t t-if="doc.partner_id.street">
+                                                        <t t-esc="doc.partner_id.street"/>
+                                                    </t>
+                                                    <t t-if="doc.partner_id.street2">
+                                                        , <t t-esc="doc.partner_id.street2"/>
+                                                    </t>
+                                                </p>
+                                                <p>
+                                                    <t t-if="doc.partner_id.zip">
+                                                        <t t-esc="doc.partner_id.zip"/>
+                                                    </t>
+                                                    <t t-if="doc.partner_id.city">
+                                                        <t t-if="doc.partner_id.zip">, </t>
+                                                        <t t-esc="doc.partner_id.city"/>
+                                                    </t>
+                                                    <t t-if="doc.partner_id.state_id">
+                                                        <t t-if="doc.partner_id.city or doc.partner_id.zip">, </t>
+                                                        <t t-esc="doc.partner_id.state_id.name"/>
+                                                    </t>
+                                                </p>
+                                                <p t-if="doc.partner_id.phone or doc.partner_id.mobile">
+                                                    Teléfono: 
+                                                    <t t-if="doc.partner_id.phone">
+                                                        <span t-field="doc.partner_id.phone"/>
+                                                    </t>
+                                                    <t t-if="doc.partner_id.phone and doc.partner_id.mobile">
+                                                        &#160;/&#160;
+                                                    </t>
+                                                    <t t-if="not doc.partner_id.phone and doc.partner_id.mobile">
+                                                        <span t-field="doc.partner_id.mobile"/>
+                                                    </t>
+                                                    <t t-if="doc.partner_id.phone and doc.partner_id.mobile">
+                                                        <span t-field="doc.partner_id.mobile"/>
+                                                    </t>
+                                                </p>
+                                            </td>
+                                        </tr>
+                                    </table>
+
+                                    <!-- Imagen del plano -->
+                                    <img t-if="'png_base64' in blueprint" t-att-src="'data:image/png;base64,' + blueprint['png_base64']"
+                                         style="width:100%; height:auto;"/>
+                                </div>
+                                <t t-set="counter" t-value="counter + 1"/>
+                            </t>
                         </t>
                     </t>
-                </t>
                 </div>
                 <div class="oe_structure"/>
             </div>
