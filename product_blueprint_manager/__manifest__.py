@@ -1,6 +1,6 @@
 {
     'name': 'Product Blueprint Manager',
-    'version': '16.0.5.0.0',
+    'version': '16.0.5.0.1',
     'category': 'Manufacturing',
     'summary': 'Gestione planos de productos y genere documentos de forma dinámica.',
     'description': '''
