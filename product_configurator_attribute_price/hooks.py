@@ -17,7 +17,7 @@ if 'product.blueprint.attribute.hook' in models.Model._inherits:
                 attribute_id_name = custom_value.custom_product_template_attribute_value_id.name
                 if attribute_id_name:
                     attribute_values[attribute_id_name] = custom_value.custom_value
-            _logger.info(f"[Hook] Valores personalizados capturados: {attribute_values}")
+            _logger.debug(f"[Hook] Valores personalizados capturados: {attribute_values}")
             return attribute_values
 else:
     class ProductConfiguratorAttributeHook(models.AbstractModel):
@@ -33,5 +33,5 @@ else:
                 attribute_id_name = custom_value.custom_product_template_attribute_value_id.name
                 if attribute_id_name:
                     attribute_values[attribute_id_name] = custom_value.custom_value
-            _logger.info(f"[Hook] Valores personalizados capturados: {attribute_values}")
+            _logger.debug(f"[Hook] Valores personalizados capturados: {attribute_values}")
             return attribute_values

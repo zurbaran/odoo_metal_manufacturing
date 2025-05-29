@@ -9,11 +9,11 @@ class AccountMove(models.Model):
     @api.onchange('company_id', 'move_type')
     def _onchange_company_or_type(self):
         for move in self:
-            _logger.info("[auto_journal_by_company] ONCHANGE triggered: company_id=%s, move_type=%s, journal_id=%s", 
-                         move.company_id.id, move.move_type, move.journal_id.id if move.journal_id else None)
+            _logger.debug("[auto_journal_by_company] ONCHANGE triggered: company_id=%s, move_type=%s, journal_id=%s", 
+                          move.company_id.id, move.move_type, move.journal_id.id if move.journal_id else None)
 
             if move.journal_id:
-                _logger.info("[auto_journal_by_company] journal_id already set (%s), skipping auto-selection", move.journal_id.id)
+                _logger.debug("[auto_journal_by_company] journal_id already set (%s), skipping auto-selection", move.journal_id.id)
                 continue
 
             journal_type = False
@@ -30,9 +30,9 @@ class AccountMove(models.Model):
                 ], limit=1)
                 if journal:
                     move.journal_id = journal
-                    _logger.info("[auto_journal_by_company] journal_id set to %s (%s)", journal.id, journal.name)
+                    _logger.info("[auto_journal_by_company] ONCHANGE: journal_id set to %s (%s)", journal.id, journal.name)
                 else:
-                    _logger.warning("[auto_journal_by_company] No journal found for type '%s' and company %s", journal_type, move.company_id.name)
+                    _logger.warning("[auto_journal_by_company] ONCHANGE: No journal found for type '%s' and company %s", journal_type, move.company_id.name)
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -55,7 +55,6 @@ class AccountMove(models.Model):
                     else:
                         _logger.warning("[auto_journal_by_company] CREATE: No se encontró diario para tipo '%s' y empresa %s", journal_type, vals['company_id'])
             else:
-                _logger.info("[auto_journal_by_company] CREATE: journal_id ya definido o datos insuficientes para move_type=%s", vals.get('move_type'))
+                _logger.debug("[auto_journal_by_company] CREATE: journal_id ya definido o datos insuficientes para move_type=%s", vals.get('move_type'))
 
         return moves
-

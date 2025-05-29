@@ -1,103 +1,158 @@
-## Product Blueprint Manager para Odoo: Descripción Detallada y Guía de Uso
+# Product Blueprint Manager
 
-**Introducción:**
+**Módulo para Odoo que permite generar planos técnicos SVG evaluados dinámicamente según los atributos configurables del producto.**
 
-El módulo "Product Blueprint Manager" para Odoo extiende las capacidades de gestión de productos, permitiendo integrar planos técnicos (en formato SVG) directamente en tus procesos de venta. Lo más potente de este módulo es su capacidad para **evaluar fórmulas matemáticas dentro del propio plano**, mostrando información dinámica y personalizada en los documentos de venta (presupuestos, pedidos, facturas). Esto es ideal para empresas que fabrican productos a medida o con características variables.
+---
 
-**¿Para qué sirve?**
+## 🎯 ¿Qué es?
 
-Imagina que vendes ventanas personalizadas. Cada cliente puede elegir el ancho, el alto, el tipo de cristal, etc. Con Product Blueprint Manager, puedes:
+Este módulo permite asociar **planos SVG dinámicos** a productos en Odoo. Cada plano puede contener **fórmulas matemáticas** que se evalúan automáticamente según los atributos configurados por el cliente (ej. ancho, alto, tipo de vidrio), y los resultados se muestran directamente en el plano que se genera como PDF.
 
-1.  **Subir un plano SVG** de una ventana genérica.
-2.  **Definir fórmulas** que calculen, por ejemplo, el área del cristal o la longitud del marco, basándose en las dimensiones elegidas por el cliente.
-3.  **Visualizar estos cálculos *directamente* sobre el plano** en el presupuesto o pedido de venta, sin tener que editar manualmente el archivo SVG.
+Ideal para fabricantes de productos a medida: mamparas, ventanas, carpintería metálica, mobiliario técnico, etc.
 
-El módulo elimina errores manuales, automatiza la presentación de información técnica y mejora la claridad de tus documentos comerciales.
+---
 
-**Dependencias:**
+## ⚙️ Características principales
 
-*   `product` (Módulo estándar de Odoo)
-*   `sale` (Módulo estándar de Odoo)
-*   `sale_management` (Módulo estándar de Odoo)
-*   `product_configurator_attribute_price`: **Crucial**. Este módulo es el que permite definir los atributos personalizados (ej. "Ancho", "Alto") y sus valores en las líneas de pedido. Product Blueprint Manager *extrae* estos valores para usarlos en las fórmulas.
+- Cargar uno o varios planos SVG por producto.
+- Definir **fórmulas dinámicas** vinculadas a elementos del SVG.
+- Evaluación de las fórmulas usando atributos personalizados definidos por el cliente.
+- Generación automática de planos personalizados como **adjuntos PDF** al pedido de venta o compra.
+- Soporte para **tipos de plano**: orden de fabricación, orden de compra.
+- Condiciones opcionales basadas en los **atributos del producto** para determinar qué plano se genera.
+- Renderizado directo del SVG evaluado con `t-raw`, o conversión opcional a **PNG** mediante CairoSVG.
+- Conserva estilo visual original (`font-size`, `fill`, etc.), editable por el usuario si se desea.
 
-**Funcionalidades Clave:**
+---
 
-1.  **Asociación de Planos a Productos:**
+## 📂 Requisitos
 
-    *   En la ficha de cada *plantilla* de producto (no en las variantes, sino en el producto "padre"), encontrarás una nueva pestaña llamada "Planos y Fórmulas".
-    *   Aquí puedes subir uno o más archivos SVG. Estos serán los planos base.
+### Módulos de Odoo necesarios
 
-2.  **Definición de Fórmulas (Vinculadas a Etiquetas en el SVG):**
+- `product`
+- `sale`
+- `sale_management`
 
-    *   **Preparación del SVG (¡IMPORTANTE!):** Antes de subir el archivo SVG a Odoo, debes prepararlo. El módulo *no* funciona con etiquetas `<text>` estándar de SVG. **Debes convertir los textos que quieres que sean dinámicos en *trayectos* (paths).**
-        *   **¿Por qué trayectos?** Odoo, al generar los PDFs, tiene problemas para renderizar correctamente los elementos `<text>` de SVG, especialmente si tienen transformaciones o estilos complejos. Convertirlos a trayectos asegura una visualización correcta.
-        *   **¿Cómo convertir textos a trayectos?** Puedes hacerlo con software de edición vectorial como Inkscape. El proceso consiste, en resumen, en seleccionar los objetos de texto y aplicar una función del tipo "Objeto a Trayecto" o "Convertir a Contornos". Esto *convierte* la representación del texto en un conjunto de curvas, que Odoo sí puede renderizar.
-        *   **Conversión con Inkscape (Línea de Comandos):** Si tienes muchos archivos, puedes automatizar la conversión usando Inkscape desde la línea de comandos (terminal):
+### Módulo adicional requerido
 
-            ```bash
-            inkscape archivo_original.svg --export-text-to-path --export-plain-svg -o archivo_convertido.svg
-            ```
+- `product_configurator_attribute_price`: permite definir atributos personalizados (como "mmAncho", "TipoVidrio") y capturarlos en la línea del pedido.
 
-            *   `archivo_original.svg`: El archivo SVG original.
-            *   `--export-text-to-path`: La opción mágica que convierte los textos a trayectos.
-            *   `--export-plain-svg`: Genera un SVG "plano" (sin características especiales de Inkscape).
-            *   `-o archivo_convertido.svg`: Especifica el nombre del archivo de salida.
+---
 
-        *   **Identificación de los Trayectos (aria-label):** Despues de transformar el texto a trayectos, en el campo "aria-label" de cada `<path>` convertido desde texto, escribe el **nombre de la etiqueta**. Este nombre será la *referencia* que usarás para vincular el trayecto con una fórmula en Odoo.
+## 🖼️ Requisitos del archivo SVG
 
-    *   **Creación de Fórmulas en Odoo:**
-        *   En la pestaña "Planos y Fórmulas" de la plantilla de producto, verás una sección llamada "Fórmulas".
-        *   Al crear una nueva fórmula, debes especificar:
-            *   **Plano:** Selecciona el archivo SVG al que pertenece esta fórmula.
-            *   **Nombre de Etiqueta de Fórmula:** Aquí debes introducir el **nombre exacto** que pusiste en el atributo `aria-label` del `<path>` en el SVG. *Es la conexión entre el plano y la fórmula.*
-            *   **Expresión de la Fórmula:** La fórmula matemática en sí, escrita en sintaxis Python. Puedes usar:
-                *   Operadores matemáticos básicos (`+`, `-`, `*`, `/`, `**` para potencias).
-                *   Funciones matemáticas de Python (`math.sin`, `math.cos`, `math.sqrt`, etc.). Consulta la documentación de Python para ver todas las funciones disponibles.
-                *   **Variables:** Aquí es donde entran los atributos personalizados del módulo `product_configurator_attribute_price`. Por ejemplo, si has definido un atributo llamado "mmAncho", puedes usarlo en tu fórmula: `mmAncho * 2`.
-            *   **Atributos Disponibles:** Este campo *calculado* muestra los atributos que puedes usar en la fórmula, a partir de los atributos personalizados definidos.
+### ¿Cómo marcar los elementos reemplazables?
 
-3.  **Evaluación Segura de Fórmulas:**
+Para que una fórmula se aplique a un nodo en el SVG, este debe:
 
-    *   El módulo evalúa las fórmulas en un entorno seguro. Esto significa que no se pueden ejecutar comandos arbitrarios de Python, solo las operaciones matemáticas permitidas.
-    *   Los valores de las variables se obtienen de los atributos personalizados que el usuario haya introducido en la línea de pedido de venta.
+1. **Tener la clase CSS `odoo-formula`**
+2. Tener el atributo `aria-label="NombreFormula"` (donde `NombreFormula` es el nombre vinculado a la fórmula configurada en Odoo)
 
-4.  **Generación de Informes PDF:**
+#### Ejemplo:
 
-    *   Cuando creas un presupuesto, pedido de venta o factura que incluye un producto con planos y fórmulas configurados, puedes imprimir un informe especial.
-    *   Ve al menú "Imprimir" del documento de venta y selecciona "Plano Orden de Venta".
-    *   El PDF generado incluirá:
-        *   La información estándar del documento (cliente, productos, precios, etc.).
-        *   **El plano SVG**, pero con una modificación importante: Los `<path>` que tenían un `aria-label` coincidente con una fórmula configurada serán *reemplazados* por el *resultado* de esa fórmula.
-        *   Si un `<path>` con `aria-label` *no* tiene una fórmula asociada, se mostrará tal cual, sin cambios.
-        *   Cada producto con planos configurados aparecerá en una página separada del informe.
+```xml
+<text x="100" y="50" font-size="12" fill="#000000" class="odoo-formula" aria-label="AnchoCalculado">0</text>
+```
 
-**Flujo de Trabajo Completo (Ejemplo):**
+- El valor `"0"` será reemplazado por el resultado evaluado.
+- El estilo visual será conservado o puede configurarse manualmente.
 
-1.  **Diseño del Plano (SVG):**
-    *   Crea tu plano en un editor vectorial (Inkscape, Adobe Illustrator, etc.).
-    *   Donde quieras que aparezcan valores dinámicos, inserta texto.
-    *   **Convierte ese texto a trayectos (paths).** Importante: en Inkscape, selecciona el texto y ve a "Trayecto" -> "Objeto a Trayecto" o usa el comando de terminal que te di antes.
-    *   A cada `<path>` resultante, asígnale un atributo `aria-label`. Por ejemplo, si tienes un texto que mostrará el ancho, podrías poner `aria-label="AnchoCalculado"`.
+> ⚠️ Importante: ya no es necesario convertir los textos a `path` (trayectos) si puedes usar nodos `<text>` bien posicionados con `class="odoo-formula"`.
 
-2.  **Configuración en Odoo:**
-    *   Crea una plantilla de producto.
-    *   Define los atributos personalizados necesarios (ej. "mmAncho", "mmAlto") usando el módulo `product_configurator_attribute_price`.
-    *   En la pestaña "Planos y Fórmulas" de la plantilla de producto:
-        *   Sube el archivo SVG.
-        *   Crea una nueva fórmula.
-        *   En "Nombre de Etiqueta de Fórmula", escribe "AnchoCalculado" (o el nombre que hayas usado en el `aria-label`).
-        *   En "Expresión de la Fórmula", escribe algo como `mmAncho * 2`.
-        *   Guarda la fórmula y la plantilla de producto.
+---
 
-3.  **Creación de un Pedido de Venta:**
-    *   Crea un nuevo pedido de venta.
-    *   Añade el producto.
-    *   Al añadir el producto, Odoo te pedirá que introduzcas los valores de los atributos personalizados (ej. "mmAncho" = 1000, "mmAlto" = 500).
-    *   Guarda el pedido de venta.
+## 🧮 Cómo se definen las fórmulas
 
-4.  **Impresión del Informe:**
-    *   En el pedido de venta, ve a "Imprimir" -> "Plano Orden de Venta".
-    *   El PDF generado mostrará el plano. Donde antes tenías el `<path>` con `aria-label="AnchoCalculado"`, ahora verás el resultado de la fórmula (en este ejemplo, 2000).
+En la ficha del producto, pestaña **"Planos y Fórmulas"**:
 
-**En resumen:** Product Blueprint Manager te da un control total sobre la presentación de información técnica variable en tus documentos de venta, de forma automatizada, segura y visualmente clara. La clave está en la correcta preparación del SVG y la definición precisa de las fórmulas.
+1. Selecciona el plano SVG.
+2. Añade una fórmula indicando:
+   - **Etiqueta de fórmula** → coincide con `aria-label` en el SVG.
+   - **Expresión matemática** → usa los nombres de atributos definidos.
+   - **Condiciones** opcionales (por ejemplo, sólo mostrar este plano si el atributo `TipoVidrio` es "Transparente").
+   - **Color y tamaño de fuente** → opcionales; se detectan automáticamente pero pueden editarse manualmente.
+
+---
+
+## 📄 ¿Qué se genera?
+
+En cada línea del pedido, al generar el informe:
+
+- Se evalúan las fórmulas.
+- Se reemplazan los nodos con `class="odoo-formula"` por un `<text>` SVG con el resultado.
+- Se respetan el color, tamaño de letra y posición.
+- Si `wkhtmltopdf` no renderiza bien el SVG, se convierte automáticamente a **PNG**.
+- El resultado se adjunta al pedido como PDF personalizado.
+
+---
+
+## 🧪 Flujo de trabajo completo
+
+1. **Diseña el plano SVG**
+   - En Inkscape o similar, usa texto donde quieras un valor dinámico.
+   - Asegúrate de que cada texto tenga `class="odoo-formula"` y `aria-label`.
+   - Opcional: convierte los textos a trayectos con Inkscape si necesitas máxima compatibilidad:
+     ```bash
+     inkscape plano.svg --export-text-to-path --export-plain-svg -o plano_convertido.svg
+     ```
+
+2. **Configura la plantilla de producto en Odoo**
+   - Añade los atributos personalizados (mmAncho, mmAlto...).
+   - Sube el SVG.
+   - Define las fórmulas correspondientes (ej. `mmAncho * 2.5`).
+
+3. **Crea un pedido de venta o compra**
+   - Selecciona el producto.
+   - Configura los valores de atributos.
+   - Guarda el pedido.
+
+4. **Genera el plano**
+   - Desde el menú "Imprimir", elige "Plano Orden de Venta" o "Plano Orden de Compra".
+   - Se genera un PDF con los planos dinámicos evaluados.
+
+---
+
+## 🔐 Seguridad
+
+Las fórmulas se evalúan en un entorno restringido:
+- Solo se permiten operadores y funciones matemáticas (`+`, `-`, `*`, `/`, `math.sqrt`, etc.).
+- No se ejecuta ningún código arbitrario ni peligroso.
+- Los valores sólo provienen de atributos configurados por el usuario.
+
+---
+
+## 📁 Estructura del módulo
+
+```
+product_blueprint_manager/
+├── models/
+│   ├── product_blueprint.py
+│   ├── product_blueprint_formula_name.py
+│   └── ...
+├── views/
+│   └── product_blueprint_views.xml
+├── report/
+│   ├── sale_order_report.xml
+│   └── purchase_order_report.xml
+└── static/
+    └── ...
+```
+
+---
+
+## 💡 Consejo práctico
+
+¿Tus valores evaluados no se ven en el PDF?
+
+- Asegúrate de que los nodos tengan `class="odoo-formula"`.
+- Verifica que el `aria-label` coincida exactamente con el nombre de la fórmula.
+- Revisa que se hayan definido valores en la línea de pedido.
+
+---
+
+## 🧷 Módulo mantenido por
+
+Zurbaran Sistemas de Producción  
+Repositorio oficial: https://github.com/zurbaran/odoo_metal_manufacturing
+
+---

@@ -8,5 +8,6 @@ if [ -z "$COMMIT" ]; then
 fi
 
 echo ">> Cherry-pickeando $COMMIT desde develop a 17.0"
+
 git checkout 17.0 &&
 git cherry-pick "$COMMIT"
