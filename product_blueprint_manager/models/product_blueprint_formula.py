@@ -57,16 +57,16 @@ class ProductBlueprintFormula(models.Model):
         if self.name:
             self.fill_color = self.name.fill_color
             self.font_size = self.name.font_size
-            _logger.info("[Blueprint][Formula] Cargando estilos desde '%s': fill_color=%s, font_size=%s", self.name.name, self.fill_color, self.font_size)
+            _logger.debug("[Blueprint][Formula] Cargando estilos desde '%s': fill_color=%s, font_size=%s", self.name.name, self.fill_color, self.font_size)
 
     @api.onchange("blueprint_id")
     def _onchange_blueprint_id(self):
         if self.blueprint_id:
             domain = self._get_available_formula_names_domain(self.blueprint_id)
-            _logger.info("[Blueprint][Formula] Dominio calculado para blueprint_id %s: %s", self.blueprint_id.id, domain)
+            _logger.debug("[Blueprint][Formula] Dominio calculado para blueprint_id %s: %s", self.blueprint_id.id, domain)
             return {'domain': {'name': domain}}
         else:
-            _logger.info("[Blueprint][Formula] No se ha seleccionado ningún plano.")
+            _logger.debug("[Blueprint][Formula] No se ha seleccionado ningún plano.")
             return {'domain': {'name': [('id', '=', False)]}}
 
     def _get_available_formula_names_domain(self, blueprint):
@@ -84,23 +84,25 @@ class ProductBlueprintFormula(models.Model):
             ('id', 'not in', used_ids)
         ]).ids
 
-        _logger.info("[Blueprint][Formula] Etiquetas disponibles para blueprint %s: %s", blueprint.id, available_ids)
+        _logger.debug("[Blueprint][Formula] Etiquetas disponibles para blueprint %s: %s", blueprint.id, available_ids)
 
         return [('id', 'in', available_ids)]
 
     @api.model_create_multi
     def create(self, vals_list):
-        _logger.info("[Blueprint][Formula] Creando nuevas fórmulas: %s", vals_list)
+        _logger.info("[Blueprint][Formula] Creando nuevas fórmulas.")
+        _logger.debug("[Blueprint][Formula] Datos recibidos en create: %s", vals_list)
         return super().create(vals_list)
 
     def write(self, vals):
         for rec in self:
-            _logger.info("[Blueprint][Formula] Modificando fórmula '%s' con valores: %s", rec.name.name if rec.name else '-', vals)
+            _logger.info("[Blueprint][Formula] Modificando fórmula '%s'.", rec.name.name if rec.name else '-')
+            _logger.debug("[Blueprint][Formula] Valores en write: %s", vals)
         return super().write(vals)
 
     def unlink(self):
         for rec in self:
-            _logger.info("[Blueprint][Formula] Eliminando fórmula '%s' del plano ID %s", rec.name.name if rec.name else '-', rec.blueprint_id.id)
+            _logger.warning("[Blueprint][Formula] Eliminando fórmula '%s' del plano ID %s", rec.name.name if rec.name else '-', rec.blueprint_id.id)
         return super().unlink()
 
     _sql_constraints = [

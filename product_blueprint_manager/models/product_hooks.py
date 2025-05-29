@@ -21,7 +21,7 @@ class ProductBlueprintHook(models.AbstractModel):
         Returns:
             dict: Un diccionario de valores de atributos.
         """
-        _logger.info(
+        _logger.debug(
             f"[Blueprint] Llamando al super get_attribute_values_for_blueprint para la línea {sale_order_line.id if sale_order_line else 'Ninguna'}"
         )
         return super().get_attribute_values_for_blueprint(sale_order_line)

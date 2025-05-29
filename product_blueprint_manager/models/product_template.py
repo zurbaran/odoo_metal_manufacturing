@@ -26,7 +26,7 @@ class ProductTemplate(models.Model):
         Returns:
             dict: Un diccionario de valores de atributos personalizados.
         """
-        _logger.info(
+        _logger.debug(
             f"[Blueprint] Obteniendo valores de atributos personalizados para {self.name}, Linea de venta: {sale_order_line.id if sale_order_line else 'Ninguna'}"
         )
         return sale_order_line.blueprint_custom_values if sale_order_line else {}
@@ -41,7 +41,6 @@ class ProductTemplate(models.Model):
 
     # def generate_blueprint_report(self, sale_order_line=None, mode="preview"):
     def generate_blueprint_report(self, sale_order_line=None):
-
         """
         Genera un reporte de blueprint.
 
@@ -56,6 +55,8 @@ class ProductTemplate(models.Model):
         if not sale_order_line:
             _logger.error("Sale order line is required for generating the blueprint.")
             return False
+
+        _logger.info(f"Generando reporte de blueprint para el producto {self.name} (SO line ID: {sale_order_line.id})")
 
         report_action = self.env["ir.actions.report"]._get_report_from_name(
             "product_blueprint_manager.action_report_sale_order_blueprint"
