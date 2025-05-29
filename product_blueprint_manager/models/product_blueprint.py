@@ -44,17 +44,17 @@ class ProductBlueprint(models.Model):
                 tree = etree.fromstring(content, parser=etree.XMLParser(remove_blank_text=True))
 
                 formula_nodes = tree.xpath("//*[@class='odoo-formula']")
-                _logger.info(f"[Blueprint] Se encontraron {len(formula_nodes)} nodos con clase 'odoo-formula'")
+                _logger.debug(f"[Blueprint] Se encontraron {len(formula_nodes)} nodos con clase 'odoo-formula'")
 
                 for node in formula_nodes:
                     formula_name = self._extract_formula_name_from_node(node)
-                    _logger.info(f"[Blueprint] Nodo analizado - fórmula: '{formula_name}'")
+                    _logger.debug(f"[Blueprint] Nodo analizado - fórmula: '{formula_name}'")
                     if not formula_name:
-                        _logger.warning("[Blueprint] Nodo omitido - no se pudo determinar un nombre de fórmula")
+                        _logger.info("[Blueprint] Nodo omitido - no se pudo determinar un nombre de fórmula")
                         continue
 
                     fill_color, font_size, font_family = self._extract_style_from_node_or_children(node)
-                    _logger.info(f"[Blueprint] Estilos detectados para '{formula_name}': fill={fill_color}, size={font_size}, font={font_family}")
+                    _logger.debug(f"[Blueprint] Estilos detectados para '{formula_name}': fill={fill_color}, size={font_size}, font={font_family}")
 
                     existing = self.env["product.blueprint.formula.name"].search([
                         ("name", "=", formula_name),
@@ -70,10 +70,10 @@ class ProductBlueprint(models.Model):
                             "font_size": font_size,
                         })
                     else:
-                        _logger.info(f"[Blueprint] Fórmula ya existente: '{formula_name}', se omite creación.")
+                        _logger.debug(f"[Blueprint] Fórmula ya existente: '{formula_name}', se omite creación.")
 
             except Exception as e:
-                _logger.warning("[Blueprint] Error al procesar el archivo SVG: %s", e)
+                _logger.exception("[Blueprint] Error al procesar el archivo SVG")
                 raise UserError("Error al procesar el archivo SVG: %s" % e)
 
     def _extract_formula_name_from_node(self, node):
@@ -166,14 +166,14 @@ class ProductBlueprint(models.Model):
     def create(self, vals_list):
         blueprints = super().create(vals_list)
         for blueprint in blueprints:
-            _logger.info(f"[Blueprint] Creando blueprint '{blueprint.name}'")
-            _logger.info(f"[Blueprint] Intentando extraer fórmulas inmediatamente después de la creación...")
+            _logger.info(f"[Blueprint] Creado blueprint '{blueprint.name}'")
+            _logger.debug(f"[Blueprint] Intentando extraer fórmulas inmediatamente después de la creación...")
             blueprint._extract_svg_formulas()
         return blueprints
 
     def write(self, vals):
-        _logger.info(f"[Blueprint] Modificando blueprint '{self.name}'")
+        _logger.info(f"[Blueprint] Modificación del blueprint '{self.name}'")
         result = super(ProductBlueprint, self).write(vals)
-        _logger.info(f"[Blueprint] Intentando extraer fórmulas después de la modificación...")
+        _logger.debug(f"[Blueprint] Intentando extraer fórmulas después de la modificación...")
         self._extract_svg_formulas()
         return result

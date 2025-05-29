@@ -36,8 +36,8 @@ class ProductTemplateAttributeValue(models.Model):
         Raises:
             ValidationError: Si hay un error al evaluar la fórmula.
         """
-        _logger.info(f"Starting calculate_price_increment for attribute {self.name}")
-        _logger.info(f"Formula: {self.price_formula}, custom_value: {custom_value}, price_so_far: {price_so_far}")
+        _logger.debug(f"Starting calculate_price_increment for attribute {self.name}")
+        _logger.debug(f"Formula: {self.price_formula}, custom_value: {custom_value}, price_so_far: {price_so_far}")
 
         if not self.price_formula:
             _logger.info(f"No price formula defined for attribute {self.name}. Using price_extra: {self.price_extra}")
@@ -48,8 +48,8 @@ class ProductTemplateAttributeValue(models.Model):
             custom_value = float(custom_value)
             price_so_far = float(price_so_far)
 
-            _logger.info(f"Evaluating formula: {self.price_formula}")
-            _logger.info(f"custom_value: {custom_value}, price_so_far: {price_so_far}")
+            _logger.debug(f"Evaluating formula: {self.price_formula}")
+            _logger.debug(f"custom_value: {custom_value}, price_so_far: {price_so_far}")
 
             # Variables adicionales que pueden ser útiles en las fórmulas
             variables = {
@@ -62,7 +62,7 @@ class ProductTemplateAttributeValue(models.Model):
 
             # Evaluar la fórmula
             increment = eval(self.price_formula, {"__builtins__": None}, allowed_names)
-            _logger.info(f"Result of formula evaluation: {increment}")
+            _logger.debug(f"Result of formula evaluation: {increment}")
 
             # Asegurarse de que el incremento no sea negativo
             if increment < 0:

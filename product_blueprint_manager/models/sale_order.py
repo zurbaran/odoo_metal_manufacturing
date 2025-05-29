@@ -15,8 +15,8 @@ class SaleOrder(models.Model):
         Para usar en un botón.
         """
         self.ensure_one()
-        _logger.info(
-            f"[Blueprint] Imprimiendo blueprints de fabricación para el pedido: {self.name}"
+        _logger.debug(
+            f"[Blueprint] Acción ejecutada: impresión de blueprints de fabricación para el pedido: {self.name}"
         )
 
         return self.env.ref(
@@ -25,8 +25,8 @@ class SaleOrder(models.Model):
 
     def action_print_purchase_blueprint(self):
         self.ensure_one()
-        _logger.info(
-            f"[Blueprint] Imprimiendo blueprints de compra para el pedido: {self.name}"
+        _logger.debug(
+            f"[Blueprint] Acción ejecutada: impresión de blueprints de compra para el pedido: {self.name}"
         )
         return self.env.ref(
             "product_blueprint_manager.action_report_purchase_order_blueprint"
@@ -46,7 +46,9 @@ class SaleOrder(models.Model):
         ):
             report = self.env.context.get("report")
             if report == "product_blueprint_manager.report_sale_order_blueprint_document":
+                _logger.debug(f"[Blueprint] Generando nombre de archivo para reporte de fabricación: Plano_Fabricacion_{self.name}")
                 return f"Plano_Fabricacion_{self.name}"
             elif report == "product_blueprint_manager.report_purchase_order_blueprint_document":
+                _logger.debug(f"[Blueprint] Generando nombre de archivo para reporte de compra: Plano_Compra_{self.name}")
                 return f"Plano_Compra_{self.name}"
         return super(SaleOrder, self)._get_report_base_filename()
