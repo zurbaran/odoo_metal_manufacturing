@@ -10,13 +10,12 @@ class ReportPurchaseOrderBlueprint(models.AbstractModel):
     def _get_report_values(self, docids, data=None):
         orders = self.env["sale.order"].browse(docids)
         for order in orders:
-            _logger.info(f"[Blueprint][Purchase] Procesando orden {order.name}")
+            _logger.debug(f"[Blueprint][Purchase] Procesando orden {order.name}")
             for line in order.order_line:
-                _logger.info(f"[Blueprint][Purchase] Línea {line.id} - Producto: {line.product_id.name}")
+                _logger.debug(f"[Blueprint][Purchase] Línea {line.id} - Producto: {line.product_id.name}")
                 line._get_evaluated_blueprint(type_blueprint='purchase')
         return {
             'doc_ids': docids,
             'doc_model': 'sale.order',
             'docs': orders,
         }
-

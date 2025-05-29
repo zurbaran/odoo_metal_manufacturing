@@ -20,17 +20,17 @@ class ProductBlueprintFormulaName(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
-            _logger.info(f"[Blueprint][Formula Name] Creando nueva etiqueta: '{vals.get('name')}' para plano ID: {vals.get('blueprint_id')} con color={vals.get('fill_color')} tamaño={vals.get('font_size')}")
+            _logger.debug(f"[Blueprint][Formula Name] Creando nueva etiqueta: '{vals.get('name')}' para plano ID: {vals.get('blueprint_id')} con color={vals.get('fill_color')} tamaño={vals.get('font_size')}")
         return super(ProductBlueprintFormulaName, self).create(vals_list)
 
     def write(self, vals):
         for record in self:
-            _logger.info(f"[Blueprint][Formula Name] Modificando etiqueta '{record.name}' del plano ID {record.blueprint_id.id} con cambios: {vals}")
+            _logger.debug(f"[Blueprint][Formula Name] Modificando etiqueta '{record.name}' del plano ID {record.blueprint_id.id} con cambios: {vals}")
         return super(ProductBlueprintFormulaName, self).write(vals)
 
     def unlink(self):
         for record in self:
-            _logger.info(f"[Blueprint][Formula Name] Eliminando etiqueta '{record.name}' del plano ID {record.blueprint_id.id}.")
+            _logger.warning(f"[Blueprint][Formula Name] Eliminando etiqueta '{record.name}' del plano ID {record.blueprint_id.id}.")
         return super(ProductBlueprintFormulaName, self).unlink()
 
     @api.model
