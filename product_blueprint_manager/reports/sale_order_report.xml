@@ -29,12 +29,10 @@
                                         <tr>
                                             <!-- Columna izquierda: Información del documento -->
                                             <td class="compact-lines" style="vertical-align: top; width: 50%;">
-                                                <p>Fecha: 
-                                                    <span t-field="doc.date_order" t-options="{'widget': 'date'}"/>
-                                                </p>
-                                                <p>Producto: 
-                                                    <t t-out="line.product_id.name"/>
-                                                </p>
+                                                <!-- Fecha -->
+                                                <p><span t-field="doc.date_order" t-options="{'widget': 'date'}"/></p>
+                                                <!-- Producto -->
+                                                <p><t t-out="line.product_id.name"/></p>
                                                 <p>Plano: 
                                                     <t t-out="line.product_id.product_tmpl_id.blueprint_ids[counter].name"/>
                                                 </p>
@@ -42,10 +40,10 @@
 
                                             <!-- Columna derecha: Información del cliente -->
                                             <td class="compact-lines" style="vertical-align: top; width: 50%;">
-                                                <p>Cliente: 
-                                                    <span t-field="doc.partner_id.name"/>
-                                                </p>
-                                                <p>Dirección:
+                                                <!-- Cliente -->
+                                                <p><span t-field="doc.partner_id.name"/></p>
+                                                <!-- Direccion -->
+                                                <p>
                                                     <t t-if="doc.partner_id.street">
                                                         <t t-out="doc.partner_id.street"/>
                                                     </t>
@@ -66,8 +64,8 @@
                                                         <t t-out="doc.partner_id.state_id.name"/>
                                                     </t>
                                                 </p>
+                                                <!-- Telefono -->
                                                 <p t-if="doc.partner_id.phone or doc.partner_id.mobile">
-                                                    Teléfono: 
                                                     <t t-if="doc.partner_id.phone">
                                                         <span t-out="doc.partner_id.phone"/>
                                                     </t>
