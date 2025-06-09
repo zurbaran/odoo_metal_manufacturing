@@ -1,4 +1,3 @@
- 
 #!/bin/bash
 
 ORIGINAL_BRANCH=$(git symbolic-ref --short HEAD)
