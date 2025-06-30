@@ -48,9 +48,14 @@ class ProductBlueprint(models.Model):
 
                 for node in formula_nodes:
                     formula_name = self._extract_formula_name_from_node(node)
-                    _logger.debug(f"[Blueprint] Nodo analizado - fórmula: '{formula_name}'")
+                    element_id = node.get("id")
+
+                    _logger.debug(f"[Blueprint] Nodo analizado - fórmula: '{formula_name}' ID nodo: '{element_id}'")
                     if not formula_name:
                         _logger.info("[Blueprint] Nodo omitido - no se pudo determinar un nombre de fórmula")
+                        continue
+                    if not element_id:
+                        _logger.warning(f"[Blueprint] Nodo sin ID detectado. Se omite fórmula '{formula_name}'")
                         continue
 
                     fill_color, font_size, font_family = self._extract_style_from_node_or_children(node)
@@ -58,19 +63,21 @@ class ProductBlueprint(models.Model):
 
                     existing = self.env["product.blueprint.formula.name"].search([
                         ("name", "=", formula_name),
+                        ("svg_element_id", "=", element_id),
                         ("blueprint_id", "=", blueprint.id),
                     ], limit=1)
 
                     if not existing:
-                        _logger.info(f"[Blueprint] Creando nueva fórmula: '{formula_name}' con color={fill_color}, tamaño={font_size}")
+                        _logger.info(f"[Blueprint] Creando nueva fórmula: '{formula_name}' con ID='{element_id}', color={fill_color}, tamaño={font_size}")
                         self.env["product.blueprint.formula.name"].create({
                             "name": formula_name,
+                            "svg_element_id": element_id,
                             "blueprint_id": blueprint.id,
                             "fill_color": fill_color,
                             "font_size": font_size,
                         })
                     else:
-                        _logger.debug(f"[Blueprint] Fórmula ya existente: '{formula_name}', se omite creación.")
+                        _logger.debug(f"[Blueprint] Fórmula ya existente: '{formula_name}' con ID='{element_id}', se omite creación.")
 
             except Exception as e:
                 _logger.exception("[Blueprint] Error al procesar el archivo SVG")
