@@ -65,15 +65,19 @@ sync_commit() {
     PARENTS=$(git rev-list --parents -n 1 "$COMMIT" | wc -w)
     if [ "$PARENTS" -gt 2 ]; then
       echo "⚠ El commit es una fusión. Usando cherry-pick -m 1"
-      git cherry-pick -m 1 "$COMMIT" || {
+      if git cherry-pick -m 1 "$COMMIT"; then
+        echo "✅ Cherry-pick fusión exitoso"
+      else
         if git status | grep -q "El cherry-pick anterior ahora está vacío"; then
           git cherry-pick --skip
           echo "⚠️ Cherry-pick vacío (fusión). Saltado."
+          echo "$BRANCH|$PATCH_ID" >> "$SYNC_STATE"
+          return
         else
           echo "❌ Error en cherry-pick fusión"
           exit 1
         fi
-      }
+      fi
     else
       git cherry-pick "$COMMIT" || {
         if git status | grep -q "El cherry-pick anterior ahora está vacío"; then
