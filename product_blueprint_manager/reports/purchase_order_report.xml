@@ -3,8 +3,8 @@
         <t t-call="web.basic_layout">
             <div class="page">
                 <div class="header" style="text-align: center; margin-bottom: 20px;">
-                    <h2 t-esc="res_company.name"/>
-                    <p t-esc="res_company.partner_id.contact_address"/>
+                    <h2 t-out="res_company.name"/>
+                    <p t-out="res_company.partner_id.contact_address"/>
                 </div>
                 <div class="oe_structure"/>
                 <div class="container">
@@ -19,7 +19,7 @@
                                 <p>Referencia de Pedido: <span t-field="doc.name"/></p>
                                 <p>Fecha: <span t-field="doc.date_order" t-options="{'widget': 'date'}"/></p>
                                 <h4>Plano:
-                                    <t t-esc="line.product_id.product_tmpl_id.blueprint_ids[counter].name"/>
+                                    <t t-out="line.product_id.product_tmpl_id.blueprint_ids[counter].name"/>
                                 </h4>
                                 <img t-if="'png_base64' in blueprint" t-att-src="'data:image/png;base64,' + blueprint['png_base64']"
                                     style="width:100%; height:auto;"/>
