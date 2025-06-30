@@ -46,8 +46,41 @@ sync_commit() {
     git cherry-pick "$COMMIT" || exit 1
     git push origin "$RAMA" || exit 1
 
-  elif [[ "$TIPO" == "no_manifest" ]]; then
-    echo "🎯 Cherry-pick en $RAMA (sin commit)..."
+  if [[ "$TYPE" == "normal" ]]; then
+    echo "🎯 Cherry-pick en $BRANCH..."
+
+    PARENTS=$(git rev-list --parents -n 1 "$COMMIT" | wc -w)
+    if [ "$PARENTS" -gt 2 ]; then
+      echo "⚠ El commit es una fusión. Usando cherry-pick -m 1"
+      if git cherry-pick -m 1 "$COMMIT"; then
+        echo "✅ Cherry-pick fusión exitoso"
+      else
+        if git status | grep -q "El cherry-pick anterior ahora está vacío"; then
+          git cherry-pick --skip
+          echo "⚠️ Cherry-pick vacío (fusión). Saltado."
+          echo "$BRANCH|$PATCH_ID" >> "$SYNC_STATE"
+          return
+        else
+          echo "❌ Error en cherry-pick fusión"
+          exit 1
+        fi
+      fi
+    else
+      git cherry-pick "$COMMIT" || {
+        if git status | grep -q "El cherry-pick anterior ahora está vacío"; then
+          git cherry-pick --skip
+          echo "⚠️ Cherry-pick vacío. Saltado."
+        else
+          echo "❌ Error en cherry-pick"
+          exit 1
+        fi
+      }
+    fi
+
+    git push origin "$BRANCH"
+
+  elif [[ "$TYPE" == "no_manifest" ]]; then
+    echo "🎯 Cherry-pick en $BRANCH (sin commit)..."
     git cherry-pick -n "$COMMIT" || exit 1
     echo "🔄 Restaurando __manifest__.py..."
     git restore --staged product_blueprint_manager/__manifest__.py 2>/dev/null
