@@ -1,7 +1,11 @@
 #!/bin/bash
 
 ORIGINAL_BRANCH=$(git symbolic-ref --short HEAD)
+SYNC_STATE=".sync_state"
 
+touch "$SYNC_STATE"
+
+# 🚫 Validaciones iniciales
 if [ -d ".git/rebase-apply" ] || [ -d ".git/rebase-merge" ]; then
   echo "🛑 Rebase en curso. Usa 'git rebase --abort' antes de continuar."
   exit 1
@@ -17,6 +21,7 @@ if git ls-files -u | grep .; then
   exit 1
 fi
 
+# 🚀 Asegurarse de que el commit más reciente esté pusheado
 LAST_COMMIT=$(git log -1 --pretty=format:"%H")
 IS_PUSHED=$(git branch -r --contains "$LAST_COMMIT" | grep "origin/develop")
 
@@ -27,7 +32,7 @@ fi
 
 echo "🔍 Último commit: $LAST_COMMIT"
 
-### === Función reutilizable === ###
+# === Función reutilizable para cherry-pick ===
 sync_commit() {
   local RAMA="$1"
   local COMMIT="$2"
@@ -74,10 +79,26 @@ sync_commit() {
   fi
 }
 
-# Aplicar a cada rama
-sync_commit "17.0" "$LAST_COMMIT" "normal"
-sync_commit "16.0" "$LAST_COMMIT" "no_manifest"
-sync_commit "18.0" "$LAST_COMMIT" "no_manifest_no_dir"
+# ✅ Ejecutar cherry-pick sólo si la rama no fue sincronizada antes
+run_if_not_synced() {
+  local BRANCH=$1
+  local COMMIT=$2
+  local TYPE=$3
 
+  if grep -q "^$BRANCH$" "$SYNC_STATE"; then
+    echo "✅ $BRANCH ya fue sincronada. Saltando..."
+  else
+    sync_commit "$BRANCH" "$COMMIT" "$TYPE"
+    echo "$BRANCH" >> "$SYNC_STATE"
+  fi
+}
+
+# 🧠 Sincronizar las ramas indicadas
+run_if_not_synced "17.0" "$LAST_COMMIT" "normal"
+run_if_not_synced "16.0" "$LAST_COMMIT" "no_manifest"
+run_if_not_synced "18.0" "$LAST_COMMIT" "no_manifest_no_dir"
+
+# 🔚 Volver a develop y limpiar estado si todo fue exitoso
 git checkout "$ORIGINAL_BRANCH"
+rm -f "$SYNC_STATE"
 echo "✅ Sincronización completa. De vuelta en $ORIGINAL_BRANCH"
