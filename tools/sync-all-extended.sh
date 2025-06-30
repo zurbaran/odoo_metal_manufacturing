@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 ORIGINAL_BRANCH=$(git symbolic-ref --short HEAD)
 SYNC_STATE=".sync_state"
 
@@ -21,7 +23,7 @@ if git ls-files -u | grep .; then
   exit 1
 fi
 
-# 🚀 Asegurarse de que el commit más reciente esté pusheado
+# 🚀 Validar último commit en develop y pushearlo si falta
 LAST_COMMIT=$(git log -1 --pretty=format:"%H")
 IS_PUSHED=$(git branch -r --contains "$LAST_COMMIT" | grep "origin/develop")
 
@@ -32,40 +34,78 @@ fi
 
 echo "🔍 Último commit: $LAST_COMMIT"
 
-# === Función reutilizable para cherry-pick ===
+# ✅ Obtener patch-id del último commit
+PATCH_ID=$(git show "$LAST_COMMIT" | git patch-id --stable | awk '{print $1}')
+
+# === Función principal de sincronización ===
 sync_commit() {
-  local RAMA="$1"
+  local BRANCH="$1"
   local COMMIT="$2"
-  local TIPO="$3"
+  local TYPE="$3"
 
-  echo "🧭 Cambiando a $RAMA..."
-  git checkout "$RAMA" || exit 1
+  echo "🧭 Cambiando a $BRANCH..."
+  git checkout "$BRANCH" || exit 1
 
-  if git branch --contains "$COMMIT" | grep -q "$RAMA"; then
-    echo "🔁 El commit ya está presente en $RAMA. Saltando..."
+  # 🧠 Verificar si ya se aplicó el mismo patch (contenido)
+  if grep -q "^$BRANCH|$PATCH_ID$" "$SYNC_STATE"; then
+    echo "✅ $BRANCH ya contiene el patch. Saltando..."
     return
   fi
 
-  if [[ "$TIPO" == "normal" ]]; then
-    echo "🎯 Cherry-pick en $RAMA..."
-    git cherry-pick "$COMMIT" || exit 1
-    git push origin "$RAMA" || exit 1
+  # ⚠️ Detectar si el commit ya está en la rama
+  if git branch --contains "$COMMIT" | grep -q "$BRANCH"; then
+    echo "🔁 El commit ya está presente en $BRANCH. Saltando..."
+    echo "$BRANCH|$PATCH_ID" >> "$SYNC_STATE"
+    return
+  fi
 
-  elif [[ "$TIPO" == "no_manifest" ]]; then
-    echo "🎯 Cherry-pick en $RAMA (sin commit)..."
+  if [[ "$TYPE" == "normal" ]]; then
+    echo "🎯 Cherry-pick en $BRANCH..."
+
+    PARENTS=$(git rev-list --parents -n 1 "$COMMIT" | wc -w)
+    if [ "$PARENTS" -gt 2 ]; then
+      echo "⚠ El commit es una fusión. Usando cherry-pick -m 1"
+      git cherry-pick -m 1 "$COMMIT" || {
+        if git status | grep -q "El cherry-pick anterior ahora está vacío"; then
+          git cherry-pick --skip
+          echo "⚠️ Cherry-pick vacío (fusión). Saltado."
+        else
+          echo "❌ Error en cherry-pick fusión"
+          exit 1
+        fi
+      }
+    else
+      git cherry-pick "$COMMIT" || {
+        if git status | grep -q "El cherry-pick anterior ahora está vacío"; then
+          git cherry-pick --skip
+          echo "⚠️ Cherry-pick vacío. Saltado."
+        else
+          echo "❌ Error en cherry-pick"
+          exit 1
+        fi
+      }
+    fi
+
+    git push origin "$BRANCH"
+
+  elif [[ "$TYPE" == "no_manifest" ]]; then
+    echo "🎯 Cherry-pick en $BRANCH (sin commit)..."
     git cherry-pick -n "$COMMIT" || exit 1
+
     echo "🔄 Restaurando __manifest__.py..."
     git restore --staged product_blueprint_manager/__manifest__.py 2>/dev/null
     git restore --staged product_configurator_attribute_price/__manifest__.py 2>/dev/null
     git restore product_blueprint_manager/__manifest__.py 2>/dev/null
     git restore product_configurator_attribute_price/__manifest__.py 2>/dev/null
+
     read -p "✍ Revisá los __manifest__.py si es necesario. ENTER para hacer commit... "
     git commit -m "Cherry-pick $COMMIT desde develop sin modificar __manifest__.py"
-    git push origin "$RAMA" || exit 1
+    git push origin "$BRANCH"
 
-  elif [[ "$TIPO" == "no_manifest_no_dir" ]]; then
-    echo "🎯 Cherry-pick en $RAMA (sin commit)..."
+  elif [[ "$TYPE" == "no_manifest_no_dir" ]]; then
+    echo "🎯 Cherry-pick en $BRANCH (sin commit)..."
     git cherry-pick -n "$COMMIT" || exit 1
+
     echo "🔄 Restaurando __manifest__.py y sale_product_configurator/..."
     git restore --staged product_blueprint_manager/__manifest__.py 2>/dev/null
     git restore --staged product_configurator_attribute_price/__manifest__.py 2>/dev/null
@@ -73,32 +113,30 @@ sync_commit() {
     git restore product_blueprint_manager/__manifest__.py 2>/dev/null
     git restore product_configurator_attribute_price/__manifest__.py 2>/dev/null
     git restore sale_product_configurator/ 2>/dev/null
+
     read -p "✍ Podés editar archivos ahora. ENTER para hacer commit... "
     git commit -m "Cherry-pick $COMMIT desde develop sin modificar __manifest__.py ni sale_product_configurator/"
-    git push origin "$RAMA" || exit 1
+    git push origin "$BRANCH"
   fi
+
+  echo "$BRANCH|$PATCH_ID" >> "$SYNC_STATE"
 }
 
-# ✅ Ejecutar cherry-pick sólo si la rama no fue sincronizada antes
+# ✅ Ejecutar cherry-pick si no fue aplicado ya
 run_if_not_synced() {
-  local BRANCH=$1
-  local COMMIT=$2
-  local TYPE=$3
+  local BRANCH="$1"
+  local COMMIT="$2"
+  local TYPE="$3"
 
-  if grep -q "^$BRANCH$" "$SYNC_STATE"; then
-    echo "✅ $BRANCH ya fue sincronada. Saltando..."
-  else
-    sync_commit "$BRANCH" "$COMMIT" "$TYPE"
-    echo "$BRANCH" >> "$SYNC_STATE"
-  fi
+  sync_commit "$BRANCH" "$COMMIT" "$TYPE"
 }
 
-# 🧠 Sincronizar las ramas indicadas
+# 🧠 Ejecutar sincronización con reanudación inteligente
 run_if_not_synced "17.0" "$LAST_COMMIT" "normal"
 run_if_not_synced "16.0" "$LAST_COMMIT" "no_manifest"
 run_if_not_synced "18.0" "$LAST_COMMIT" "no_manifest_no_dir"
 
-# 🔚 Volver a develop y limpiar estado si todo fue exitoso
+# 🔚 Volver a develop y limpiar
 git checkout "$ORIGINAL_BRANCH"
 rm -f "$SYNC_STATE"
 echo "✅ Sincronización completa. De vuelta en $ORIGINAL_BRANCH"
