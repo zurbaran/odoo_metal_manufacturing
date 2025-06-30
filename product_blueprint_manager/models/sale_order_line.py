@@ -94,27 +94,43 @@ class SaleOrderLine(models.Model):
                     if rounded_value.lower() != "error":
                         _logger.debug(f"[Blueprint] Sustituyendo '{formula_name}' → '{rounded_value}' en ID={elem_id}")
 
+                        # === 🔧 NUEVA LÓGICA DE ESTILOS ===
+                        # 1. Extraer estilo original
                         style = elem.get("style", "")
-                        font_size = "12px"
+                        font_size = None
                         fill_color = None
+                        _logger.debug(f"[Blueprint][STYLE] Nodo ID={elem_id} fórmula='{formula_name}' - style='{style}'")
+
                         for attr in style.split(";"):
                             if "font-size" in attr:
                                 font_size = attr.split(":")[1].strip()
                             elif "fill" in attr:
                                 fill_color = attr.split(":")[1].strip()
+
+                        # 2. Complementar con atributos directos si faltan
                         if not fill_color and elem.get("fill"):
                             fill_color = elem.get("fill")
-                        if elem.get("font-size"):
+                            _logger.debug(f"[Blueprint][STYLE] Nodo ID={elem_id} fill directo='{fill_color}'")
+                        if not font_size and elem.get("font-size"):
                             font_size = elem.get("font-size")
+                            _logger.debug(f"[Blueprint][STYLE] Nodo ID={elem_id} font-size directo='{font_size}'")
 
-                        formula_filtered = blueprint.formula_ids.filtered(lambda f: f.name.name == formula_name)
+                        # 3. Aplicar estilos desde la fórmula (si están definidos)
+                        formula_filtered = blueprint.formula_ids.filtered(lambda f: f.name and f.name.svg_element_id == elem_id)
+                        if not formula_filtered:
+                            _logger.warning(f"[Blueprint] No se encontró fórmula con ID SVG '{elem_id}' para '{formula_name}'")
                         formula_obj = formula_filtered[0] if formula_filtered else None
                         if formula_obj:
                             _logger.debug(f"[Blueprint] Usando estilo configurado para '{formula_name}': fill={formula_obj.fill_color}, font_size={formula_obj.font_size}")
                             font_size = formula_obj.font_size or font_size
                             fill_color = formula_obj.fill_color or fill_color
 
+                        # 4. Defaults si siguen vacíos
+                        font_size = font_size or "12px"
+                        fill_color = fill_color or "#000000"
+
                         final_style = f"fill:{fill_color}; font-size:{font_size};"
+                        _logger.debug(f"[Blueprint][STYLE] Nodo ID={elem_id} estilo aplicado final='{final_style}'")
 
                         transform = elem.get("transform", "")
                         x = elem.get("x", "0")
@@ -135,6 +151,7 @@ class SaleOrderLine(models.Model):
                         })
                         text_element.text = rounded_value
                         elem.getparent().replace(elem, text_element)
+
                     else:
                         _logger.warning(f"[Blueprint] Valor de fórmula '{formula_name}' es 'error'. No se reemplaza. Se marca el nodo.")
 
@@ -163,7 +180,6 @@ class SaleOrderLine(models.Model):
                     _logger.debug(f"[Blueprint] No hay fórmula configurada para '{formula_name}', se mantiene sin cambios en el SVG.")
 
             new_svg_data = etree.tostring(root, pretty_print=True, encoding="utf-8").decode("utf-8")
-            new_svg_base64 = base64.b64encode(new_svg_data.encode("utf-8"))
 
             # Guardar adjunto SVG
             attachment = self.env["ir.attachment"].create({
@@ -316,6 +332,7 @@ class SaleOrderLine(models.Model):
                 'attachment_id': result['attachment_id'],
                 'markup': result['svg_markup'],
                 'png_base64': result['png_base64'],
+                'blueprint_name': blueprint.name,
             })
 
         if not evaluated_svgs:

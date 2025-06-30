@@ -34,7 +34,7 @@
                                                 <!-- Producto -->
                                                 <p><t t-out="line.product_id.name"/></p>
                                                 <p>Plano: 
-                                                    <t t-out="line.product_id.product_tmpl_id.blueprint_ids[counter].name"/>
+                                                    <t t-out="blueprint['blueprint_name']"/>
                                                 </p>
                                             </td>
 
