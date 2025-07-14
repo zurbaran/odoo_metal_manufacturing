@@ -39,7 +39,10 @@
                                 <sheet>
                                     <group>
                                         <field name="product_id" required="1"/>
-                                        <field name="blueprint_id" required="1" options="{'no_create': True}"/>
+                                        <field name="blueprint_id"
+                                               required="1"
+                                               options="{'no_create': True}"
+                                               domain="[('product_id', '=', product_id)]"/>
                                         <field name="available_name_ids" invisible="1"/>
                                         <field name="name"
                                             required="1"
