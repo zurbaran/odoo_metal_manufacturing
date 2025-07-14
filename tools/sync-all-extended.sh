@@ -30,6 +30,8 @@ IS_PUSHED=$(git branch -r --contains "$LAST_COMMIT" | grep "origin/develop")
 if [ -z "$IS_PUSHED" ]; then
   echo "🔄 El último commit no ha sido pusheado. Ejecutando push..."
   git push origin develop || exit 1
+  # 👇 Después del push, actualizar el valor
+  IS_PUSHED=$(git branch -r --contains "$LAST_COMMIT" | grep "origin/develop")
 fi
 
 echo "🔍 Último commit: $LAST_COMMIT"
