@@ -30,14 +30,24 @@ IS_PUSHED=$(git branch -r --contains "$LAST_COMMIT" | grep "origin/develop")
 if [ -z "$IS_PUSHED" ]; then
   echo "🔄 El último commit no ha sido pusheado. Ejecutando push..."
   git push origin develop || exit 1
-  # 👇 Después del push, actualizar el valor
-  IS_PUSHED=$(git branch -r --contains "$LAST_COMMIT" | grep "origin/develop")
 fi
 
 echo "🔍 Último commit: $LAST_COMMIT"
 
 # ✅ Obtener patch-id del último commit
 PATCH_ID=$(git show "$LAST_COMMIT" | git patch-id --stable | awk '{print $1}')
+
+# === Función para comprobar si el patch ya existe en una rama ===
+branch_has_patch() {
+  local BRANCH="$1"
+  if git log "$BRANCH" --pretty=format:"%H" | while read -r commit; do
+    git show "$commit" | git patch-id --stable
+  done | grep -q "$PATCH_ID"; then
+    return 0
+  else
+    return 1
+  fi
+}
 
 # === Función principal de sincronización ===
 sync_commit() {
@@ -48,14 +58,9 @@ sync_commit() {
   echo "🧭 Cambiando a $BRANCH..."
   git checkout "$BRANCH" || exit 1
 
-  # 🧠 Verificar si ya se aplicó el mismo patch (contenido)
-  if grep -q "^$BRANCH|$PATCH_ID$" "$SYNC_STATE"; then
-    echo "✅ $BRANCH ya contiene el patch. Saltando..."
-    return
-  fi
-
-  if git branch --contains "$COMMIT" | grep -q "$BRANCH"; then
-    echo "🔁 El commit ya está presente en $BRANCH. Saltando..."
+  # 🧠 Verificar si ya se aplicó por patch-id
+  if branch_has_patch "$BRANCH"; then
+    echo "✅ $BRANCH ya contiene el commit (por contenido). Saltando..."
     echo "$BRANCH|$PATCH_ID" >> "$SYNC_STATE"
     return
   fi
@@ -69,7 +74,7 @@ sync_commit() {
         echo "✅ Cherry-pick fusión exitoso"
       elif git status | grep -q "El cherry-pick anterior ahora está vacío"; then
         git cherry-pick --skip
-        echo "⚠️ Cherry-pick vacío (fusión). Saltado."
+        echo "⚠ Cherry-pick vacío (fusión). Saltado."
       else
         echo "❌ Error en cherry-pick fusión"
         exit 1
@@ -79,7 +84,7 @@ sync_commit() {
         echo "✅ Cherry-pick normal exitoso"
       elif git status | grep -q "El cherry-pick anterior ahora está vacío"; then
         git cherry-pick --skip
-        echo "⚠️ Cherry-pick vacío. Saltado."
+        echo "⚠ Cherry-pick vacío. Saltado."
       else
         echo "❌ Error en cherry-pick"
         exit 1
@@ -114,7 +119,7 @@ sync_commit() {
     fi
 
     if git diff --staged --quiet; then
-      echo "⚠️ No hay cambios para commitear. Commit vacío."
+      echo "⚠ No hay cambios para commitear. Commit vacío."
       git commit --allow-empty -m "Cherry-pick $COMMIT ya aplicado en $BRANCH"
     else
       read -p "✍ Revisá los archivos restaurados. ENTER para hacer commit... "
