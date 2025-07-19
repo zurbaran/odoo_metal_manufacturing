@@ -1,4 +1,4 @@
-from odoo import models, fields, api
+from odoo import models, fields
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -9,9 +9,7 @@ class ProductTemplate(models.Model):
 
     _inherit = "product.template"
 
-    blueprint_ids = fields.One2many(
-        "product.blueprint", "product_id", string="Planos"
-    )
+    blueprint_ids = fields.One2many("product.blueprint", "product_id", string="Planos")
     formula_ids = fields.One2many(
         "product.blueprint.formula", "product_id", string="Fórmulas"
     )
@@ -56,7 +54,9 @@ class ProductTemplate(models.Model):
             _logger.error("Sale order line is required for generating the blueprint.")
             return False
 
-        _logger.info(f"Generando reporte de blueprint para el producto {self.name} (SO line ID: {sale_order_line.id})")
+        _logger.info(
+            f"Generando reporte de blueprint para el producto {self.name} (SO line ID: {sale_order_line.id})"
+        )
 
         report_action = self.env["ir.actions.report"]._get_report_from_name(
             "product_blueprint_manager.action_report_sale_order_blueprint"
