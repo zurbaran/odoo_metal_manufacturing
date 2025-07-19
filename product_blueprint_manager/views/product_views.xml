@@ -7,11 +7,11 @@
             <xpath expr="//sheet/notebook" position="inside">
                 <page string="Planos y Fórmulas">
                     <group string="Planos">
-                        <field name="blueprint_ids" mode="kanban,tree,form">
-                            <tree>
+                        <field name="blueprint_ids" mode="kanban,list,form">
+                            <list>
                                 <field name="name"/>
                                 <field name="product_id"/>
-                            </tree>
+                            </list>
                             <form>
                                 <sheet>
                                     <group>
@@ -30,11 +30,11 @@
                     </group>
                     <group string="Fórmulas">
                         <field name="formula_ids" context="{'reload_on_create': True}">
-                            <tree>
+                            <list>
                                 <field name="name"/>
                                 <field name="blueprint_id"/>
                                 <field name="formula_expression"/>
-                            </tree>
+                            </list>
                             <form>
                                 <sheet>
                                     <group>

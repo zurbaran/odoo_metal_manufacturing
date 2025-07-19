@@ -25,14 +25,18 @@ class ProductBlueprintHook(models.AbstractModel):
                 if val.custom_value is not None:
                     try:
                         result[var_name] = int(val.custom_value)
-                        _logger.debug(f"[Blueprint][HOOK] Personalizado: {var_name} = {int(val.custom_value)}")
+                        _logger.debug(
+                            f"[Blueprint][HOOK] Personalizado: {var_name} = {int(val.custom_value)}"
+                        )
                     except Exception:
-                        _logger.warning(f"[Blueprint][HOOK] Valor no numérico en custom: {val.custom_value}")
+                        _logger.warning(
+                            f"[Blueprint][HOOK] Valor no numérico en custom: {val.custom_value}"
+                        )
 
         # 🔹 Valores estándar, proyectados solo si el atributo tiene is_custom relacionado
         standard_values = (
-            sale_order_line.product_template_attribute_value_ids +
-            sale_order_line.product_no_variant_attribute_value_ids
+            sale_order_line.product_template_attribute_value_ids
+            + sale_order_line.product_no_variant_attribute_value_ids
         ).filtered(lambda v: not v.is_custom)
 
         for val in standard_values:
@@ -47,8 +51,12 @@ class ProductBlueprintHook(models.AbstractModel):
 
             try:
                 result[var_name] = int(val.name)
-                _logger.debug(f"[Blueprint][HOOK] Estándar proyectado: {var_name} = {int(val.name)}")
+                _logger.debug(
+                    f"[Blueprint][HOOK] Estándar proyectado: {var_name} = {int(val.name)}"
+                )
             except ValueError:
-                _logger.info(f"[Blueprint][HOOK] Ignorado '{val.name}' para '{var_name}': no es entero")
+                _logger.info(
+                    f"[Blueprint][HOOK] Ignorado '{val.name}' para '{var_name}': no es entero"
+                )
 
         return result

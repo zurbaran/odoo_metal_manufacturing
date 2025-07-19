@@ -152,7 +152,7 @@ product_blueprint_manager/
 
 ## 🧷 Módulo mantenido por
 
-Zurbaran Sistemas de Producción  
+Zurbaran Sistemas de Producción
 Repositorio oficial: https://github.com/zurbaran/odoo_metal_manufacturing
 
 ---

@@ -1,4 +1,5 @@
 # README.md
+
 # Auto Journal by Company
 
 Este módulo asigna automáticamente el diario contable (`account.journal`) en facturas de cliente y proveedor (`account.move`) en función de:
@@ -35,4 +36,4 @@ Este módulo incluye pruebas automáticas:
 
 ## Autor
 
-Antonio Caballero 
+Antonio Caballero
