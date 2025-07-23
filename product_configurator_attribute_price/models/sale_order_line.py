@@ -11,6 +11,14 @@ class SaleOrderLine(models.Model):
     considerando las fórmulas de los atributos.
     """
     _inherit = 'sale.order.line'
+    
+    price_modified = fields.Monetary(
+        string='Precio Modificado',
+        currency_field='currency_id',
+        compute='_compute_price_modified',
+        store=False
+    )
+
 
     @api.depends('product_id', 'product_custom_attribute_value_ids', 'product_no_variant_attribute_value_ids')
     def _compute_price_unit(self):
@@ -81,3 +89,11 @@ class SaleOrderLine(models.Model):
             # Asignar precio final al campo price_unit
             line.price_unit = price_so_far
             _logger.info(f"[Line {line.id}] Precio final calculado: {line.price_unit}")
+            
+    @api.depends('price_unit')
+    def _compute_price_modified(self):
+        for line in self:
+            # Se muestra el mismo valor que price_unit, pero podrías aplicar lógica adicional aquí.
+            line.price_modified = line.price_unit
+
+
