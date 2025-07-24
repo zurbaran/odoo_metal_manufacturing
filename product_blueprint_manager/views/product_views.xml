@@ -47,11 +47,11 @@
               name="formula_ids"
               context="{'reload_on_create': True}"
             >
-                            <tree>
+                            <list>
                                 <field name="name" />
                                 <field name="blueprint_id" />
                                 <field name="formula_expression" />
-                            </tree>
+                            </list>
                             <form>
                                 <sheet>
                                     <group>
