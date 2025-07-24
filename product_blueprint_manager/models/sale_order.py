@@ -1,5 +1,6 @@
-from odoo import models
 import logging
+
+from odoo import models
 
 _logger = logging.getLogger(__name__)
 
@@ -61,4 +62,4 @@ class SaleOrder(models.Model):
                     f"[Blueprint] Generando nombre de archivo para reporte de compra: Plano_Compra_{self.name}"
                 )
                 return f"Plano_Compra_{self.name}"
-        return super(SaleOrder, self)._get_report_base_filename()
+        return super()._get_report_base_filename()

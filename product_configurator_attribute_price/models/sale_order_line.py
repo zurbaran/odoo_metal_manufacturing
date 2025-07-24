@@ -1,6 +1,7 @@
-from odoo import models, api, fields
-import math
 import logging
+import math
+
+from odoo import api, fields, models
 
 _logger = logging.getLogger(__name__)
 
@@ -12,12 +13,11 @@ class SaleOrderLine(models.Model):
     """
 
     _inherit = "sale.order.line"
-    
     price_modified = fields.Monetary(
-        string='Precio Modificado',
-        currency_field='currency_id',
-        compute='_compute_price_modified',
-        store=False
+        string="Precio Modificado",
+        currency_field="currency_id",
+        compute="_compute_price_modified",
+        store=False,
     )
 
     @api.depends(
@@ -126,7 +126,7 @@ class SaleOrderLine(models.Model):
             line.price_unit = price_so_far
             _logger.info(f"[Line {line.id}] Precio final calculado: {line.price_unit}")
 
-    @api.depends('price_unit')
+    @api.depends("price_unit")
     def _compute_price_modified(self):
         for line in self:
             line.price_modified = line.price_unit

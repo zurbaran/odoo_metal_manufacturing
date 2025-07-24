@@ -1,5 +1,6 @@
 import logging
-from odoo import models, api
+
+from odoo import api, models
 
 _logger = logging.getLogger(__name__)
 
@@ -56,7 +57,7 @@ class AccountMove(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         moves = super().create(vals_list)
-        for move, vals in zip(moves, vals_list):
+        for move, vals in zip(moves, vals_list, strict=False):
             if (
                 not vals.get("journal_id")
                 and vals.get("company_id")

@@ -1,9 +1,8 @@
 {
     "name": "Product Blueprint Manager",
-    "version": "18.0.6.0.3",
+    "version": "18.0.7.0.3",
     "category": "Manufacturing",
-    "summary": """
-            Gestione planos de productos y genere documentos de forma dinámica.
+    "summary": """Gestione planos de productos y genere documentos de forma dinámica.
         Este módulo permite la gestión de planos de productos, incluyendo
         la vinculación de documentos característicos y la generación de documentos dinámicos
         con fórmulas integradas basadas en atributos de producto.
@@ -26,6 +25,7 @@
         "views/menu.xml",
         "reports/sale_order_report.xml",
         "reports/purchase_order_report.xml",
+        "reports/blueprint_report.xml",
     ],
     "installable": True,
     "application": True,

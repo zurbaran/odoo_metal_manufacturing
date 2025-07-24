@@ -1,0 +1,31 @@
+
+fix = true
+
+[lint]
+extend-select = [
+    "B",
+    "C90",
+    "E501",
+    "I",
+    "UP",
+]
+extend-safe-fixes = ["UP008"]
+exclude = ["setup/*"]
+ignore = ["E501", "C901", ]
+
+[format]
+exclude = ["setup/*"]
+
+[per-file-ignores]
+"__init__.py" = ["F401", "I001"]
+"__manifest__.py" = ["B018"]
+
+[isort]
+section-order = ["future", "standard-library", "third-party", "odoo", "odoo-addons", "first-party", "local-folder"]
+
+[isort.sections]
+"odoo" = ["odoo"]
+"odoo-addons" = ["odoo.addons"]
+
+[mccabe]
+max-complexity = 16

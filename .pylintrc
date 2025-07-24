@@ -1,20 +1,18 @@
 [MASTER]
-load-plugins = pylint_odoo
-score = n
+load-plugins=pylint_odoo
+score=n
 
 [ODOOLINT]
-readme-template-url = "https://github.com/OCA/maintainer-tools/blob/master/template/module/README.rst"
-manifest-required-authors = Antonio Caballero
-manifest-required-keys = license
-manifest-deprecated-keys = description,active
-license-allowed = AGPL-3,GPL-2,GPL-2 or any later version,GPL-3,GPL-3 or any later version,LGPL-3
-valid-odoo-versions = 18.0
+readme-template-url="https://github.com/OCA/maintainer-tools/blob/master/template/module/README.rst"
+manifest-required-authors=Antonio Caballero
+manifest-required-keys=license
+manifest-deprecated-keys=description,active
+license-allowed=AGPL-3,GPL-2,GPL-2 or any later version,GPL-3,GPL-3 or any later version,LGPL-3
+valid-odoo-versions=18.0
 
 [MESSAGES CONTROL]
-disable = all
-
-enable =
-    anomalous-backslash-in-string,
+disable=all
+enable=anomalous-backslash-in-string,
     api-one-deprecated,
     api-one-multi-together,
     assignment-from-none,
@@ -28,7 +26,6 @@ enable =
     duplicate-xml-fields,
     duplicate-xml-record-id,
     eval-referenced,
-    eval-used,
     incoherent-interpreter-exec-perm,
     license-allowed,
     manifest-author-string,
@@ -90,11 +87,9 @@ enable =
     xml-attribute-translatable,
     xml-deprecated-qweb-directive,
     xml-deprecated-tree-attribute,
-    external-request-timeout,
-    redefined-builtin,
-    too-complex
+    external-request-timeout
 
 [REPORTS]
-msg-template = {path}:{line}: [{msg_id}({symbol}), {obj}] {msg}
-output-format = colorized
-reports = no
+msg-template={path}:{line}: [{msg_id}({symbol}), {obj}] {msg}
+output-format=colorized
+reports=no
