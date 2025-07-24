@@ -1,8 +1,10 @@
-from odoo import models, fields, api, _
-from odoo.exceptions import ValidationError, UserError
 import base64
 import logging
+
 from lxml import etree
+
+from odoo import _, api, fields, models
+from odoo.exceptions import UserError, ValidationError
 
 _logger = logging.getLogger(__name__)
 
@@ -61,18 +63,27 @@ class ProductBlueprint(models.Model):
 
                 for node in formula_nodes:
                     formula_name = self._extract_formula_name_from_node(node)
+                    element_id = node.get("id")
+
                     _logger.debug(
-                        f"[Blueprint] Nodo analizado - fórmula: '{formula_name}'"
+                        f"[Blueprint] Nodo analizado - fórmula: '{formula_name}' ID nodo: '{element_id}'"
                     )
                     if not formula_name:
                         _logger.info(
                             "[Blueprint] Nodo omitido - no se pudo determinar un nombre de fórmula"
                         )
                         continue
+                    if not element_id:
+                        _logger.warning(
+                            f"[Blueprint] Nodo sin ID detectado. Se omite fórmula '{formula_name}'"
+                        )
+                        continue
 
-                    fill_color, font_size, font_family = (
-                        self._extract_style_from_node_or_children(node)
-                    )
+                    (
+                        fill_color,
+                        font_size,
+                        font_family,
+                    ) = self._extract_style_from_node_or_children(node)
                     _logger.debug(
                         f"[Blueprint] Estilos detectados para '{formula_name}': fill={fill_color}, size={font_size}, font={font_family}"
                     )
@@ -80,6 +91,7 @@ class ProductBlueprint(models.Model):
                     existing = self.env["product.blueprint.formula.name"].search(
                         [
                             ("name", "=", formula_name),
+                            ("svg_element_id", "=", element_id),
                             ("blueprint_id", "=", blueprint.id),
                         ],
                         limit=1,
@@ -87,11 +99,12 @@ class ProductBlueprint(models.Model):
 
                     if not existing:
                         _logger.info(
-                            f"[Blueprint] Creando nueva fórmula: '{formula_name}' con color={fill_color}, tamaño={font_size}"
+                            f"[Blueprint] Creando nueva fórmula: '{formula_name}' con ID='{element_id}', color={fill_color}, tamaño={font_size}"
                         )
                         self.env["product.blueprint.formula.name"].create(
                             {
                                 "name": formula_name,
+                                "svg_element_id": element_id,
                                 "blueprint_id": blueprint.id,
                                 "fill_color": fill_color,
                                 "font_size": font_size,
@@ -99,12 +112,12 @@ class ProductBlueprint(models.Model):
                         )
                     else:
                         _logger.debug(
-                            f"[Blueprint] Fórmula ya existente: '{formula_name}', se omite creación."
+                            f"[Blueprint] Fórmula ya existente: '{formula_name}' con ID='{element_id}', se omite creación."
                         )
 
             except Exception as e:
                 _logger.exception("[Blueprint] Error al procesar el archivo SVG")
-                raise UserError(_("Error al procesar el archivo SVG: %s") % e)
+                raise UserError(f"Error al procesar el archivo SVG: {e}") from e
 
     def _extract_formula_name_from_node(self, node):
         """
@@ -218,7 +231,7 @@ class ProductBlueprint(models.Model):
 
     def write(self, vals):
         _logger.info(f"[Blueprint] Modificación del blueprint '{self.name}'")
-        result = super(ProductBlueprint, self).write(vals)
+        result = super().write(vals)
         _logger.debug(
             "[Blueprint] Intentando extraer fórmulas después de la modificación..."
         )

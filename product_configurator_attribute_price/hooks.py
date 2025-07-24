@@ -1,5 +1,6 @@
-from odoo import models
 import logging
+
+from odoo import models
 
 _logger = logging.getLogger(__name__)
 
@@ -24,6 +25,7 @@ if "product.blueprint.attribute.hook" in models.Model._inherits:
                 f"[Hook] Valores personalizados capturados: {attribute_values}"
             )
             return attribute_values
+
 else:
 
     class ProductConfiguratorAttributeHook(models.AbstractModel):

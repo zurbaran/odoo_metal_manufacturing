@@ -1,12 +1,14 @@
-from odoo import models, fields, api, _
-from odoo.exceptions import ValidationError
-import base64
-from lxml import etree
-import logging
 import ast
+import base64
+import logging
 import math
-from markupsafe import Markup
+
 import cairosvg
+from lxml import etree
+from markupsafe import Markup
+
+from odoo import _, api, fields, models
+from odoo.exceptions import ValidationError
 
 _logger = logging.getLogger(__name__)
 
@@ -15,7 +17,7 @@ class SaleOrderLine(models.Model):
     _inherit = "sale.order.line"
 
     blueprint_custom_values = fields.Char(
-        compute="_capture_blueprint_custom_values",
+        compute="_compute_blueprint_custom_values",
     )
 
     blueprint_attachment_id = fields.Many2one(
@@ -23,7 +25,7 @@ class SaleOrderLine(models.Model):
     )
 
     @api.depends("product_id", "product_custom_attribute_value_ids")
-    def _capture_blueprint_custom_values(self):
+    def _compute_blueprint_custom_values(self):
         hook = self.env["product.blueprint.hook"]
         for line in self:
             _logger.debug(
@@ -109,6 +111,9 @@ class SaleOrderLine(models.Model):
                         style = elem.get("style", "")
                         font_size = "12px"
                         fill_color = None
+                        _logger.debug(
+                            f"[Blueprint][STYLE] Nodo ID={elem_id} fórmula='{formula_name}' - style='{style}'"
+                        )
                         for attr in style.split(";"):
                             if "font-size" in attr:
                                 font_size = attr.split(":")[1].strip()
@@ -116,12 +121,24 @@ class SaleOrderLine(models.Model):
                                 fill_color = attr.split(":")[1].strip()
                         if not fill_color and elem.get("fill"):
                             fill_color = elem.get("fill")
-                        if elem.get("font-size"):
+                            _logger.debug(
+                                f"[Blueprint][STYLE] Nodo ID={elem_id} fill directo='{fill_color}'"
+                            )
+                        if not font_size and elem.get("font-size"):
                             font_size = elem.get("font-size")
+                            _logger.debug(
+                                f"[Blueprint][STYLE] Nodo ID={elem_id} font-size directo='{font_size}'"
+                            )
 
+                        # 3. Aplicar estilos desde la fórmula (si están definidos)
                         formula_filtered = blueprint.formula_ids.filtered(
-                            lambda f: f.name.name == formula_name
+                            lambda f, elem_id=elem_id: f.name
+                            and f.name.svg_element_id == elem_id
                         )
+                        if not formula_filtered:
+                            _logger.warning(
+                                f"[Blueprint] No se encontró fórmula con ID SVG '{elem_id}' para '{formula_name}'"
+                            )
                         formula_obj = formula_filtered[0] if formula_filtered else None
                         if formula_obj:
                             _logger.debug(
@@ -131,7 +148,9 @@ class SaleOrderLine(models.Model):
                             fill_color = formula_obj.fill_color or fill_color
 
                         final_style = f"fill:{fill_color}; font-size:{font_size};"
-
+                        _logger.debug(
+                            f"[Blueprint][STYLE] Nodo ID={elem_id} estilo aplicado final='{final_style}'"
+                        )
                         transform = elem.get("transform", "")
                         x = elem.get("x", "0")
                         y = elem.get("y", "0")
@@ -232,7 +251,7 @@ class SaleOrderLine(models.Model):
 
         except Exception as e:
             _logger.exception("[Blueprint] Error en la evaluación del plano")
-            raise ValidationError(f"Error procesando el SVG: {str(e)}")
+            raise ValidationError(f"Error procesando el SVG: {e}") from e
 
     def safe_evaluate_formula(self, expression, variables):
         """
@@ -384,6 +403,7 @@ class SaleOrderLine(models.Model):
                     "attachment_id": result["attachment_id"],
                     "markup": result["svg_markup"],
                     "png_base64": result["png_base64"],
+                    "blueprint_name": blueprint.name,
                 }
             )
 

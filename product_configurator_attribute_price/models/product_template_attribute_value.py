@@ -1,7 +1,8 @@
-from odoo import models, fields, _
-from odoo.exceptions import ValidationError
-import math
 import logging
+import math
+
+from odoo import _, fields, models
+from odoo.exceptions import ValidationError
 
 _logger = logging.getLogger(__name__)
 
@@ -81,4 +82,4 @@ class ProductTemplateAttributeValue(models.Model):
             _logger.error(f"Error evaluating formula for attribute '{self.name}': {e}")
             raise ValidationError(
                 _(f"Error evaluating formula for attribute '{self.name}': {e}")
-            )
+            ) from e
