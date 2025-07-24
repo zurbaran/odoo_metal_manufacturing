@@ -7,7 +7,7 @@ El módulo `Product Configurator Attribute Price` extiende la funcionalidad de c
 #### Funcionalidades Principales
 
 1. **Definición de Fórmulas de Precio:**
-   - **Campo `price_formula`:** Permite definir fórmulas de precio dinámicas utilizando variables como `custom_value` y `price_so_far`. 
+   - **Campo `price_formula`:** Permite definir fórmulas de precio dinámicas utilizando variables como `custom_value` y `price_so_far`.
      - `custom_value`: Utilizado para atributos que requieren valores personalizados, como medidas. Este valor se ingresa a través de la "Entrada de cuadrícula de variante" en el presupuesto.
      - `price_so_far`: Utilizado para aplicar incrementos acumulativos basados en el precio calculado hasta el momento. Este acumulador considera los incrementos de otros atributos y el `price_extra`.
 
@@ -31,7 +31,7 @@ El módulo `Product Configurator Attribute Price` extiende la funcionalidad de c
 
 #### Descripción de los Archivos del Módulo
 
-1. **`__init__.py`:** 
+1. **`__init__.py`:**
    - Importa y carga los modelos del módulo.
 
 2. **`__manifest__.py`:**

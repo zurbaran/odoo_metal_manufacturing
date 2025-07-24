@@ -1,7 +1,8 @@
-from odoo import models, fields, _
-from odoo.exceptions import ValidationError
-import math
 import logging
+import math
+
+from odoo import _, fields, models
+from odoo.exceptions import ValidationError
 
 _logger = logging.getLogger(__name__)
 
@@ -11,15 +12,15 @@ class ProductTemplateAttributeValue(models.Model):
     Hereda de product.template.attribute.value para agregar la funcionalidad
     de cálculo de precio por fórmula.
     """
-    _inherit = 'product.template.attribute.value'
+
+    _inherit = "product.template.attribute.value"
 
     price_formula = fields.Char(
-        string="Price Formula",
-        help=_(
+        help=(
             "Define a formula to calculate the price variation dynamically. "
             "Use 'custom_value' and 'price_so_far' as variables. "
             "Example: (math.ceil(custom_value / 50) * 50 - 950) // 50 * 4 or (price_so_far * 0.2)"
-        )
+        ),
     )
 
     def calculate_price_increment(self, custom_value, price_so_far):
@@ -37,10 +38,14 @@ class ProductTemplateAttributeValue(models.Model):
             ValidationError: Si hay un error al evaluar la fórmula.
         """
         _logger.debug(f"Starting calculate_price_increment for attribute {self.name}")
-        _logger.debug(f"Formula: {self.price_formula}, custom_value: {custom_value}, price_so_far: {price_so_far}")
+        _logger.debug(
+            f"Formula: {self.price_formula}, custom_value: {custom_value}, price_so_far: {price_so_far}"
+        )
 
         if not self.price_formula:
-            _logger.info(f"No price formula defined for attribute {self.name}. Using price_extra: {self.price_extra}")
+            _logger.info(
+                f"No price formula defined for attribute {self.name}. Using price_extra: {self.price_extra}"
+            )
             return self.price_extra  # Si no hay fórmula, usa el incremento fijo
 
         try:
@@ -53,9 +58,9 @@ class ProductTemplateAttributeValue(models.Model):
 
             # Variables adicionales que pueden ser útiles en las fórmulas
             variables = {
-                'custom_value': custom_value,
-                'price_so_far': price_so_far,
-                'math': math  # Para permitir el uso de funciones de math
+                "custom_value": custom_value,
+                "price_so_far": price_so_far,
+                "math": math,  # Para permitir el uso de funciones de math
             }
             allowed_names = {"__builtins__": None}
             allowed_names.update(variables)
@@ -66,11 +71,15 @@ class ProductTemplateAttributeValue(models.Model):
 
             # Asegurarse de que el incremento no sea negativo
             if increment < 0:
-                _logger.warning(f"Negative increment calculated: {increment}. Resetting to 0.")
+                _logger.warning(
+                    f"Negative increment calculated: {increment}. Resetting to 0."
+                )
                 increment = 0
 
             _logger.info(f"Increment calculated: {increment}")
             return float(increment)
         except Exception as e:
             _logger.error(f"Error evaluating formula for attribute '{self.name}': {e}")
-            raise ValidationError(_(f"Error evaluating formula for attribute '{self.name}': {e}"))
+            raise ValidationError(
+                _(f"Error evaluating formula for attribute '{self.name}': {e}")
+            ) from e

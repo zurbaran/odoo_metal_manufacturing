@@ -1,5 +1,6 @@
-from odoo import models, fields, api
 import logging
+
+from odoo import models
 
 _logger = logging.getLogger(__name__)
 
@@ -45,10 +46,20 @@ class SaleOrder(models.Model):
             and self.env.context.get("active_id") == self.id
         ):
             report = self.env.context.get("report")
-            if report == "product_blueprint_manager.report_sale_order_blueprint_document":
-                _logger.debug(f"[Blueprint] Generando nombre de archivo para reporte de fabricación: Plano_Fabricacion_{self.name}")
+            if (
+                report
+                == "product_blueprint_manager.report_sale_order_blueprint_document"
+            ):
+                _logger.debug(
+                    f"[Blueprint] Generando nombre de archivo para reporte de fabricación: Plano_Fabricacion_{self.name}"
+                )
                 return f"Plano_Fabricacion_{self.name}"
-            elif report == "product_blueprint_manager.report_purchase_order_blueprint_document":
-                _logger.debug(f"[Blueprint] Generando nombre de archivo para reporte de compra: Plano_Compra_{self.name}")
+            elif (
+                report
+                == "product_blueprint_manager.report_purchase_order_blueprint_document"
+            ):
+                _logger.debug(
+                    f"[Blueprint] Generando nombre de archivo para reporte de compra: Plano_Compra_{self.name}"
+                )
                 return f"Plano_Compra_{self.name}"
-        return super(SaleOrder, self)._get_report_base_filename()
+        return super()._get_report_base_filename()

@@ -1,7 +1,7 @@
 <odoo>
     <record id="paperformat_blueprint_reports" model="report.paperformat">
         <field name="name">Formato para Reportes de Planos</field>
-        <field name="default" eval="True"/>
+        <field name="default" eval="True" />
         <field name="format">A4</field>
         <field name="page_height">0</field>
         <field name="page_width">0</field>

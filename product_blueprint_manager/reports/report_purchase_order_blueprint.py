@@ -1,7 +1,9 @@
-from odoo import models
 import logging
 
+from odoo import models
+
 _logger = logging.getLogger(__name__)
+
 
 class ReportPurchaseOrderBlueprint(models.AbstractModel):
     _name = "report.product_blueprint_manager.report_purchase_order_blueprint"
@@ -12,10 +14,12 @@ class ReportPurchaseOrderBlueprint(models.AbstractModel):
         for order in orders:
             _logger.debug(f"[Blueprint][Purchase] Procesando orden {order.name}")
             for line in order.order_line:
-                _logger.debug(f"[Blueprint][Purchase] Línea {line.id} - Producto: {line.product_id.name}")
-                line._get_evaluated_blueprint(type_blueprint='purchase')
+                _logger.debug(
+                    f"[Blueprint][Purchase] Línea {line.id} - Producto: {line.product_id.name}"
+                )
+                line._get_evaluated_blueprint(type_blueprint="purchase")
         return {
-            'doc_ids': docids,
-            'doc_model': 'sale.order',
-            'docs': orders,
+            "doc_ids": docids,
+            "doc_model": "sale.order",
+            "docs": orders,
         }

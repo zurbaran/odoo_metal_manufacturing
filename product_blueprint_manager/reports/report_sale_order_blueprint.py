@@ -1,7 +1,9 @@
-from odoo import models
 import logging
 
+from odoo import models
+
 _logger = logging.getLogger(__name__)
+
 
 class ReportBlueprintAutoGenerate(models.AbstractModel):
     _name = "report.product_blueprint_manager.report_sale_order_blueprint"
@@ -12,10 +14,12 @@ class ReportBlueprintAutoGenerate(models.AbstractModel):
         for order in orders:
             _logger.debug(f"[Blueprint][Auto] Procesando orden {order.name}")
             for line in order.order_line:
-                _logger.debug(f"[Blueprint][Auto] Línea {line.id} - Producto: {line.product_id.name}")
+                _logger.debug(
+                    f"[Blueprint][Auto] Línea {line.id} - Producto: {line.product_id.name}"
+                )
                 line._get_evaluated_blueprint()
         return {
-            'doc_ids': docids,
-            'doc_model': 'sale.order',
-            'docs': orders,
+            "doc_ids": docids,
+            "doc_model": "sale.order",
+            "docs": orders,
         }
