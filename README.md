@@ -6,59 +6,33 @@ Este repositorio contiene desarrollos para la vertical de manufactura en Odoo, i
 - `product_blueprint_manager`
 - `auto_journal_by_company`
 
-Cada módulo incluye su propio `README.md` con detalles específicos.
+Cada módulo mantiene su propio `README.md` con detalles específicos.
 
 ---
 
-## 🔄 Sincronización entre ramas (`develop` → `17.0` y `16.0`)
+## 🌳 Estructura de ramas
 
-Este proyecto mantiene tres ramas principales:
+Este proyecto sigue el flujo de trabajo recomendado por la **OCA**:
 
-- `develop`: rama activa de desarrollo (basada en Odoo 17)
-- `17.0`: versión estable para Odoo 17 (**se mantiene completamente sincronizada con `develop`**)
-- `16.0`: versión para Odoo 16 (**recibe sincronización parcial** – se excluyen los archivos `__manifest__.py`)
+- `16.0`: versión estable para Odoo 16.
+- `17.0`: versión estable y **rama principal de desarrollo** (Odoo 17).
+- `18.0`: versión para Odoo 18 (migrada desde `17.0`).
 
----
-
-## ⚙️ Scripts disponibles en `tools/`
-
-| Script                       | Descripción                                                                                 |
-|-----------------------------|---------------------------------------------------------------------------------------------|
-| `sync-last-to-17.sh`        | Cherry-pick del último commit de `develop` a `17.0`, con `push` automático.                |
-| `sync-last-to-16.sh`        | Cherry-pick del último commit de `develop` a `16.0`, **sin modificar `__manifest__.py`**. |
-| `git-cp17.sh <commit>`      | Cherry-pick manual de un commit específico a `17.0`.                                        |
-| `git-cp16.sh <commit>`      | Cherry-pick manual de un commit a `16.0`, permitiendo edición manual de los manifests.     |
-| `sync-all.sh`               | Versión combinada e inteligente: sincroniza el último commit de `develop` a `17.0` y `16.0`, permitiendo edición manual del manifest antes del commit. |
+> **Nota:** No existe rama `develop`. Los cambios se realizan directamente en la rama correspondiente a la versión de Odoo (normalmente `17.0`) y, si es necesario, se portan a otras ramas.
 
 ---
 
-## 🔐 Protección de `__manifest__.py` en `16.0`
+## 🔄 Propagación de cambios entre versiones
 
-Los scripts de sincronización restauran automáticamente los siguientes archivos tras hacer cherry-pick:
+Cuando un cambio realizado en `17.0` debe aplicarse también en `18.0` o `16.0`, se utilizan **herramientas OCA** para portarlo:
 
-- `product_blueprint_manager/__manifest__.py`
-- `product_configurator_attribute_price/__manifest__.py`
+- [oca-port](https://github.com/OCA/oca-port): detecta y aplica commits que faltan entre ramas.
+- Cherry-pick manual: para casos puntuales.
 
-Esto permite que `develop` y `17.0` evolucionen con los cambios de Odoo 17, sin interferir con los requerimientos específicos de Odoo 16.
-
-> Durante el proceso de sincronización con `16.0`, se te dará la oportunidad de editar manualmente los manifests antes de hacer commit.
-
----
-
-### 🛠️ Ejemplo de sincronización completa
-
+### **Ejemplo usando el script `tools/oca-sync.sh`:**
 ```bash
-./tools/sync-all.sh
-```
+./tools/oca-sync.sh 17.0 18.0
 
-Este comando:
-
-1. Verifica que estés en la rama `develop`
-2. Aplica el último commit a `17.0` automáticamente
-3. Luego lo aplica a `16.0`, permitiendo que edites los manifests antes del commit
-4. Vuelve a tu rama original
-
----
 
 ## 🚨 Seguridad
 
