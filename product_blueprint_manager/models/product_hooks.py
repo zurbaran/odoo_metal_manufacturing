@@ -44,7 +44,8 @@ class ProductBlueprintHook(models.AbstractModel):
             attr = val.attribute_id
             custom_vals = attr.value_ids.filtered(lambda v: v.is_custom)
             if not custom_vals:
-                continue  # este atributo no tiene variable de fórmula (ej: Color, Vidrio...)
+                # este atributo no tiene variable de fórmula (ej: Color, Vidrio...)
+                continue
 
             var_name = custom_vals[0].name
             if var_name in result:
