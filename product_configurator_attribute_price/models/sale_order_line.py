@@ -130,5 +130,6 @@ class SaleOrderLine(models.Model):
     @api.depends("price_unit")
     def _compute_price_modified(self):
         for line in self:
-            # Se muestra el mismo valor que price_unit, pero podrías aplicar lógica adicional aquí.
+            # Se muestra el mismo valor que price_unit, pero podrías aplicar lógica
+            # adicional aquí.
             line.price_modified = line.price_unit
