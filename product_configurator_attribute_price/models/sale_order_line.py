@@ -71,11 +71,17 @@ class SaleOrderLine(models.Model):
                             increment = 0
                         price_so_far += increment
                         _logger.debug(
-                            f"[Line {line.id}] Incremento por custom_value ({attribute_value.name}): {increment}"
+                            "[Line %s] Incremento por custom_value (%s): %s",
+                            line.id,
+                            attribute_value.name,
+                            increment,
                         )
                     except Exception as e:
                         _logger.exception(
-                            f"[Line {line.id}] Error al evaluar la fórmula para {attribute_value.name}: {e}"
+                            "[Line %s] Error al evaluar la fórmula para %s: %s",
+                            line.id,
+                            attribute_value.name,
+                            e,
                         )
                         continue
 
@@ -96,11 +102,17 @@ class SaleOrderLine(models.Model):
                             increment = 0
                         price_so_far += increment
                         _logger.debug(
-                            f"[Line {line.id}] Incremento por price_so_far ({no_variant_attribute.name}): {increment}"
+                            "[Line %s] Incremento por price_so_far (%s): %s",
+                            line.id,
+                            no_variant_attribute.name,
+                            increment,
                         )
                     except Exception as e:
                         _logger.exception(
-                            f"[Line {line.id}] Error al evaluar la fórmula para {no_variant_attribute.name}: {e}"
+                            "[Line %s] Error al evaluar la fórmula para %s: %s",
+                            line.id,
+                            no_variant_attribute.name,
+                            e,
                         )
                         continue
 
@@ -112,14 +124,20 @@ class SaleOrderLine(models.Model):
                 if attribute_value and attribute_value.price_extra:
                     price_so_far += attribute_value.price_extra
                     _logger.debug(
-                        f"[Line {line.id}] Incremento por price_extra ({attribute_value.name}): {attribute_value.price_extra}"
+                        "[Line %s] Incremento por price_extra (%s): %s",
+                        line.id,
+                        attribute_value.name,
+                        attribute_value.price_extra,
                     )
 
             for no_variant_attribute in line.product_no_variant_attribute_value_ids:
                 if no_variant_attribute and no_variant_attribute.price_extra:
                     price_so_far += no_variant_attribute.price_extra
                     _logger.debug(
-                        f"[Line {line.id}] Incremento por price_extra ({no_variant_attribute.name}): {no_variant_attribute.price_extra}"
+                        "[Line %s] Incremento por price_extra (%s): %s",
+                        line.id,
+                        no_variant_attribute.name,
+                        no_variant_attribute.price_extra,
                     )
 
             # Asignar precio final al campo price_unit
