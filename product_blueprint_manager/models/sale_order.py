@@ -6,7 +6,8 @@ _logger = logging.getLogger(__name__)
 
 
 class SaleOrder(models.Model):
-    """Extensión del modelo sale.order para la impresión del reporte de blueprints."""
+    """Extensión del modelo sale.order para la impresión del
+    reporte de blueprints."""
 
     _inherit = "sale.order"
 
@@ -17,7 +18,10 @@ class SaleOrder(models.Model):
         """
         self.ensure_one()
         _logger.debug(
-            f"[Blueprint] Acción ejecutada: impresión de blueprints de fabricación para el pedido: {self.name}"
+            (
+                "[Blueprint] Acción ejecutada: impresión de blueprints de "
+                f"fabricación para el pedido: {self.name}"
+            )
         )
 
         return self.env.ref(
@@ -26,16 +30,20 @@ class SaleOrder(models.Model):
 
     def action_print_purchase_blueprint(self):
         self.ensure_one()
-        _logger.debug(
-            f"[Blueprint] Acción ejecutada: impresión de blueprints de compra para el pedido: {self.name}"
-        )
+            _logger.debug(
+                (
+                    "[Blueprint] Acción ejecutada: impresión de blueprints de "
+                    f"compra para el pedido: {self.name}"
+                )
+            )
         return self.env.ref(
             "product_blueprint_manager.action_report_purchase_order_blueprint"
         ).report_action(self)
 
     def _get_report_base_filename(self):
         """
-        Sobreescribe el nombre base del reporte para el nuevo informe de blueprints.
+        Sobreescribe el nombre base del reporte para el nuevo informe de
+        blueprints.
 
         Returns:
             str: El nombre base del reporte.
@@ -48,18 +56,32 @@ class SaleOrder(models.Model):
             report = self.env.context.get("report")
             if (
                 report
-                == "product_blueprint_manager.report_sale_order_blueprint_document"
+                == (
+                    "product_blueprint_manager.report_"
+                    "sale_order_blueprint_document"
+                )
             ):
                 _logger.debug(
-                    f"[Blueprint] Generando nombre de archivo para reporte de fabricación: Plano_Fabricacion_{self.name}"
+                    (
+                        "[Blueprint] Generando nombre de archivo para "
+                        "reporte de "
+                        f"fabricación: Plano_Fabricacion_{self.name}"
+                    )
                 )
                 return f"Plano_Fabricacion_{self.name}"
             elif (
                 report
-                == "product_blueprint_manager.report_purchase_order_blueprint_document"
+                == (
+                    "product_blueprint_manager.report_"
+                    "purchase_order_blueprint_document"
+                )
             ):
                 _logger.debug(
-                    f"[Blueprint] Generando nombre de archivo para reporte de compra: Plano_Compra_{self.name}"
+                    (
+                        "[Blueprint] Generando nombre de archivo para "
+                        "reporte de "
+                        f"compra: Plano_Compra_{self.name}"
+                    )
                 )
                 return f"Plano_Compra_{self.name}"
         return super()._get_report_base_filename()
