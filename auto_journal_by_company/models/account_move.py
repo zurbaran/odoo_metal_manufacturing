@@ -24,8 +24,8 @@ class AccountMove(models.Model):
             if move.journal_id:
                 _logger.debug(
                     (
-                        "[auto_journal_by_company] journal_id already set (%s),"
-                        " skipping auto-selection"
+                        "[auto_journal_by_company] journal_id already set "
+                        "(%s), skipping auto-selection"
                     ),
                     move.journal_id.id,
                 )
@@ -49,7 +49,10 @@ class AccountMove(models.Model):
                 if journal:
                     move.journal_id = journal
                     _logger.info(
-                        "[auto_journal_by_company] ONCHANGE: journal_id set to %s (%s)",
+                        (
+                            "[auto_journal_by_company] ONCHANGE: "
+                            "journal_id set to %s (%s)"
+                        ),
                         journal.id,
                         journal.name,
                     )
@@ -72,9 +75,10 @@ class AccountMove(models.Model):
                 and vals.get("company_id")
                 and vals.get("move_type")
             ):
-                journal_type = {"out_invoice": "sale", "in_invoice": "purchase"}.get(
-                    vals["move_type"]
-                )
+                journal_type = {
+                    "out_invoice": "sale",
+                    "in_invoice": "purchase",
+                }.get(vals["move_type"])
                 if journal_type:
                     journal = self.env["account.journal"].search(
                         [
@@ -100,7 +104,8 @@ class AccountMove(models.Model):
                         _logger.warning(
                             (
                                 "[auto_journal_by_company] CREATE: "
-                                "No se encontró diario para tipo '%s' y empresa %s"
+                                "No se encontró diario para tipo '%s' y "
+                                "empresa %s"
                             ),
                             journal_type,
                             vals["company_id"],
@@ -108,8 +113,8 @@ class AccountMove(models.Model):
             else:
                 _logger.debug(
                     (
-                        "[auto_journal_by_company] CREATE: journal_id ya definido "
-                        "o datos insuficientes para move_type=%s"
+                        "[auto_journal_by_company] CREATE: journal_id ya "
+                        "definido o datos insuficientes para move_type=%s"
                     ),
                     vals.get("move_type"),
                 )
