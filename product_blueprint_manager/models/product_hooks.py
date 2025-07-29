@@ -14,7 +14,8 @@ class ProductBlueprintHook(models.AbstractModel):
         """
         Devuelve variables para las fórmulas del blueprint:
         - Si es un valor is_custom: variable = valor personalizado.
-        - Si no es is_custom, pero el atributo tiene un is_custom (como mmAltura), asignamos el valor estándar como entero.
+        - Si no es is_custom, pero el atributo tiene un is_custom
+          (como mmAltura), asignamos el valor estándar como entero.
         """
         result = {}
 
@@ -27,14 +28,21 @@ class ProductBlueprintHook(models.AbstractModel):
                     try:
                         result[var_name] = int(val.custom_value)
                         _logger.debug(
-                            f"[Blueprint][HOOK] Personalizado: {var_name} = {int(val.custom_value)}"
+                            (
+                                "[Blueprint][HOOK] Personalizado: "
+                                f"{var_name} = {int(val.custom_value)}"
+                            )
                         )
                     except Exception:
                         _logger.warning(
-                            f"[Blueprint][HOOK] Valor no numérico en custom: {val.custom_value}"
+                            (
+                                "[Blueprint][HOOK] Valor no numérico en "
+                                f"custom: {val.custom_value}"
+                            )
                         )
 
-        # 🔹 Valores estándar, proyectados solo si el atributo tiene is_custom relacionado
+        # 🔹 Valores estándar, proyectados solo si el atributo tiene
+        #    is_custom relacionado
         standard_values = (
             sale_order_line.product_template_attribute_value_ids
             + sale_order_line.product_no_variant_attribute_value_ids
@@ -44,7 +52,8 @@ class ProductBlueprintHook(models.AbstractModel):
             attr = val.attribute_id
             custom_vals = attr.value_ids.filtered(lambda v: v.is_custom)
             if not custom_vals:
-                # este atributo no tiene variable de fórmula (ej: Color, Vidrio...)
+                # este atributo no tiene variable de fórmula
+                # (ej: Color, Vidrio...)
                 continue
 
             var_name = custom_vals[0].name
@@ -54,11 +63,17 @@ class ProductBlueprintHook(models.AbstractModel):
             try:
                 result[var_name] = int(val.name)
                 _logger.debug(
-                    f"[Blueprint][HOOK] Estándar proyectado: {var_name} = {int(val.name)}"
+                    (
+                        f"[Blueprint][HOOK] Estándar proyectado: {var_name} = "
+                        f"{int(val.name)}"
+                    )
                 )
             except ValueError:
                 _logger.info(
-                    f"[Blueprint][HOOK] Ignorado '{val.name}' para '{var_name}': no es entero"
+                    (
+                        f"[Blueprint][HOOK] Ignorado '{val.name}' para "
+                        f"'{var_name}': no es entero"
+                    )
                 )
 
         return result
