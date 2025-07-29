@@ -2,11 +2,13 @@
     "name": "Product Blueprint Manager",
     "version": "17.0.7.0.3",
     "category": "Manufacturing",
-    "summary": """Gestione planos de productos y genere documentos de forma dinámica.
-        Este módulo permite la gestión de planos de productos, incluyendo
-        la vinculación de documentos característicos y la generación de documentos dinámicos
-        con fórmulas integradas basadas en atributos de producto.
-    """,
+    "summary": (
+        "Gestione planos de productos y genere documentos de forma dinámica. "
+        "Este módulo permite la gestión de planos de productos, incluyendo "
+        "la vinculación de documentos característicos y la generación de "
+        "documentos dinámicos con fórmulas integradas basadas en atributos de "
+        "producto."
+    ),
     "author": "Antonio Caballero",
     "maintainer": "Antonio Caballero",
     "website": "https://github.com/zurbaran/odoo_metal_manufacturing",

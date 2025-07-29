@@ -12,7 +12,10 @@ class AccountMove(models.Model):
     def _onchange_company_or_type(self):
         for move in self:
             _logger.debug(
-                "[auto_journal_by_company] ONCHANGE triggered: company_id=%s, move_type=%s, journal_id=%s",
+                (
+                    "[auto_journal_by_company] ONCHANGE triggered: "
+                    "company_id=%s, move_type=%s, journal_id=%s"
+                ),
                 move.company_id.id,
                 move.move_type,
                 move.journal_id.id if move.journal_id else None,
@@ -20,7 +23,10 @@ class AccountMove(models.Model):
 
             if move.journal_id:
                 _logger.debug(
-                    "[auto_journal_by_company] journal_id already set (%s), skipping auto-selection",
+                    (
+                        "[auto_journal_by_company] journal_id already set (%s),"
+                        " skipping auto-selection"
+                    ),
                     move.journal_id.id,
                 )
                 continue
@@ -49,7 +55,10 @@ class AccountMove(models.Model):
                     )
                 else:
                     _logger.warning(
-                        "[auto_journal_by_company] ONCHANGE: No journal found for type '%s' and company %s",
+                        (
+                            "[auto_journal_by_company] ONCHANGE: "
+                            "No journal found for type '%s' and company %s"
+                        ),
                         journal_type,
                         move.company_id.name,
                     )
@@ -77,21 +86,31 @@ class AccountMove(models.Model):
                     )
                     if journal:
                         move.journal_id = journal
+                        message = (
+                            "[auto_journal_by_company] CREATE: "
+                            "Asignado journal_id=%s (%s) para company_id=%s"
+                        )
                         _logger.info(
-                            "[auto_journal_by_company] CREATE: Asignado journal_id=%s (%s) para company_id=%s",
+                            message,
                             journal.id,
                             journal.name,
                             vals["company_id"],
                         )
                     else:
                         _logger.warning(
-                            "[auto_journal_by_company] CREATE: No se encontró diario para tipo '%s' y empresa %s",
+                            (
+                                "[auto_journal_by_company] CREATE: "
+                                "No se encontró diario para tipo '%s' y empresa %s"
+                            ),
                             journal_type,
                             vals["company_id"],
                         )
             else:
                 _logger.debug(
-                    "[auto_journal_by_company] CREATE: journal_id ya definido o datos insuficientes para move_type=%s",
+                    (
+                        "[auto_journal_by_company] CREATE: journal_id ya definido "
+                        "o datos insuficientes para move_type=%s"
+                    ),
                     vals.get("move_type"),
                 )
 
