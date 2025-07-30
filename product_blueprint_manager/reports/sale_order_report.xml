@@ -146,6 +146,7 @@
                                             </td>
                                         </tr>
                                     </table>
+
                                     <!-- Mostrar atributos filtrados de la línea (solo los que tengan valor y sean Color, Altura o Vidrio) -->
                                     <t
                     t-if="line.product_custom_attribute_value_ids or line.product_no_variant_attribute_value_ids"
@@ -177,6 +178,7 @@
                                                         </li>
                                                     </t>
                                                 </t>
+
                                                 <!-- Atributos sin variante (no editables por el cliente, pero configurados en la plantilla) -->
                                                 <t
                           t-foreach="line.product_no_variant_attribute_value_ids"
@@ -196,6 +198,7 @@
                                                         </li>
                                                     </t>
                                                 </t>
+
                                             </ul>
                                         </div>
                                     </t>
