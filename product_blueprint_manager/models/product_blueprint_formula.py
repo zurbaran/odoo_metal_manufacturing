@@ -16,7 +16,11 @@ class ProductBlueprintFormula(models.Model):
         help="Seleccione el nombre de la fórmula según las etiquetas del SVG.",
     )
     formula_expression = fields.Char("Expresión de la Fórmula", required=True)
-    product_id = fields.Many2one("product.template", string="Producto", required=True)
+    product_id = fields.Many2one(
+        "product.template",
+        string="Producto",
+        required=True,
+    )
     blueprint_id = fields.Many2one(
         "product.blueprint", string="Plano", required=True, ondelete="cascade"
     )
@@ -38,11 +42,13 @@ class ProductBlueprintFormula(models.Model):
         for record in self:
             if record.product_id:
                 custom_attribute_values = (
-                    record.product_id.valid_product_template_attribute_line_ids.mapped(
-                        "attribute_id.value_ids"
-                    ).filtered(lambda v: v.is_custom)
+                    record.product_id.valid_product_template_attribute_line_ids
+                    .mapped("attribute_id.value_ids")
+                    .filtered(lambda v: v.is_custom)
                 )
-                variable_names = [value.name for value in custom_attribute_values]
+                variable_names = [
+                    value.name for value in custom_attribute_values
+                ]
                 record.available_attributes = ", ".join(variable_names)
             else:
                 record.available_attributes = ""
@@ -75,7 +81,10 @@ class ProductBlueprintFormula(models.Model):
             self.fill_color = self.name.fill_color
             self.font_size = self.name.font_size
             _logger.debug(
-                "[Blueprint][Formula] Cargando estilos desde '%s': fill_color=%s, font_size=%s",
+                (
+                    "[Blueprint][Formula] Cargando estilos desde '%s': "
+                    "fill_color=%s, font_size=%s"
+                ),
                 self.name.name,
                 self.fill_color,
                 self.font_size,
@@ -84,15 +93,22 @@ class ProductBlueprintFormula(models.Model):
     @api.onchange("blueprint_id")
     def _onchange_blueprint_id(self):
         if self.blueprint_id:
-            domain = self._get_available_formula_names_domain(self.blueprint_id)
+            domain = self._get_available_formula_names_domain(
+                self.blueprint_id
+            )
             _logger.debug(
-                "[Blueprint][Formula] Dominio calculado para blueprint_id %s: %s",
+                (
+                    "[Blueprint][Formula] Dominio calculado para "
+                    "blueprint_id %s: %s"
+                ),
                 self.blueprint_id.id,
                 domain,
             )
             return {"domain": {"name": domain}}
         else:
-            _logger.debug("[Blueprint][Formula] No se ha seleccionado ningún plano.")
+            _logger.debug(
+                "[Blueprint][Formula] No se ha seleccionado ningún plano."
+            )
             return {"domain": {"name": [("id", "=", False)]}}
 
     def _get_available_formula_names_domain(self, blueprint):
@@ -100,17 +116,25 @@ class ProductBlueprintFormula(models.Model):
         Formula = self.env["product.blueprint.formula"]
 
         # Fórmulas ya asignadas a este plano
-        used_ids = Formula.search([("blueprint_id", "=", blueprint.id)]).mapped(
-            "name.id"
+        used_ids = (
+            Formula.search([("blueprint_id", "=", blueprint.id)]).mapped(
+                "name.id"
+            )
         )
 
         # Solo devolvemos IDs válidos para este blueprint y que no estén en uso
         available_ids = FormulaName.search(
-            [("blueprint_id", "=", blueprint.id), ("id", "not in", used_ids)]
+            [
+                ("blueprint_id", "=", blueprint.id),
+                ("id", "not in", used_ids),
+            ]
         ).ids
 
         _logger.debug(
-            "[Blueprint][Formula] Etiquetas disponibles para blueprint %s: %s",
+            (
+                "[Blueprint][Formula] Etiquetas disponibles para "
+                "blueprint %s: %s"
+            ),
             blueprint.id,
             available_ids,
         )
@@ -120,7 +144,10 @@ class ProductBlueprintFormula(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         _logger.info("[Blueprint][Formula] Creando nuevas fórmulas.")
-        _logger.debug("[Blueprint][Formula] Datos recibidos en create: %s", vals_list)
+        _logger.debug(
+            "[Blueprint][Formula] Datos recibidos en create: %s",
+            vals_list,
+        )
         return super().create(vals_list)
 
     def write(self, vals):
@@ -145,6 +172,9 @@ class ProductBlueprintFormula(models.Model):
         (
             "unique_formula_per_blueprint",
             "unique(name, blueprint_id)",
-            "Ya existe una fórmula configurada para esta etiqueta en este plano.",
+            (
+                "Ya existe una fórmula configurada para esta etiqueta "
+                "en este plano."
+            ),
         ),
     ]
