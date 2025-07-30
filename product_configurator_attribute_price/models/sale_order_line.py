@@ -13,6 +13,7 @@ class SaleOrderLine(models.Model):
     """
 
     _inherit = "sale.order.line"
+
     price_modified = fields.Monetary(
         string="Precio Modificado",
         currency_field="currency_id",
