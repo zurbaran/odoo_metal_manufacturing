@@ -14,7 +14,7 @@
                 <field
           name="price_formula"
           string="Fórmula de Precio"
-          placeholder="Ejemplos: (math.ceil(custom_value / 50) * 50 - 950) // 50 * 4 o (price_so_far * 0.2)"
+          placeholder="Ejemplos: ((custom_value + 49) // 50 - 10) * 5 o (price_so_far * 0.2)"
         />
             </xpath>
         </field>
