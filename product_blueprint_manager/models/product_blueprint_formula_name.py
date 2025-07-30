@@ -46,7 +46,6 @@ class ProductBlueprintFormulaName(models.Model):
                 f"con color={vals.get('fill_color')} "
                 f"tamaño={vals.get('font_size')} - "
                 f"Nodo SVG ID={vals.get('svg_element_id')}"
-                
             )
         return super().create(vals_list)
 

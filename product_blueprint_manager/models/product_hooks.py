@@ -28,17 +28,13 @@ class ProductBlueprintHook(models.AbstractModel):
                     try:
                         result[var_name] = int(val.custom_value)
                         _logger.debug(
-                            (
-                                "[Blueprint][HOOK] Personalizado: "
-                                f"{var_name} = {int(val.custom_value)}"
-                            )
+                            "[Blueprint][HOOK] Personalizado: "
+                            f"{var_name} = {int(val.custom_value)}"
                         )
                     except Exception:
                         _logger.warning(
-                            (
-                                "[Blueprint][HOOK] Valor no numérico en "
-                                f"custom: {val.custom_value}"
-                            )
+                            "[Blueprint][HOOK] Valor no numérico en "
+                            f"custom: {val.custom_value}"
                         )
 
         # 🔹 Valores estándar, proyectados solo si el atributo tiene
@@ -63,17 +59,13 @@ class ProductBlueprintHook(models.AbstractModel):
             try:
                 result[var_name] = int(val.name)
                 _logger.debug(
-                    (
-                        f"[Blueprint][HOOK] Estándar proyectado: {var_name} = "
-                        f"{int(val.name)}"
-                    )
+                    f"[Blueprint][HOOK] Estándar proyectado: {var_name} = "
+                    f"{int(val.name)}"
                 )
             except ValueError:
                 _logger.info(
-                    (
-                        f"[Blueprint][HOOK] Ignorado '{val.name}' para "
-                        f"'{var_name}': no es entero"
-                    )
+                    f"[Blueprint][HOOK] Ignorado '{val.name}' para "
+                    f"'{var_name}': no es entero"
                 )
 
         return result

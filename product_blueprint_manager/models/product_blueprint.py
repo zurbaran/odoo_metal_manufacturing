@@ -67,10 +67,8 @@ class ProductBlueprint(models.Model):
         for blueprint in self:
             if not blueprint.file:
                 _logger.warning(
-                    (
-                        f"[Blueprint] El plano '{blueprint.name}' "
-                        "no tiene archivo SVG adjunto."
-                    )
+                    f"[Blueprint] El plano '{blueprint.name}' "
+                    "no tiene archivo SVG adjunto."
                 )
                 continue
 
@@ -82,10 +80,8 @@ class ProductBlueprint(models.Model):
 
                 formula_nodes = tree.xpath("//*[@class='odoo-formula']")
                 _logger.debug(
-                    (
-                        "[Blueprint] Se encontraron "
-                        f"{len(formula_nodes)} nodos con clase 'odoo-formula'"
-                    )
+                    "[Blueprint] Se encontraron "
+                    f"{len(formula_nodes)} nodos con clase 'odoo-formula'"
                 )
 
                 for node in formula_nodes:
@@ -93,25 +89,19 @@ class ProductBlueprint(models.Model):
                     element_id = node.get("id")
 
                     _logger.debug(
-                        (
-                            "[Blueprint] Nodo analizado - fórmula: "
-                            f"'{formula_name}' ID nodo: '{element_id}'"
-                        )
+                        "[Blueprint] Nodo analizado - fórmula: "
+                        f"'{formula_name}' ID nodo: '{element_id}'"
                     )
                     if not formula_name:
                         _logger.info(
-                            (
-                                "[Blueprint] Nodo omitido - no se pudo "
-                                "determinar un nombre de fórmula"
-                            )
+                            "[Blueprint] Nodo omitido - no se pudo "
+                            "determinar un nombre de fórmula"
                         )
                         continue
                     if not element_id:
                         _logger.warning(
-                            (
-                                f"[Blueprint] Nodo sin ID detectado. "
-                                f"Se omite fórmula '{formula_name}'"
-                            )
+                            "[Blueprint] Nodo sin ID detectado. "
+                            f"Se omite fórmula '{formula_name}'"
                         )
                         continue
 
@@ -121,17 +111,14 @@ class ProductBlueprint(models.Model):
                         font_family,
                     ) = self._extract_style_from_node_or_children(node)
                     _logger.debug(
-                        (
-                            "[Blueprint] Estilos detectados para '"
-                            f"{formula_name}': "
-                            f"fill={fill_color}, size={font_size}, "
-                            f"font={font_family}"
-                        )
+                        "[Blueprint] Estilos detectados para '"
+                        f"{formula_name}': "
+                        f"fill={fill_color}, size={font_size}, "
+                        f"font={font_family}"
                     )
 
-                    existing = (
-                        self.env["product.blueprint.formula.name"].search(
-                            [
+                    existing = self.env["product.blueprint.formula.name"].search(
+                        [
                             ("name", "=", formula_name),
                             ("svg_element_id", "=", element_id),
                             ("blueprint_id", "=", blueprint.id),
@@ -141,12 +128,10 @@ class ProductBlueprint(models.Model):
 
                     if not existing:
                         _logger.info(
-                            (
-                                "[Blueprint] Creando nueva fórmula: '"
-                                f"{formula_name}' "
-                                f"con ID='{element_id}', "
-                                f"color={fill_color}, tamaño={font_size}"
-                            )
+                            "[Blueprint] Creando nueva fórmula: '"
+                            f"{formula_name}' "
+                            f"con ID='{element_id}', "
+                            f"color={fill_color}, tamaño={font_size}"
                         )
                         self.env["product.blueprint.formula.name"].create(
                             {
@@ -159,20 +144,14 @@ class ProductBlueprint(models.Model):
                         )
                     else:
                         _logger.debug(
-                            (
-                                "[Blueprint] Fórmula ya existente: '"
-                                f"{formula_name}' "
-                                f"con ID='{element_id}', se omite creación."
-                            )
+                            "[Blueprint] Fórmula ya existente: '"
+                            f"{formula_name}' "
+                            f"con ID='{element_id}', se omite creación."
                         )
 
             except Exception as e:
-                _logger.exception(
-                    "[Blueprint] Error al procesar el archivo SVG"
-                )
-                raise UserError(
-                    f"Error al procesar el archivo SVG: {e}"
-                ) from e
+                _logger.exception("[Blueprint] Error al procesar el archivo SVG")
+                raise UserError(f"Error al procesar el archivo SVG: {e}") from e
 
     def _extract_formula_name_from_node(self, node):
         """
@@ -197,16 +176,12 @@ class ProductBlueprint(models.Model):
         for candidate in candidates:
             if candidate and candidate.strip():
                 cleaned = candidate.replace("{{", "").replace("}}", "").strip()
-                _logger.debug(
-                    f"[Blueprint] Texto de fórmula encontrado: '{cleaned}'"
-                )
+                _logger.debug(f"[Blueprint] Texto de fórmula encontrado: '{cleaned}'")
                 return cleaned
 
         _logger.debug(
-            (
-                "[Blueprint] No se encontró texto visible en el nodo "
-                "ni en sus descendientes."
-            )
+            "[Blueprint] No se encontró texto visible en el nodo "
+            "ni en sus descendientes."
         )
         return None
 
@@ -236,9 +211,7 @@ class ProductBlueprint(models.Model):
         if not fill or not size or not family:
             style_attr = node.get("style")
             if style_attr:
-                fill_style, size_style, family_style = extract_from_style(
-                    style_attr
-                )
+                fill_style, size_style, family_style = extract_from_style(style_attr)
                 fill = fill or fill_style
                 size = size or size_style
                 family = family or family_style
@@ -259,10 +232,8 @@ class ProductBlueprint(models.Model):
             family = family or child.get("font-family")
 
         _logger.debug(
-            (
-                f"[Blueprint] Estilos finales extraídos: fill={fill}, "
-                f"font-size={size}, font-family={family}"
-            )
+            f"[Blueprint] Estilos finales extraídos: fill={fill}, "
+            f"font-size={size}, font-family={family}"
         )
 
         return (fill or "#000000", size or "12px", family or "Arial")
@@ -279,11 +250,9 @@ class ProductBlueprint(models.Model):
             )
             if existing:
                 _logger.warning(
-                    (
-                        "[Blueprint] Ya existe un plano con nombre '"
-                        f"{rec.name}' "
-                        f"para el producto ID {rec.product_id.id}"
-                    )
+                    "[Blueprint] Ya existe un plano con nombre '"
+                    f"{rec.name}' "
+                    f"para el producto ID {rec.product_id.id}"
                 )
                 raise ValidationError(
                     _("El nombre del plano debe ser único para cada producto.")
@@ -295,10 +264,8 @@ class ProductBlueprint(models.Model):
         for blueprint in blueprints:
             _logger.info(f"[Blueprint] Creado blueprint '{blueprint.name}'")
             _logger.debug(
-                (
-                    "[Blueprint] Intentando extraer fórmulas "
-                    "inmediatamente después de la creación..."
-                )
+                "[Blueprint] Intentando extraer fórmulas "
+                "inmediatamente después de la creación..."
             )
             blueprint._extract_svg_formulas()
         return blueprints
@@ -307,10 +274,7 @@ class ProductBlueprint(models.Model):
         _logger.info(f"[Blueprint] Modificación del blueprint '{self.name}'")
         result = super().write(vals)
         _logger.debug(
-            (
-                "[Blueprint] Intentando extraer fórmulas después de la "
-                "modificación..."
-            )
+            "[Blueprint] Intentando extraer fórmulas después de la " "modificación..."
         )
         self._extract_svg_formulas()
         return result
