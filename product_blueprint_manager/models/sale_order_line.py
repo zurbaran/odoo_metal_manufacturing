@@ -109,6 +109,8 @@ class SaleOrderLine(models.Model):
                                   '{rounded_value}' en ID={elem_id}"
                         )
 
+                        # === 🔧 NUEVA LÓGICA DE ESTILOS ===
+                        # 1. Extraer estilo original
                         style = elem.get("style", "")
                         font_size = None
                         fill_color = None
@@ -116,11 +118,14 @@ class SaleOrderLine(models.Model):
                             f"[Blueprint][STYLE] Nodo ID={elem_id}\
                                   fórmula='{formula_name}' - style='{style}'"
                         )
+
                         for attr in style.split(";"):
                             if "font-size" in attr:
                                 font_size = attr.split(":")[1].strip()
                             elif "fill" in attr:
                                 fill_color = attr.split(":")[1].strip()
+
+                        # 2. Complementar con atributos directos si faltan
                         if not fill_color and elem.get("fill"):
                             fill_color = elem.get("fill")
                             _logger.debug(
@@ -154,11 +159,16 @@ class SaleOrderLine(models.Model):
                             font_size = formula_obj.font_size or font_size
                             fill_color = formula_obj.fill_color or fill_color
 
+                        # 4. Defaults si siguen vacíos
+                        font_size = font_size or "12px"
+                        fill_color = fill_color or "#000000"
+
                         final_style = f"fill:{fill_color}; font-size:{font_size};"
                         _logger.debug(
                             f"[Blueprint][STYLE] Nodo ID={elem_id} estilo aplicado\
                                   final='{final_style}'"
                         )
+
                         transform = elem.get("transform", "")
                         x = elem.get("x", "0")
                         y = elem.get("y", "0")
@@ -192,6 +202,7 @@ class SaleOrderLine(models.Model):
                         )
                         text_element.text = rounded_value
                         elem.getparent().replace(elem, text_element)
+
                     else:
                         _logger.warning(
                             f"[Blueprint] Valor de fórmula '{formula_name}' es 'error'.\
