@@ -15,7 +15,7 @@
         />
                 <div class="container">
                 <t t-set="doc" t-value="doc" />
-                <t t-foreach="doc.order_line" t-as="line" />
+                <t t-foreach="doc.order_line" t-as="line">
                     <t
               t-set="evaluated_blueprints"
               t-value="line._get_evaluated_blueprint(type_blueprint='purchase')"
@@ -50,6 +50,7 @@
                             <t t-set="counter" t-value="counter + 1" />
                         </t>
                     </t>
+                </t>
                 </div>
                 <div
           class="oe_structure"

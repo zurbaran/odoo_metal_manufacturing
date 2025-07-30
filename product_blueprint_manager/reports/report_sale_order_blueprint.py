@@ -15,7 +15,8 @@ class ReportBlueprintAutoGenerate(models.AbstractModel):
             _logger.debug(f"[Blueprint][Auto] Procesando orden {order.name}")
             for line in order.order_line:
                 _logger.debug(
-                    f"[Blueprint][Auto] Línea {line.id} - Producto: {line.product_id.name}"
+                    f"[Blueprint][Auto] Línea {line.id} - Producto:\
+                          {line.product_id.name}"
                 )
                 line._get_evaluated_blueprint()
         return {
