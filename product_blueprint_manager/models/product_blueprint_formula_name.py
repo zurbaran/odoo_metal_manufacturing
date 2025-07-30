@@ -16,12 +16,16 @@ class ProductBlueprintFormulaName(models.Model):
         help="Nombre de la etiqueta detectada en el plano SVG.",
     )
     blueprint_id = fields.Many2one(
-        "product.blueprint", string="Plano Asociado", required=True, ondelete="cascade"
+        "product.blueprint",
+        string="Plano Asociado",
+        required=True,
+        ondelete="cascade",
     )
     fill_color = fields.Char(string="Color del Texto", default="#000000")
     font_size = fields.Char(string="Tamaño de Fuente", default="12px")
     svg_element_id = fields.Char(
-        string="ID de nodo SVG", help="ID del elemento SVG que contiene esta fórmula."
+        string="ID de nodo SVG",
+        help="ID del elemento SVG que contiene esta fórmula.",
     )
 
     _sql_constraints = [
@@ -36,25 +40,36 @@ class ProductBlueprintFormulaName(models.Model):
     def create(self, vals_list):
         for vals in vals_list:
             _logger.debug(
-                f"[Blueprint][Formula Name] Creando nueva etiqueta: '{vals.get('name')}' "
-                f"para plano ID: {vals.get('blueprint_id')} con color={vals.get('fill_color')} "
-                f"tamaño={vals.get('font_size')} - Nodo SVG ID={vals.get('svg_element_id')}"
+                (
+                    "[Blueprint][Formula Name] Creando nueva etiqueta: '"
+                    f"{vals.get('name')}' "
+                    f"para plano ID: {vals.get('blueprint_id')} "
+                    f"con color={vals.get('fill_color')} "
+                    f"tamaño={vals.get('font_size')} - "
+                    f"Nodo SVG ID={vals.get('svg_element_id')}"
+                )
             )
         return super().create(vals_list)
 
     def write(self, vals):
         for record in self:
             _logger.debug(
-                f"[Blueprint][Formula Name] Modificando etiqueta '{record.name}' "
-                f"del plano ID {record.blueprint_id.id} con cambios: {vals}"
+                (
+                    "[Blueprint][Formula Name] Modificando etiqueta '"
+                    f"{record.name}' del plano ID {record.blueprint_id.id} "
+                    f"con cambios: {vals}"
+                )
             )
         return super().write(vals)
 
     def unlink(self):
         for record in self:
             _logger.warning(
-                f"[Blueprint][Formula Name] Eliminando etiqueta '{record.name}' "
-                f"del plano ID {record.blueprint_id.id} (Nodo SVG ID={record.svg_element_id})."
+                (
+                    "[Blueprint][Formula Name] Eliminando etiqueta '"
+                    f"{record.name}' del plano ID {record.blueprint_id.id} "
+                    f"(Nodo SVG ID={record.svg_element_id})."
+                )
             )
         return super().unlink()
 
