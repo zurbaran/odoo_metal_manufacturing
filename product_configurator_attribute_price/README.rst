@@ -7,9 +7,10 @@ El módulo `Product Configurator Attribute Price` extiende la funcionalidad de c
 #### Funcionalidades Principales
 
 1. **Definición de Fórmulas de Precio:**
+
    - **Campo `price_formula`:** Permite definir fórmulas de precio dinámicas utilizando variables como `custom_value` y `price_so_far`.
-     - `custom_value`: Utilizado para atributos que requieren valores personalizados, como medidas. Este valor se ingresa a través de la "Entrada de cuadrícula de variante" en el presupuesto.
-     - `price_so_far`: Utilizado para aplicar incrementos acumulativos basados en el precio calculado hasta el momento. Este acumulador considera los incrementos de otros atributos y el `price_extra`.
+      - `custom_value`: Utilizado para atributos que requieren valores personalizados, como medidas. Este valor se ingresa a través de la "Entrada de cuadrícula de variante" en el presupuesto.
+      - `price_so_far`: Utilizado para aplicar incrementos acumulativos basados en el precio calculado hasta el momento. Este acumulador considera los incrementos de otros atributos y el `price_extra`.
 
 2. **Compatibilidad con Incrementos Fijos (`price_extra`):**
    - **Campo `price_extra`:** Mantiene la funcionalidad nativa de Odoo para incrementos fijos. Este campo se aplica después de calcular las fórmulas definidas en `price_formula`.
