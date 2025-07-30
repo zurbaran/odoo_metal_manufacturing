@@ -1,6 +1,6 @@
 {
     "name": "Product Configurator Attribute Price",
-    "version": "18.0.3.1.1",
+    "version": "18.0.4.2.1",
     "category": "Manufacturing",
     "summary": """Extiende la configuración de atributos en productos con cálculos
       dinámicos de precios
