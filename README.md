@@ -37,5 +37,3 @@ Cuando un cambio realizado en `17.0` debe aplicarse también en `18.0` o `16.0`,
 ## 🚨 Seguridad
 
 **TODO**:
-- Eliminar el uso de `eval()` para prevenir inyecciones de código.
-- Reemplazar `eval()` por la librería segura `numexpr` para evaluaciones numéricas.

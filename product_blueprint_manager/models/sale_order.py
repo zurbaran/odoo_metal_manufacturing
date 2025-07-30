@@ -18,10 +18,8 @@ class SaleOrder(models.Model):
         """
         self.ensure_one()
         _logger.debug(
-            (
-                "[Blueprint] Acción ejecutada: impresión de blueprints de "
-                f"fabricación para el pedido: {self.name}"
-            )
+            "[Blueprint] Acción ejecutada: impresión de blueprints de "
+            f"fabricación para el pedido: {self.name}"
         )
 
         return self.env.ref(
@@ -30,12 +28,10 @@ class SaleOrder(models.Model):
 
     def action_print_purchase_blueprint(self):
         self.ensure_one()
-            _logger.debug(
-                (
-                    "[Blueprint] Acción ejecutada: impresión de blueprints de "
-                    f"compra para el pedido: {self.name}"
-                )
-            )
+        _logger.debug(
+            "[Blueprint] Acción ejecutada: impresión de blueprints de "
+            f"compra para el pedido: {self.name}"
+        )
         return self.env.ref(
             "product_blueprint_manager.action_report_purchase_order_blueprint"
         ).report_action(self)
@@ -54,34 +50,22 @@ class SaleOrder(models.Model):
             and self.env.context.get("active_id") == self.id
         ):
             report = self.env.context.get("report")
-            if (
-                report
-                == (
-                    "product_blueprint_manager.report_"
-                    "sale_order_blueprint_document"
-                )
+            if report == (
+                "product_blueprint_manager.report_" "sale_order_blueprint_document"
             ):
                 _logger.debug(
-                    (
-                        "[Blueprint] Generando nombre de archivo para "
-                        "reporte de "
-                        f"fabricación: Plano_Fabricacion_{self.name}"
-                    )
+                    "[Blueprint] Generando nombre de archivo para "
+                    "reporte de "
+                    f"fabricación: Plano_Fabricacion_{self.name}"
                 )
                 return f"Plano_Fabricacion_{self.name}"
-            elif (
-                report
-                == (
-                    "product_blueprint_manager.report_"
-                    "purchase_order_blueprint_document"
-                )
+            elif report == (
+                "product_blueprint_manager.report_" "purchase_order_blueprint_document"
             ):
                 _logger.debug(
-                    (
-                        "[Blueprint] Generando nombre de archivo para "
-                        "reporte de "
-                        f"compra: Plano_Compra_{self.name}"
-                    )
+                    "[Blueprint] Generando nombre de archivo para "
+                    "reporte de "
+                    f"compra: Plano_Compra_{self.name}"
                 )
                 return f"Plano_Compra_{self.name}"
         return super()._get_report_base_filename()

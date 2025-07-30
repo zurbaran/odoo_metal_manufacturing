@@ -105,7 +105,8 @@ class SaleOrderLine(models.Model):
 
                     if rounded_value.lower() != "error":
                         _logger.debug(
-                            f"[Blueprint] Sustituyendo '{formula_name}' → '{rounded_value}' en ID={elem_id}"
+                            f"[Blueprint] Sustituyendo '{formula_name}' →\
+                                  '{rounded_value}' en ID={elem_id}"
                         )
 
                         # === 🔧 NUEVA LÓGICA DE ESTILOS ===
@@ -114,7 +115,8 @@ class SaleOrderLine(models.Model):
                         font_size = None
                         fill_color = None
                         _logger.debug(
-                            f"[Blueprint][STYLE] Nodo ID={elem_id} fórmula='{formula_name}' - style='{style}'"
+                            f"[Blueprint][STYLE] Nodo ID={elem_id}\
+                                  fórmula='{formula_name}' - style='{style}'"
                         )
 
                         for attr in style.split(";"):
@@ -127,12 +129,14 @@ class SaleOrderLine(models.Model):
                         if not fill_color and elem.get("fill"):
                             fill_color = elem.get("fill")
                             _logger.debug(
-                                f"[Blueprint][STYLE] Nodo ID={elem_id} fill directo='{fill_color}'"
+                                f"[Blueprint][STYLE] Nodo ID={elem_id}\
+                                      fill directo='{fill_color}'"
                             )
                         if not font_size and elem.get("font-size"):
                             font_size = elem.get("font-size")
                             _logger.debug(
-                                f"[Blueprint][STYLE] Nodo ID={elem_id} font-size directo='{font_size}'"
+                                f"[Blueprint][STYLE] Nodo ID={elem_id} font-size\
+                                      directo='{font_size}'"
                             )
 
                         # 3. Aplicar estilos desde la fórmula (si están definidos)
@@ -142,12 +146,15 @@ class SaleOrderLine(models.Model):
                         )
                         if not formula_filtered:
                             _logger.warning(
-                                f"[Blueprint] No se encontró fórmula con ID SVG '{elem_id}' para '{formula_name}'"
+                                f"[Blueprint] No se encontró fórmula con ID\
+                                      SVG '{elem_id}' para '{formula_name}'"
                             )
                         formula_obj = formula_filtered[0] if formula_filtered else None
                         if formula_obj:
                             _logger.debug(
-                                f"[Blueprint] Usando estilo configurado para '{formula_name}': fill={formula_obj.fill_color}, font_size={formula_obj.font_size}"
+                                f"[Blueprint] Usando estilo configurado para\
+                                      '{formula_name}': fill={formula_obj.fill_color},\
+                                        font_size={formula_obj.font_size}"
                             )
                             font_size = formula_obj.font_size or font_size
                             fill_color = formula_obj.fill_color or fill_color
@@ -158,7 +165,8 @@ class SaleOrderLine(models.Model):
 
                         final_style = f"fill:{fill_color}; font-size:{font_size};"
                         _logger.debug(
-                            f"[Blueprint][STYLE] Nodo ID={elem_id} estilo aplicado final='{final_style}'"
+                            f"[Blueprint][STYLE] Nodo ID={elem_id} estilo aplicado\
+                                  final='{final_style}'"
                         )
 
                         transform = elem.get("transform", "")
@@ -179,7 +187,8 @@ class SaleOrderLine(models.Model):
                                 )
                             except Exception:
                                 _logger.debug(
-                                    f"[Blueprint] No se pudo obtener la posición de {elem_id}, usando (0,0)"
+                                    f"[Blueprint] No se pudo obtener la posición\
+                                          de {elem_id}, usando (0,0)"
                                 )
 
                         text_element = etree.Element(
@@ -196,7 +205,8 @@ class SaleOrderLine(models.Model):
 
                     else:
                         _logger.warning(
-                            f"[Blueprint] Valor de fórmula '{formula_name}' es 'error'. No se reemplaza. Se marca el nodo."
+                            f"[Blueprint] Valor de fórmula '{formula_name}' es 'error'.\
+                                  No se reemplaza. Se marca el nodo."
                         )
 
                         existing_class = elem.get("class", "")
@@ -227,7 +237,8 @@ class SaleOrderLine(models.Model):
                         elem.getparent().append(warning_text)
                 else:
                     _logger.debug(
-                        f"[Blueprint] No hay fórmula configurada para '{formula_name}', se mantiene sin cambios en el SVG."
+                        f"[Blueprint] No hay fórmula configurada para '{formula_name}'\
+                            , se mantiene sin cambios en el SVG."
                     )
 
             new_svg_data = etree.tostring(
@@ -251,7 +262,9 @@ class SaleOrderLine(models.Model):
             png_base64 = base64.b64encode(png_output).decode("utf-8")
 
             _logger.debug(
-                f"[Blueprint] Adjunto creado: ID={attachment.id}, Nombre={attachment.name}, Res_model={attachment.res_model}, Res_id={attachment.res_id}"
+                f"[Blueprint] Adjunto creado: ID={attachment.id}, Nombre=\
+                    {attachment.name}, Res_model={attachment.res_model},\
+                          Res_id={attachment.res_id}"
             )
 
             return {
@@ -270,13 +283,15 @@ class SaleOrderLine(models.Model):
 
         Args:
             expression (str): La expresión matemática a evaluar (ej. "mmA * 2").
-            variables (dict): Diccionario con los valores de las variables (ej. {"mmA": 1500}).
+            variables (dict): Diccionario con los valores de las variables
+            (ej. {"mmA": 1500}).
 
         Returns:
             str: Resultado de la evaluación o 'Error' si ocurre un problema.
         """
         _logger.debug(
-            f"[Blueprint] Evaluando expresión: '{expression}' con variables: {variables}"
+            f"[Blueprint] Evaluando expresión: '{expression}' con variables:\
+                  {variables}"
         )
 
         try:
@@ -301,7 +316,8 @@ class SaleOrderLine(models.Model):
 
     def _get_evaluated_variables(self, sale_order_line):
         """
-        Devuelve un diccionario con los nombres de las variables personalizadas y sus valores correspondientes.
+        Devuelve un diccionario con los nombres de las variables personalizadas
+        y sus valores correspondientes.
 
         Args:
             sale_order_line (recordset): La línea de pedido de venta.
@@ -310,7 +326,8 @@ class SaleOrderLine(models.Model):
             dict: Un diccionario con las variables evaluadas.
         """
         _logger.debug(
-            f"[Blueprint] Iniciando la captura de variables evaluadas para la línea de venta ID: {sale_order_line.id}"
+            f"[Blueprint] Iniciando la captura de variables evaluadas para la línea\
+                  de venta ID: {sale_order_line.id}"
         )
 
         hook = self.env["product.blueprint.hook"]
@@ -324,7 +341,8 @@ class SaleOrderLine(models.Model):
             or not sale_order_line.product_id.product_tmpl_id
         ):
             _logger.warning(
-                f"[Blueprint] Producto o plantilla no encontrados para línea {sale_order_line.id}."
+                f"[Blueprint] Producto o plantilla no encontrados para\
+                      línea {sale_order_line.id}."
             )
             return {}
 
@@ -349,7 +367,8 @@ class SaleOrderLine(models.Model):
     def _get_evaluated_blueprint(self, type_blueprint="manufacturing"):
         self.ensure_one()
         _logger.info(
-            f"[Blueprint] Generando planos evaluados para línea {self.id} (Producto: {self.product_id.name})"
+            f"[Blueprint] Generando planos evaluados para línea {self.id}\
+                  (Producto: {self.product_id.name})"
         )
 
         old_attachments = self.env["ir.attachment"].search(
