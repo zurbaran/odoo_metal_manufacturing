@@ -40,36 +40,30 @@ class ProductBlueprintFormulaName(models.Model):
     def create(self, vals_list):
         for vals in vals_list:
             _logger.debug(
-                (
-                    "[Blueprint][Formula Name] Creando nueva etiqueta: '"
-                    f"{vals.get('name')}' "
-                    f"para plano ID: {vals.get('blueprint_id')} "
-                    f"con color={vals.get('fill_color')} "
-                    f"tamaño={vals.get('font_size')} - "
-                    f"Nodo SVG ID={vals.get('svg_element_id')}"
-                )
+                "[Blueprint][Formula Name] Creando nueva etiqueta: '"
+                f"{vals.get('name')}' "
+                f"para plano ID: {vals.get('blueprint_id')} "
+                f"con color={vals.get('fill_color')} "
+                f"tamaño={vals.get('font_size')} - "
+                f"Nodo SVG ID={vals.get('svg_element_id')}"
             )
         return super().create(vals_list)
 
     def write(self, vals):
         for record in self:
             _logger.debug(
-                (
-                    "[Blueprint][Formula Name] Modificando etiqueta '"
-                    f"{record.name}' del plano ID {record.blueprint_id.id} "
-                    f"con cambios: {vals}"
-                )
+                "[Blueprint][Formula Name] Modificando etiqueta '"
+                f"{record.name}' del plano ID {record.blueprint_id.id} "
+                f"con cambios: {vals}"
             )
         return super().write(vals)
 
     def unlink(self):
         for record in self:
             _logger.warning(
-                (
-                    "[Blueprint][Formula Name] Eliminando etiqueta '"
-                    f"{record.name}' del plano ID {record.blueprint_id.id} "
-                    f"(Nodo SVG ID={record.svg_element_id})."
-                )
+                "[Blueprint][Formula Name] Eliminando etiqueta '"
+                f"{record.name}' del plano ID {record.blueprint_id.id} "
+                f"(Nodo SVG ID={record.svg_element_id})."
             )
         return super().unlink()
 

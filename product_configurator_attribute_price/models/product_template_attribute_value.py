@@ -28,9 +28,7 @@ class ProductTemplateAttributeValue(models.Model):
     def _safe_eval(self, expression, variables):
         """Evaluate the formula expression in a safe environment."""
         allowed_names = {
-            k: v
-            for k, v in math.__dict__.items()
-            if not k.startswith("__")
+            k: v for k, v in math.__dict__.items() if not k.startswith("__")
         }
         allowed_names.update(variables)
 
@@ -52,22 +50,16 @@ class ProductTemplateAttributeValue(models.Model):
         Raises:
             ValidationError: Si hay un error al evaluar la fórmula.
         """
+        _logger.debug(f"Starting calculate_price_increment for attribute {self.name}")
         _logger.debug(
-            f"Starting calculate_price_increment for attribute {self.name}"
-        )
-        _logger.debug(
-            (
-                "Formula: %s, custom_value: %s, price_so_far: %s"
-                % (self.price_formula, custom_value, price_so_far)
-            )
+            f"Formula: {self.price_formula}, custom_value: {custom_value},\
+              price_so_far: {price_so_far}"
         )
 
         if not self.price_formula:
             _logger.info(
-                (
-                    "No price formula defined for attribute %s. Using price_extra: %s"
-                    % (self.name, self.price_extra)
-                )
+                f"No price formula defined for attribute {self.name}. Using\
+                      price_extra: {self.price_extra}"
             )
             return self.price_extra  # Si no hay fórmula, usa el incremento fijo
 

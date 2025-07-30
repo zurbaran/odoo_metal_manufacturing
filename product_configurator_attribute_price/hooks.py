@@ -12,7 +12,8 @@ if "product.blueprint.attribute.hook" in models.Model._inherits:
 
         def get_attribute_values_for_blueprint(self, sale_order_line):
             """
-            Devuelve los valores de atributos específicos usados en el configurador de productos para un blueprint.
+            Devuelve los valores de atributos específicos usados en el configurador
+              de productos para un blueprint.
             """
             attribute_values = {}
             for custom_value in sale_order_line.product_custom_attribute_value_ids:
@@ -30,11 +31,15 @@ else:
 
     class ProductConfiguratorAttributeHook(models.AbstractModel):
         _name = "product.configurator.attribute.hook"
-        _description = "Devuelve los valores de atributos específicos usados en el configurador de productos para un blueprint."
+        _description = (
+            "Devuelve los valores de atributos específicos usados en el"
+            " configurador de productos para un blueprint."
+        )
 
         def get_attribute_values_for_blueprint(self, sale_order_line):
             """
-            Devuelve los valores de atributos específicos usados en el configurador de productos para un blueprint.
+            Devuelve los valores de atributos específicos usados en el configurador de
+              productos para un blueprint.
             """
             attribute_values = {}
             for custom_value in sale_order_line.product_custom_attribute_value_ids:

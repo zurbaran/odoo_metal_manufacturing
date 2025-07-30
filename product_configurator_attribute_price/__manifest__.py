@@ -1,8 +1,9 @@
 {
     "name": "Product Configurator Attribute Price",
-    "version": "17.0.3.1.1",
+    "version": "17.0.4.2.1",
     "category": "Manufacturing",
-    "summary": """Extiende la configuración de atributos en productos con cálculos dinámicos de precios
+    "summary": """Extiende la configuración de atributos en productos con cálculos
+      dinámicos de precios
         Permite configurar productos con incrementos de precio basados en fórmulas:
         - Atributos personalizados (custom_value)
         - Incrementos fijos nativos (price_extra)

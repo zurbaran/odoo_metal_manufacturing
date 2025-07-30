@@ -15,7 +15,8 @@ class ReportPurchaseOrderBlueprint(models.AbstractModel):
             _logger.debug(f"[Blueprint][Purchase] Procesando orden {order.name}")
             for line in order.order_line:
                 _logger.debug(
-                    f"[Blueprint][Purchase] Línea {line.id} - Producto: {line.product_id.name}"
+                    f"[Blueprint][Purchase] Línea {line.id} - Producto:\
+                          {line.product_id.name}"
                 )
                 line._get_evaluated_blueprint(type_blueprint="purchase")
         return {

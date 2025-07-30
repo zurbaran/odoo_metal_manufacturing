@@ -32,17 +32,11 @@ class ProductTemplate(models.Model):
             dict: Un diccionario de valores de atributos personalizados.
         """
         _logger.debug(
-            (
-                "[Blueprint] Obteniendo valores de atributos personalizados "
-                f"para {self.name}, Linea de venta: "
-                f"{sale_order_line.id if sale_order_line else 'Ninguna'}"
-            )
+            "[Blueprint] Obteniendo valores de atributos personalizados "
+            f"para {self.name}, Linea de venta: "
+            f"{sale_order_line.id if sale_order_line else 'Ninguna'}"
         )
-        return (
-            sale_order_line.blueprint_custom_values
-            if sale_order_line
-            else {}
-        )
+        return sale_order_line.blueprint_custom_values if sale_order_line else {}
 
     # Eliminamos los metodos relacionados con la previsualizacion
     # def action_generate_blueprint_preview(self):
@@ -70,16 +64,12 @@ class ProductTemplate(models.Model):
         self.ensure_one()
 
         if not sale_order_line:
-            _logger.error(
-                "Sale order line is required for generating the blueprint."
-            )
+            _logger.error("Sale order line is required for generating the blueprint.")
             return False
 
         _logger.info(
-            (
-                "Generando reporte de blueprint para el producto "
-                f"{self.name} (SO line ID: {sale_order_line.id})"
-            )
+            "Generando reporte de blueprint para el producto "
+            f"{self.name} (SO line ID: {sale_order_line.id})"
         )
 
         report_action = self.env["ir.actions.report"]._get_report_from_name(
