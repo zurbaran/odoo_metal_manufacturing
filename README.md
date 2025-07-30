@@ -63,5 +63,3 @@ Este comando:
 ## 🚨 Seguridad
 
 **TODO**:
-- Eliminar el uso de `eval()` para prevenir inyecciones de código.
-- Reemplazar `eval()` por la librería segura `numexpr` para evaluaciones numéricas.
