@@ -1,5 +1,7 @@
-from . import blueprint_report_template
-from . import menu_views
-from . import product_views
-from . import sale_report_blueprint_final
-from . import sale_order_views
+from . import (
+    blueprint_report_template,
+    menu_views,
+    product_views,
+    sale_order_views,
+    sale_report_blueprint_final,
+)
