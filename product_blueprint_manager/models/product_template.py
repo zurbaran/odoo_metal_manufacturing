@@ -1,16 +1,20 @@
-from odoo import models, fields, api
 import logging
+
+from odoo import fields, models
 
 _logger = logging.getLogger(__name__)
 
 
 class ProductTemplate(models.Model):
-    """Extensión del modelo product.template para agregar la gestión de planos y fórmulas."""
+    """Extensión del modelo product.template para agregar
+    la gestión de planos y fórmulas."""
 
     _inherit = "product.template"
 
     blueprint_ids = fields.One2many(
-        "product.blueprint", "product_id", string="Planos"
+        "product.blueprint",
+        "product_id",
+        string="Planos",
     )
     formula_ids = fields.One2many(
         "product.blueprint.formula", "product_id", string="Fórmulas"
@@ -18,7 +22,8 @@ class ProductTemplate(models.Model):
 
     def get_custom_attribute_values(self, sale_order_line=None):
         """
-        Obtiene los valores de atributos personalizados para una línea de pedido de venta dada.
+        Obtiene los valores de atributos personalizados para una línea de
+        pedido de venta dada.
 
         Args:
             sale_order_line (recordset): La línea de pedido de venta.
@@ -27,7 +32,9 @@ class ProductTemplate(models.Model):
             dict: Un diccionario de valores de atributos personalizados.
         """
         _logger.debug(
-            f"[Blueprint] Obteniendo valores de atributos personalizados para {self.name}, Linea de venta: {sale_order_line.id if sale_order_line else 'Ninguna'}"
+            "[Blueprint] Obteniendo valores de atributos personalizados "
+            f"para {self.name}, Linea de venta: "
+            f"{sale_order_line.id if sale_order_line else 'Ninguna'}"
         )
         return sale_order_line.blueprint_custom_values if sale_order_line else {}
 
@@ -39,13 +46,17 @@ class ProductTemplate(models.Model):
     #     """
     #     return self.generate_blueprint_report(mode="preview")
 
-    # def generate_blueprint_report(self, sale_order_line=None, mode="preview"):
+    # def generate_blueprint_report(
+    #     self, sale_order_line=None, mode="preview"
+    # ):
     def generate_blueprint_report(self, sale_order_line=None):
         """
         Genera un reporte de blueprint.
 
         Args:
-            sale_order_line (recordset, optional): La línea de pedido de venta para el reporte final. Defaults to None.
+            sale_order_line (recordset, optional):
+                La línea de pedido de venta para el reporte final.
+                Defaults to None.
 
         Returns:
             dict or bool: La acción del reporte o False si hay un error.
@@ -56,7 +67,10 @@ class ProductTemplate(models.Model):
             _logger.error("Sale order line is required for generating the blueprint.")
             return False
 
-        _logger.info(f"Generando reporte de blueprint para el producto {self.name} (SO line ID: {sale_order_line.id})")
+        _logger.info(
+            "Generando reporte de blueprint para el producto "
+            f"{self.name} (SO line ID: {sale_order_line.id})"
+        )
 
         report_action = self.env["ir.actions.report"]._get_report_from_name(
             "product_blueprint_manager.action_report_sale_order_blueprint"

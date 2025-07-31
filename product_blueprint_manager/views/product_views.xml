@@ -1,61 +1,103 @@
 <odoo>
-    <record id="view_product_template_form_inherit_blueprint" model="ir.ui.view">
+    <record
+    id="view_product_template_form_inherit_blueprint"
+    model="ir.ui.view"
+  >
         <field name="name">product.template.form.inherit.blueprint</field>
         <field name="model">product.template</field>
-        <field name="inherit_id" ref="product.product_template_only_form_view"/>
+        <field
+      name="inherit_id"
+      ref="product.product_template_only_form_view"
+    />
         <field name="arch" type="xml">
             <xpath expr="//sheet/notebook" position="inside">
                 <page string="Planos y Fórmulas">
                     <group string="Planos">
                         <field name="blueprint_ids" mode="kanban,tree,form">
                             <tree>
-                                <field name="name"/>
-                                <field name="product_id"/>
+                                <field name="name" />
+                                <field name="product_id" />
                             </tree>
                             <form>
                                 <sheet>
                                     <group>
-                                        <field name="name"/>
-                                        <field name="file" widget="image" string="Archivo SVG" required="1"/>
-                                        <field name="product_id" required="1"/>
+                                        <field name="name" />
+                                        <field
+                      name="file"
+                      widget="image"
+                      string="Archivo SVG"
+                      required="1"
+                    />
+                                        <field name="product_id" required="1" />
                                     </group>
                                     <group string="Configuración del Plano">
-                                        <field name="type_blueprint"/>
-                                        <field name="attribute_filter_id"/>
-                                        <field name="attribute_value_ids" widget="many2many_tags"/>
+                                        <field name="type_blueprint" />
+                                        <field name="attribute_filter_id" />
+                                        <field
+                      name="attribute_value_ids"
+                      widget="many2many_tags"
+                    />
                                     </group>
                                 </sheet>
                             </form>
                         </field>
                     </group>
                     <group string="Fórmulas">
-                        <field name="formula_ids" context="{'reload_on_create': True}">
+                        <field
+              name="formula_ids"
+              context="{'reload_on_create': True}"
+            >
                             <tree>
-                                <field name="name"/>
-                                <field name="blueprint_id"/>
-                                <field name="formula_expression"/>
+                                <field name="name" />
+                                <field name="blueprint_id" />
+                                <field name="formula_expression" />
                             </tree>
                             <form>
                                 <sheet>
                                     <group>
-                                        <field name="product_id" required="1"/>
-                                        <field name="blueprint_id"
-                                               required="1"
-                                               options="{'no_create': True}"
-                                               domain="[('product_id', '=', product_id)]"/>
-                                        <field name="available_name_ids" invisible="1"/>
-                                        <field name="name"
-                                            required="1"
-                                            options="{'no_create': True}"
-                                            force_save="1"
-                                            domain="[('id', 'in', available_name_ids)]"
-                                            context="{'blueprint_id': blueprint_id}"/>
-                                        <field name="formula_expression" required="1"/>
-                                        <field name="available_attributes" readonly="1" string="Atributos Disponibles"/>
+                                        <field name="product_id" required="1" />
+                                        <field
+                      name="blueprint_id"
+                      required="1"
+                      options="{'no_create': True}"
+                      domain="[('product_id', '=', product_id)]"
+                    />
+                                        <field
+                      name="available_name_ids"
+                      invisible="1"
+                    />
+                                        <field
+                      name="name"
+                      required="1"
+                      options="{'no_create': True}"
+                      force_save="1"
+                      domain="[('id', 'in', available_name_ids)]"
+                      context="{'blueprint_id': blueprint_id}"
+                    />
+                                        <field
+                      name="formula_expression"
+                      required="1"
+                    />
+                                        <field
+                      name="available_attributes"
+                      readonly="1"
+                      string="Atributos Disponibles"
+                    />
                                     </group>
-                                    <group string="Estilo Visual Detectado" col="2">
-                                        <field name="fill_color" string="Color del Texto" placeholder="#000000"/>
-                                        <field name="font_size" string="Tamaño de Fuente" placeholder="12px"/>
+                                    <group
+                    string="Estilo Visual Detectado"
+                    col="2"
+                  >
+                                        <field
+                      name="fill_color"
+                      string="Color del Texto"
+                      placeholder="#000000"
+                    />
+                                        <field
+                      name="font_size"
+                      string="Tamaño de Fuente"
+                      placeholder="12px"
+                    />
                                     </group>
                                 </sheet>
                             </form>

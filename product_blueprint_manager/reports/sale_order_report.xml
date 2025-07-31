@@ -1,7 +1,10 @@
 <odoo>
     <template id="report_sale_order_blueprint_document">
         <t t-call="web.external_layout">
-            <t t-set="doc" t-value="doc.with_context(lang=doc.partner_id.lang)" />
+            <t
+        t-set="doc"
+        t-value="doc.with_context(lang=doc.partner_id.lang)"
+      />
 
             <!-- Estilos compactos -->
             <style>
@@ -14,64 +17,130 @@
             </style>
 
             <div class="page">
-                <div class="oe_structure"/>
+                <div
+          class="oe_structure"
+          id="oe_structure_purchase_order_header"
+        />
                 <div class="container">
                     <t t-foreach="doc.order_line" t-as="line">
-                        <t t-set="evaluated_blueprints" t-value="line._get_evaluated_blueprint()"/>
-                        <t t-if="evaluated_blueprints and len(evaluated_blueprints) > 0">
-                            <t t-set="counter" t-value="0"/>
-                            <t t-foreach="evaluated_blueprints" t-as="blueprint">
-                                <div style="page-break-inside: avoid; page-break-after: always;">
-                                    <h2>Planos: <t t-out="doc.name"/></h2>
+                        <t
+              t-set="evaluated_blueprints"
+              t-value="line._get_evaluated_blueprint()"
+            />
+                        <t
+              t-if="evaluated_blueprints and len(evaluated_blueprints) > 0"
+            >
+                            <t t-set="counter" t-value="0" />
+                            <t
+                t-foreach="evaluated_blueprints"
+                t-as="blueprint"
+              >
+                                <div
+                  style="page-break-inside: avoid; page-break-after: always;"
+                >
+                                    <h2>Planos: <t t-out="doc.name" /></h2>
 
                                     <!-- Tabla para dividir información -->
-                                    <table style="width: 100%; margin-bottom: 20px;">
+                                    <table
+                    style="width: 100%; margin-bottom: 20px;"
+                  >
                                         <tr>
                                             <!-- Columna izquierda: Información del documento -->
-                                            <td class="compact-lines" style="vertical-align: top; width: 50%;">
+                                            <td
+                        class="compact-lines"
+                        style="vertical-align: top; width: 50%;"
+                      >
                                                 <!-- Fecha -->
-                                                <p><span t-field="doc.date_order" t-options="{'widget': 'date'}"/></p>
+                                                <p><span
+                            t-field="doc.date_order"
+                            t-options="{'widget': 'date'}"
+                          /></p>
                                                 <!-- Producto -->
-                                                <p><t t-out="line.product_id.name"/></p>
-                                                <p>Plano: 
-                                                    <t t-out="blueprint['blueprint_name']"/>
+                                                <p><t
+                            t-out="line.product_id.name"
+                          /></p>
+                                                <p>Plano:
+                                                    <t
+                            t-out="blueprint['blueprint_name']"
+                          />
                                                 </p>
                                             </td>
 
                                             <!-- Columna derecha: Información del cliente -->
-                                            <td class="compact-lines" style="vertical-align: top; width: 50%;">
+                                            <td
+                        class="compact-lines"
+                        style="vertical-align: top; width: 50%;"
+                      >
                                                 <!-- Cliente -->
-                                                <p><span t-field="doc.partner_id.name"/></p>
+                                                <p><span
+                            t-field="doc.partner_id.name"
+                          /></p>
                                                 <!-- Direccion -->
                                                 <p>
-                                                    <t t-if="doc.partner_id.street">
-                                                        <t t-out="doc.partner_id.street"/>
+                                                    <t
+                            t-if="doc.partner_id.street"
+                          >
+                                                        <t
+                              t-out="doc.partner_id.street"
+                            />
                                                     </t>
-                                                    <t t-if="doc.partner_id.street2">
-                                                        , <t t-out="doc.partner_id.street2"/>
+                                                    <t
+                            t-if="doc.partner_id.street2"
+                          >
+                                                        , <t
+                              t-out="doc.partner_id.street2"
+                            />
                                                     </t>
                                                 </p>
                                                 <p>
-                                                    <t t-if="doc.partner_id.zip">
-                                                        <t t-out="doc.partner_id.zip"/>
+                                                    <t
+                            t-if="doc.partner_id.zip"
+                          >
+                                                        <t
+                              t-out="doc.partner_id.zip"
+                            />
                                                     </t>
-                                                    <t t-if="doc.partner_id.city">
-                                                        <t t-if="doc.partner_id.zip">, </t>
-                                                        <t t-out="doc.partner_id.city"/>
+                                                    <t
+                            t-if="doc.partner_id.city"
+                          >
+                                                        <t
+                              t-if="doc.partner_id.zip"
+                            >, </t>
+                                                        <t
+                              t-out="doc.partner_id.city"
+                            />
                                                     </t>
-                                                    <t t-if="doc.partner_id.state_id">
-                                                        <t t-if="doc.partner_id.city or doc.partner_id.zip">, </t>
-                                                        <t t-out="doc.partner_id.state_id.name"/>
+                                                    <t
+                            t-if="doc.partner_id.state_id"
+                          >
+                                                        <t
+                              t-if="doc.partner_id.city or doc.partner_id.zip"
+                            >, </t>
+                                                        <t
+                              t-out="doc.partner_id.state_id.name"
+                            />
                                                     </t>
                                                 </p>
                                                 <!-- Telefono -->
-                                                <p t-if="doc.partner_id.phone or doc.partner_id.mobile">
-                                                    <t t-if="doc.partner_id.phone">
-                                                        <span t-out="doc.partner_id.phone"/>
+                                                <p
+                          t-if="doc.partner_id.phone or doc.partner_id.mobile"
+                        >
+                                                    <t
+                            t-if="doc.partner_id.phone"
+                          >
+                                                        <span
+                              t-out="doc.partner_id.phone"
+                            />
                                                     </t>
-                                                    <t t-if="doc.partner_id.phone and doc.partner_id.mobile"> / </t>
-                                                    <t t-if="doc.partner_id.mobile">
-                                                        <span t-out="doc.partner_id.mobile"/>
+                                                    <t
+                            t-if="doc.partner_id.phone and doc.partner_id.mobile"
+                          > / </t>
+                                                    <t
+                            t-if="doc.partner_id.mobile"
+                          >
+                                                        <span
+                              t-out="doc.partner_id.mobile"
+                            />
                                                     </t>
                                                 </p>
                                             </td>
@@ -79,28 +148,53 @@
                                     </table>
 
                                     <!-- Mostrar atributos filtrados de la línea (solo los que tengan valor y sean Color, Altura o Vidrio) -->
-                                    <t t-if="line.product_custom_attribute_value_ids or line.product_no_variant_attribute_value_ids">
-                                        <div class="compact-lines" style="margin-top: 10px;">
-                                            <ul style="padding-left: 15px; margin: 0;">
+                                    <t
+                    t-if="line.product_custom_attribute_value_ids or line.product_no_variant_attribute_value_ids"
+                  >
+                                        <div
+                      class="compact-lines"
+                      style="margin-top: 10px;"
+                    >
+                                            <ul
+                        style="padding-left: 15px; margin: 0;"
+                      >
 
                                                 <!-- Atributos personalizados (con valor) -->
-                                                <t t-foreach="line.product_custom_attribute_value_ids" t-as="attr">
+                                                <t
+                          t-foreach="line.product_custom_attribute_value_ids"
+                          t-as="attr"
+                        >
                                                     <!-- Mostrar solo si el nombre del atributo está en la lista deseada -->
-                                                    <t t-if="attr.custom_product_template_attribute_value_id.attribute_id.name in ['Color', 'Altura', 'Vidrio']">
+                                                    <t
+                            t-if="attr.custom_product_template_attribute_value_id.attribute_id.name in ['Color', 'Altura', 'Vidrio']"
+                          >
                                                         <li>
-                                                            <t t-out="attr.custom_product_template_attribute_value_id.attribute_id.name"/>:
-                                                            <t t-out="attr.name"/>
+                                                            <t
+                                t-out="attr.custom_product_template_attribute_value_id.attribute_id.name"
+                              />:
+                                                            <t
+                                t-out="attr.name"
+                              />
                                                         </li>
                                                     </t>
                                                 </t>
 
                                                 <!-- Atributos sin variante (no editables por el cliente, pero configurados en la plantilla) -->
-                                                <t t-foreach="line.product_no_variant_attribute_value_ids" t-as="attr">
+                                                <t
+                          t-foreach="line.product_no_variant_attribute_value_ids"
+                          t-as="attr"
+                        >
                                                     <!-- Filtramos también por nombre -->
-                                                    <t t-if="attr.attribute_id.name in ['Color', 'Altura', 'Vidrio']">
+                                                    <t
+                            t-if="attr.attribute_id.name in ['Color', 'Altura', 'Vidrio']"
+                          >
                                                         <li>
-                                                            <t t-out="attr.attribute_id.name"/>:
-                                                            <t t-out="attr.name"/>
+                                                            <t
+                                t-out="attr.attribute_id.name"
+                              />:
+                                                            <t
+                                t-out="attr.name"
+                              />
                                                         </li>
                                                     </t>
                                                 </t>
@@ -110,15 +204,21 @@
                                     </t>
 
                                     <!-- Imagen del plano -->
-                                    <img t-if="'png_base64' in blueprint" t-att-src="'data:image/png;base64,' + blueprint['png_base64']"
-                                         style="width:100%; height:auto;"/>
+                                    <img
+                    t-if="'png_base64' in blueprint"
+                    t-att-src="'data:image/png;base64,' + blueprint['png_base64']"
+                    style="width:100%; height:auto;"
+                  />
                                 </div>
-                                <t t-set="counter" t-value="counter + 1"/>
+                                <t t-set="counter" t-value="counter + 1" />
                             </t>
                         </t>
                     </t>
                 </div>
-                <div class="oe_structure"/>
+                <div
+          class="oe_structure"
+          id="oe_structure_purchase_order_footer"
+        />
             </div>
         </t>
     </template>
@@ -126,7 +226,10 @@
     <template id="report_sale_order_blueprint">
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="doc">
-                <t t-call="product_blueprint_manager.report_sale_order_blueprint_document" t-lang="doc.partner_id.lang">
+                <t
+          t-call="product_blueprint_manager.report_sale_order_blueprint_document"
+          t-lang="doc.partner_id.lang"
+        >
                     <t t-set="doc" t-value="doc" />
                 </t>
             </t>
