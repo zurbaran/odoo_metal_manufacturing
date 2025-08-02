@@ -2,7 +2,12 @@
 
 #### Introducción
 
+
 El módulo `Product Configurator Attribute Price` extiende la funcionalidad de configuración de productos en Odoo, permitiendo la definición de fórmulas dinámicas para calcular incrementos de precio basados en atributos personalizados. Este módulo es especialmente útil para empresas que necesitan ajustar los precios de sus productos en función de características específicas, como medidas personalizadas o colores.
+#### Dependencias
+
+Para Odoo 18 este módulo requiere el uso de `product_configurator_sale` de la OCA,
+que sustituye al antiguo módulo nativo `sale_product_configurator` de Odoo 17.
 
 #### Funcionalidades Principales
 

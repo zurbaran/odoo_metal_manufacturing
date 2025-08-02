@@ -23,79 +23,88 @@ class SaleOrderLine(models.Model):
 
     @api.depends(
         "product_id",
-        "product_custom_attribute_value_ids",
-        "product_no_variant_attribute_value_ids",
+        "custom_value_ids",
+        "config_session_id",
+        "config_session_id.value_ids",
     )
     def _compute_price_unit(self):
         """
         Calcula el precio unitario, aplicando fórmulas y ajustes específicos
         para atributos configurables.
         """
+        result = super()._compute_price_unit()
+
+        ptav_model = self.env["product.template.attribute.value"]
+        try:
+            custom_ptav = self.env.ref("product_configurator.custom_attribute_value")
+        except Exception:  # pragma: no cover - ref not found if dependency missing
+            custom_ptav = None
+
         for line in self:
             if not line.product_id:
                 _logger.warning(
-                    f"[Line {line.id}] Producto no definido. Saltando cálculo."
+                    "[Line %s] Producto no definido. Saltando cálculo.", line.id
                 )
                 continue
 
-            # Precio inicial basado en el precio del producto
-            price_so_far = line.product_id.lst_price
+            price_so_far = line.price_unit
             _logger.debug(f"[Line {line.id}] Precio inicial: {price_so_far}")
+            tmpl = line.product_id.product_tmpl_id
 
-            # Procesar atributos de tipo "medida" (custom_value)
-            for custom_attribute in line.product_custom_attribute_value_ids:
-                attribute_value = (
-                    custom_attribute.custom_product_template_attribute_value_id
+            # Procesar valores personalizados
+            for custom_value in line.custom_value_ids:
+                if not custom_ptav:
+                    continue
+                ptav = ptav_model.search(
+                    [
+                        ("product_tmpl_id", "=", tmpl.id),
+                        ("attribute_id", "=", custom_value.attribute_id.id),
+                        ("product_attribute_value_id", "=", custom_ptav.id),
+                    ],
+                    limit=1,
                 )
-
-                if (
-                    attribute_value
-                    and attribute_value.price_formula
-                    and "custom_value" in attribute_value.price_formula
-                ):
+                if ptav and ptav.price_formula and "custom_value" in ptav.price_formula:
                     try:
-                        custom_value = float(custom_attribute.custom_value or 0)
-                        # Evaluar la formula de manera segura:
+                        custom_val = float(custom_value.eval())
                         increment = eval(
-                            attribute_value.price_formula,
+                            ptav.price_formula,
+                            {"__builtins__": None},
                             {
-                                "__builtins__": None
-                            },  # Evitar el uso de funciones incorporadas peligrosas
-                            {
-                                "custom_value": custom_value,
+                                "custom_value": custom_val,
                                 "price_so_far": price_so_far,
                                 "math": math,
                             },
                         )
-
                         if increment < 0:
                             increment = 0
                         price_so_far += increment
                         _logger.debug(
                             "[Line %s] Incremento por custom_value (%s): %s",
                             line.id,
-                            attribute_value.name,
+                            ptav.name,
                             increment,
                         )
                     except Exception as e:
                         _logger.exception(
                             "[Line %s] Error al evaluar la fórmula para %s: %s",
                             line.id,
-                            attribute_value.name,
+                            ptav.name if ptav else "?",
                             e,
                         )
-                        continue
 
-            # Procesar atributos de tipo "price_so_far"
-            for no_variant_attribute in line.product_no_variant_attribute_value_ids:
-                if (
-                    no_variant_attribute
-                    and no_variant_attribute.price_formula
-                    and "price_so_far" in no_variant_attribute.price_formula
-                ):
+            # Procesar atributos con price_so_far
+            for value in line.config_session_id.value_ids:
+                ptav = ptav_model.search(
+                    [
+                        ("product_tmpl_id", "=", tmpl.id),
+                        ("product_attribute_value_id", "=", value.id),
+                    ],
+                    limit=1,
+                )
+                if ptav and ptav.price_formula and "price_so_far" in ptav.price_formula:
                     try:
                         increment = eval(
-                            no_variant_attribute.price_formula,
+                            ptav.price_formula,
                             {"__builtins__": None},
                             {"price_so_far": price_so_far, "math": math},
                         )
@@ -105,45 +114,23 @@ class SaleOrderLine(models.Model):
                         _logger.debug(
                             "[Line %s] Incremento por price_so_far (%s): %s",
                             line.id,
-                            no_variant_attribute.name,
+                            ptav.name,
                             increment,
                         )
                     except Exception as e:
                         _logger.exception(
                             "[Line %s] Error al evaluar la fórmula para %s: %s",
                             line.id,
-                            no_variant_attribute.name,
+                            ptav.name,
                             e,
                         )
-                        continue
 
-            # Aplicar price_extra después de procesar las fórmulas
-            for custom_attribute in line.product_custom_attribute_value_ids:
-                attribute_value = (
-                    custom_attribute.custom_product_template_attribute_value_id
-                )
-                if attribute_value and attribute_value.price_extra:
-                    price_so_far += attribute_value.price_extra
-                    _logger.debug(
-                        "[Line %s] Incremento por price_extra (%s): %s",
-                        line.id,
-                        attribute_value.name,
-                        attribute_value.price_extra,
-                    )
-
-            for no_variant_attribute in line.product_no_variant_attribute_value_ids:
-                if no_variant_attribute and no_variant_attribute.price_extra:
-                    price_so_far += no_variant_attribute.price_extra
-                    _logger.debug(
-                        "[Line %s] Incremento por price_extra (%s): %s",
-                        line.id,
-                        no_variant_attribute.name,
-                        no_variant_attribute.price_extra,
-                    )
-
-            # Asignar precio final al campo price_unit
             line.price_unit = price_so_far
-            _logger.info(f"[Line {line.id}] Precio final calculado: {line.price_unit}")
+            _logger.info(
+                "[Line %s] Precio final calculado: %s", line.id, line.price_unit
+            )
+
+        return result
 
     @api.depends("price_unit")
     def _compute_price_modified(self):

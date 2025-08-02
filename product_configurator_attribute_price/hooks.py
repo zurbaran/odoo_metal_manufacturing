@@ -16,12 +16,10 @@ if "product.blueprint.attribute.hook" in models.Model._inherits:
               de productos para un blueprint.
             """
             attribute_values = {}
-            for custom_value in sale_order_line.product_custom_attribute_value_ids:
-                attribute_id_name = (
-                    custom_value.custom_product_template_attribute_value_id.name
-                )
+            for custom_value in sale_order_line.custom_value_ids:
+                attribute_id_name = custom_value.attribute_id.name
                 if attribute_id_name:
-                    attribute_values[attribute_id_name] = custom_value.custom_value
+                    attribute_values[attribute_id_name] = custom_value.eval()
             _logger.debug(
                 f"[Hook] Valores personalizados capturados: {attribute_values}"
             )
@@ -42,12 +40,10 @@ else:
               productos para un blueprint.
             """
             attribute_values = {}
-            for custom_value in sale_order_line.product_custom_attribute_value_ids:
-                attribute_id_name = (
-                    custom_value.custom_product_template_attribute_value_id.name
-                )
+            for custom_value in sale_order_line.custom_value_ids:
+                attribute_id_name = custom_value.attribute_id.name
                 if attribute_id_name:
-                    attribute_values[attribute_id_name] = custom_value.custom_value
+                    attribute_values[attribute_id_name] = custom_value.eval()
             _logger.debug(
                 f"[Hook] Valores personalizados capturados: {attribute_values}"
             )
