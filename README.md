@@ -29,10 +29,6 @@ Cuando un cambio realizado en `17.0` debe aplicarse también en `18.0` o `16.0`,
 - [oca-port](https://github.com/OCA/oca-port): detecta y aplica commits que faltan entre ramas.
 - Cherry-pick manual: para casos puntuales.
 
-### **Ejemplo usando el script `tools/oca-sync.sh`:**
-```bash
-./tools/oca-sync.sh 17.0 18.0
-
 
 ## 🚨 Seguridad
 
