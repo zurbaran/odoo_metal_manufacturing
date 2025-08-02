@@ -1,16 +1,21 @@
 import base64
 
-from odoo.tests.common import TransactionCase
+from odoo.tests.common import SavepointCase
 
 
-class TestProductBlueprint(TransactionCase):
-    def test_extract_svg_formulas_creates_names(self):
-        product = self.env["product.template"].create(
+class TestProductBlueprint(SavepointCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.product = cls.env["product.template"].create(
             {
                 "name": "Test product",
                 "type": "consu",
             }
         )
+        cls.partner = cls.env["res.partner"].create({"name": "Partner"})
+
+    def test_extract_svg_formulas_creates_names(self):
         svg = (
             "<svg xmlns='http://www.w3.org/2000/svg'>"
             "<text id='f1' class='odoo-formula' style='fill:#ff0000;font-size:14px'>"
@@ -21,7 +26,7 @@ class TestProductBlueprint(TransactionCase):
             {
                 "name": "Blueprint 1",
                 "file": base64.b64encode(svg.encode()),
-                "product_id": product.id,
+                "product_id": self.product.id,
             }
         )
         blueprint._extract_svg_formulas()
@@ -35,3 +40,61 @@ class TestProductBlueprint(TransactionCase):
         self.assertEqual(formula_name.svg_element_id, "f1")
         self.assertEqual(formula_name.fill_color, "#ff0000")
         self.assertEqual(formula_name.font_size, "14px")
+
+    def test_blueprint_applies_only_with_matching_attribute_value(self):
+        attribute = self.env["product.attribute"].create({"name": "Size"})
+        value_s = self.env["product.attribute.value"].create(
+            {"name": "S", "attribute_id": attribute.id}
+        )
+        value_l = self.env["product.attribute.value"].create(
+            {"name": "L", "attribute_id": attribute.id}
+        )
+        self.product.attribute_line_ids = [
+            (
+                0,
+                0,
+                {
+                    "attribute_id": attribute.id,
+                    "value_ids": [(6, 0, [value_s.id, value_l.id])],
+                },
+            )
+        ]
+        variant_s = self.product.product_variant_ids.filtered(
+            lambda p: value_s
+            in p.product_template_attribute_value_ids.mapped(
+                "product_attribute_value_id"
+            )
+        )[0]
+        variant_l = self.product.product_variant_ids.filtered(
+            lambda p: value_l
+            in p.product_template_attribute_value_ids.mapped(
+                "product_attribute_value_id"
+            )
+        )[0]
+        svg = "<svg xmlns='http://www.w3.org/2000/svg'></svg>"
+        self.env["product.blueprint"].create(
+            {
+                "name": "Blueprint 2",
+                "file": base64.b64encode(svg.encode()),
+                "product_id": self.product.id,
+                "attribute_filter_id": attribute.id,
+                "attribute_value_ids": [(6, 0, [value_s.id])],
+            }
+        )
+        order = self.env["sale.order"].create({"partner_id": self.partner.id})
+        line_s = self.env["sale.order.line"].create(
+            {
+                "order_id": order.id,
+                "product_id": variant_s.id,
+                "product_uom_qty": 1,
+            }
+        )
+        line_l = self.env["sale.order.line"].create(
+            {
+                "order_id": order.id,
+                "product_id": variant_l.id,
+                "product_uom_qty": 1,
+            }
+        )
+        self.assertTrue(line_s._get_evaluated_blueprint())
+        self.assertEqual(line_l._get_evaluated_blueprint(), [])
