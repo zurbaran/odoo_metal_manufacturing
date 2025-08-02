@@ -1,28 +1,25 @@
-from odoo.tests import TransactionCase
+from odoo.tests.common import SavepointCase
 
 
-class TestAutoJournalByCompany(TransactionCase):
-    def setUp(self):
-        super().setUp()
-        self.company = self.env["res.company"].create(
-            {
-                "name": "Empresa de Test",
-            }
-        )
-        self.journal_sale = self.env["account.journal"].create(
+class TestAutoJournalByCompany(SavepointCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.company = cls.env["res.company"].create({"name": "Empresa de Test"})
+        cls.journal_sale = cls.env["account.journal"].create(
             {
                 "name": "Ventas Test",
                 "type": "sale",
                 "code": "VT",
-                "company_id": self.company.id,
+                "company_id": cls.company.id,
             }
         )
-        self.journal_purchase = self.env["account.journal"].create(
+        cls.journal_purchase = cls.env["account.journal"].create(
             {
                 "name": "Compras Test",
                 "type": "purchase",
                 "code": "CT",
-                "company_id": self.company.id,
+                "company_id": cls.company.id,
             }
         )
 
@@ -50,4 +47,40 @@ class TestAutoJournalByCompany(TransactionCase):
             move.journal_id,
             self.journal_purchase,
             "No se asignó correctamente el diario de compras",
+        )
+
+    def test_onchange_auto_assign_journal(self):
+        move = self.env["account.move"].new(
+            {
+                "move_type": "out_invoice",
+                "company_id": self.company.id,
+            }
+        )
+        move._onchange_company_or_type()
+        self.assertEqual(
+            move.journal_id,
+            self.journal_sale,
+            "El onchange no asignó el diario de ventas",
+        )
+
+    def test_create_respects_existing_journal(self):
+        other_journal = self.env["account.journal"].create(
+            {
+                "name": "Misceláneo",
+                "type": "general",
+                "code": "MI",
+                "company_id": self.company.id,
+            }
+        )
+        move = self.env["account.move"].create(
+            {
+                "move_type": "out_invoice",
+                "company_id": self.company.id,
+                "journal_id": other_journal.id,
+            }
+        )
+        self.assertEqual(
+            move.journal_id,
+            other_journal,
+            "Se reemplazó un diario ya definido",
         )
