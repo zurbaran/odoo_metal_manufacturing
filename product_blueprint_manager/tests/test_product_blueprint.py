@@ -1,6 +1,6 @@
 import base64
 
-from odoo.tests.common import SavepointCase
+from odoo.tests.common import SavepointCase  # pyright: ignore[reportMissingImports]
 
 
 class TestProductBlueprint(SavepointCase):
