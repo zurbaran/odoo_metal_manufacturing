@@ -3,12 +3,12 @@ import base64
 import logging
 import math
 
-import cairosvg
+import cairosvg  # pyright: ignore[reportMissingImports]
 from lxml import etree
 from markupsafe import Markup
 
-from odoo import _, api, fields, models
-from odoo.exceptions import ValidationError
+from odoo import _, api, fields, models  # pyright: ignore[reportMissingImports]
+from odoo.exceptions import ValidationError  # pyright: ignore[reportMissingImports]
 
 _logger = logging.getLogger(__name__)
 
@@ -396,6 +396,32 @@ class SaleOrderLine(models.Model):
             if blueprint.type_blueprint != type_blueprint:
                 continue
 
+            blueprint_value_names = blueprint.attribute_value_ids.mapped("name")
+            selected_names = []
+            for v in self.product_custom_attribute_value_ids:
+                if (
+                    v.custom_product_template_attribute_value_id.attribute_id
+                    == blueprint.attribute_filter_id
+                ):
+                    selected_names.append(v.name)
+            for v in self.product_no_variant_attribute_value_ids:
+                if v.attribute_id == blueprint.attribute_filter_id:
+                    selected_names.append(v.name)
+            for v in self.product_template_attribute_value_ids:
+                if v.attribute_id == blueprint.attribute_filter_id:
+                    selected_names.append(v.name)
+
+            _logger.debug(
+                "[Blueprint] Filtrando plano '%s'  filtro-at=%s  requiere=%s"
+                "  seleccionados=%s",
+                blueprint.name,
+                blueprint.attribute_filter_id
+                and blueprint.attribute_filter_id.name
+                or "-",
+                blueprint_value_names,
+                selected_names,
+            )
+
             if blueprint.attribute_filter_id:
                 blueprint_value_names = blueprint.attribute_value_ids.mapped("name")
                 selected_names = []
@@ -414,7 +440,13 @@ class SaleOrderLine(models.Model):
                     if v.attribute_id == blueprint.attribute_filter_id:
                         selected_names.append(v.name)
 
-                if not any(name in blueprint_value_names for name in selected_names):
+                if blueprint_value_names and not all(
+                    name in selected_names for name in blueprint_value_names
+                ):
+                    _logger.debug(
+                        "[Blueprint] → Saltando plano %s por" " no cumplir condición",
+                        blueprint.name,
+                    )
                     continue
 
             _logger.debug(f"[Blueprint] Evaluando plano: {blueprint.name}")
