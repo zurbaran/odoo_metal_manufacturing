@@ -390,64 +390,39 @@ class SaleOrderLine(models.Model):
             )
             return []
 
+        attribute_values = {}
+
+        for v in self.product_custom_attribute_value_ids:
+            if v.custom_product_template_attribute_value_id:
+                attr = v.custom_product_template_attribute_value_id.attribute_id
+                attribute_values.setdefault(attr.id, set()).add(v.name)
+        for v in self.product_no_variant_attribute_value_ids:
+            attribute_values.setdefault(v.attribute_id.id, set()).add(v.name)
+        for v in self.product_template_attribute_value_ids:
+            attribute_values.setdefault(v.attribute_id.id, set()).add(v.name)
+
         evaluated_svgs = []
 
         for blueprint in self.product_id.product_tmpl_id.blueprint_ids:
             if blueprint.type_blueprint != type_blueprint:
                 continue
 
-            blueprint_value_names = blueprint.attribute_value_ids.mapped("name")
-            selected_names = []
-            for v in self.product_custom_attribute_value_ids:
-                if (
-                    v.custom_product_template_attribute_value_id.attribute_id
-                    == blueprint.attribute_filter_id
-                ):
-                    selected_names.append(v.name)
-            for v in self.product_no_variant_attribute_value_ids:
-                if v.attribute_id == blueprint.attribute_filter_id:
-                    selected_names.append(v.name)
-            for v in self.product_template_attribute_value_ids:
-                if v.attribute_id == blueprint.attribute_filter_id:
-                    selected_names.append(v.name)
-
-            _logger.debug(
-                "[Blueprint] Filtrando plano '%s'  filtro-at=%s  requiere=%s"
-                "  seleccionados=%s",
-                blueprint.name,
-                blueprint.attribute_filter_id
-                and blueprint.attribute_filter_id.name
-                or "-",
-                blueprint_value_names,
-                selected_names,
-            )
-
-            if blueprint.attribute_filter_id:
-                blueprint_value_names = blueprint.attribute_value_ids.mapped("name")
-                selected_names = []
-
-                for v in self.product_custom_attribute_value_ids:
-                    if (
-                        v.custom_product_template_attribute_value_id
-                        and v.custom_product_template_attribute_value_id.attribute_id
-                        == blueprint.attribute_filter_id
-                    ):
-                        selected_names.append(v.name)
-                for v in self.product_no_variant_attribute_value_ids:
-                    if v.attribute_id == blueprint.attribute_filter_id:
-                        selected_names.append(v.name)
-                for v in self.product_template_attribute_value_ids:
-                    if v.attribute_id == blueprint.attribute_filter_id:
-                        selected_names.append(v.name)
-
-                if blueprint_value_names and not all(
-                    name in selected_names for name in blueprint_value_names
-                ):
+            skip_blueprint = False
+            for condition in blueprint.blueprint_condition_ids:
+                required = set(condition.attribute_value_ids.mapped("name"))
+                selected = attribute_values.get(condition.attribute_id.id, set())
+                if required and selected.isdisjoint(required):
                     _logger.debug(
-                        "[Blueprint] → Saltando plano %s por" " no cumplir condición",
+                        "[Blueprint] → Saltando plano %s por no cumplir "
+                        "condición del atributo %s",
                         blueprint.name,
+                        condition.attribute_id and condition.attribute_id.name or "-",
                     )
-                    continue
+                    skip_blueprint = True
+                    break
+
+            if skip_blueprint:
+                continue
 
             _logger.debug(f"[Blueprint] Evaluando plano: {blueprint.name}")
             variables = self._get_evaluated_variables(self)
