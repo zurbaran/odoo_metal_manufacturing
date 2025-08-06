@@ -27,6 +27,7 @@ class TestProductBlueprint(SavepointCase):
                 "name": "Blueprint 1",
                 "file": base64.b64encode(svg.encode()),
                 "product_id": self.product.id,
+                "blueprint_condition_ids": [],
             }
         )
         blueprint._extract_svg_formulas()
@@ -77,8 +78,16 @@ class TestProductBlueprint(SavepointCase):
                 "name": "Blueprint 2",
                 "file": base64.b64encode(svg.encode()),
                 "product_id": self.product.id,
-                "attribute_filter_id": attribute.id,
-                "attribute_value_ids": [(6, 0, [value_s.id])],
+                "blueprint_condition_ids": [
+                    (
+                        0,
+                        0,
+                        {
+                            "attribute_id": attribute.id,
+                            "value_ids": [(6, 0, [value_s.id])],
+                        },
+                    )
+                ],
             }
         )
         order = self.env["sale.order"].create({"partner_id": self.partner.id})
