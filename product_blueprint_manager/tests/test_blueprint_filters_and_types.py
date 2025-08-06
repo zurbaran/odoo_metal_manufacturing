@@ -27,17 +27,27 @@ class TestBlueprintFilters(TransactionCase):
             {
                 "name": "Plano Solo Transparente",
                 "product_tmpl_id": tmpl.id,
-                "attribute_filter_id": attr.id,
-                "attribute_filter_value_ids": [(6, 0, [val.id])],
+                "blueprint_condition_ids": [
+                    (
+                        0,
+                        0,
+                        {
+                            "attribute_id": attr.id,
+                            "value_ids": [(6, 0, [val.id])],
+                        },
+                    )
+                ],
                 "svg_file": b"<svg></svg>",
                 "type": "manufacturing",
             }
         )
         product = tmpl.product_variant_id
-        line = self.env["sale.order.line"].new(  # noqa: F841
+        line = self.env["sale.order.line"].new(
             {
                 "product_id": product.id,
                 "product_template_attribute_value_ids": [(6, 0, [val.id])],
             }
         )
-        self.assertIn(val.name, [v.name for v in blueprint.attribute_filter_value_ids])
+        evaluated = line._get_evaluated_blueprint()
+        names = [b["blueprint_name"] for b in evaluated]
+        self.assertIn(blueprint.name, names, "El plano debería incluirse")
