@@ -1,0 +1,27 @@
+<odoo>
+    <record id="view_product_blueprint_condition_tree" model="ir.ui.view">
+        <field name="name">product.blueprint.condition.tree</field>
+        <field name="model">product.blueprint.condition</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="attribute_id"/>
+                <field name="value_ids" widget="many2many_tags"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_product_blueprint_condition_form" model="ir.ui.view">
+        <field name="name">product.blueprint.condition.form</field>
+        <field name="model">product.blueprint.condition</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="attribute_id"/>
+                        <field name="value_ids" widget="many2many_tags"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>
