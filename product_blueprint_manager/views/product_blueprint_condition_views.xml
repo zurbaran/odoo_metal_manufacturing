@@ -1,27 +1,38 @@
 <odoo>
-    <record id="view_product_blueprint_condition_tree" model="ir.ui.view">
-        <field name="name">product.blueprint.condition.tree</field>
-        <field name="model">product.blueprint.condition</field>
-        <field name="arch" type="xml">
-            <list>
-                <field name="attribute_id"/>
-                <field name="value_ids" widget="many2many_tags"/>
-            </list>
-        </field>
-    </record>
-
     <record id="view_product_blueprint_condition_form" model="ir.ui.view">
         <field name="name">product.blueprint.condition.form</field>
         <field name="model">product.blueprint.condition</field>
         <field name="arch" type="xml">
-            <form>
-                <sheet>
-                    <group>
-                        <field name="attribute_id"/>
-                        <field name="value_ids" widget="many2many_tags"/>
-                    </group>
-                </sheet>
+            <form string="Condición de Plano">
+                <group>
+                    <field name="blueprint_id" required="1" />
+                    <field name="attribute_id" required="1" domain="[]"/>
+                    <field name="value_ids"
+                        domain="[('attribute_id', '=', attribute_id)]"
+                        widget="many2many_tags"/>
+                </group>
             </form>
+        </field>
+    </record>
+
+    <record id="view_product_blueprint_condition_tree" model="ir.ui.view">
+        <field name="name">product.blueprint.condition.tree</field>
+        <field name="model">product.blueprint.condition</field>
+        <field name="arch" type="xml">
+            <list string="Condiciones de Plano">
+                <field name="blueprint_id"/>
+                <field name="attribute_id"/>
+                <field name="value_ids"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_product_blueprint_condition" model="ir.actions.act_window">
+        <field name="name">Condiciones de Planos</field>
+        <field name="res_model">product.blueprint.condition</field>
+        <field name="view_mode">tree,form</field>
+        <field name="help" type="html">
+            <p>Configura aquí las condiciones basadas en atributos que debe cumplir un producto para que se genere un plano específico.</p>
         </field>
     </record>
 </odoo>

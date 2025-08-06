@@ -1,4 +1,4 @@
-from odoo import api, fields, models
+from odoo import api, fields, models  # pyright: ignore[reportMissingImports]
 
 
 class ProductBlueprintCondition(models.Model):
@@ -29,13 +29,18 @@ class ProductBlueprintCondition(models.Model):
 
     @api.onchange("blueprint_id")
     def _onchange_blueprint_id(self):
+        # Si hay blueprint y producto, limitar los atributos
         if self.blueprint_id and self.blueprint_id.product_id:
-            attribute_ids = (
-                self.blueprint_id.product_id.attribute_line_ids.mapped(
-                    "attribute_id"
-                ).ids
-            )
-            return {"domain": {"attribute_id": [("id", "in", attribute_ids)]}}
+            attribute_ids = self.blueprint_id.product_id.attribute_line_ids.mapped(
+                "attribute_id"
+            ).ids
+            return {
+                "domain": {
+                    "attribute_id": [("id", "in", attribute_ids)],
+                    "value_ids": [("attribute_id", "in", attribute_ids)],
+                }
+            }
+        # Si no hay blueprint/producto, vacía los fields y el dominio
         self.attribute_id = False
         self.value_ids = False
         return {
@@ -47,14 +52,10 @@ class ProductBlueprintCondition(models.Model):
 
     @api.onchange("attribute_id")
     def _onchange_attribute_id(self):
+        # Limita valores solo a los del atributo seleccionado
         if self.attribute_id:
             return {
-                "domain": {
-                    "value_ids": [
-                        ("attribute_id", "=", self.attribute_id.id)
-                    ]
-                }
+                "domain": {"value_ids": [("attribute_id", "=", self.attribute_id.id)]}
             }
         self.value_ids = False
         return {"domain": {"value_ids": [("id", "=", False)]}}
-
