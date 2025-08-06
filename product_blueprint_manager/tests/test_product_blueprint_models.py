@@ -10,6 +10,7 @@ class TestProductBlueprintModels(TransactionCase):
                 "product_tmpl_id": self.env.ref(
                     "product.product_product_4_product_template"
                 ).id,
+                "blueprint_condition_ids": [],
                 "svg_file": b"""<svg><text class='odoo-formula' aria-label=
                 'Ancho'>0</text></svg>""",
                 "type": "manufacturing",
@@ -26,6 +27,7 @@ class TestProductBlueprintModels(TransactionCase):
                 "product_tmpl_id": self.env.ref(
                     "product.product_product_4_product_template"
                 ).id,
+                "blueprint_condition_ids": [],
                 "svg_file": b"""<svg><text class='odoo-formula'
                   aria-label='Valor1'>0</text></svg>""",
                 "type": "manufacturing",
