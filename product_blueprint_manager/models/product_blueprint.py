@@ -42,24 +42,10 @@ class ProductBlueprint(models.Model):
         ),
     )
 
-    attribute_filter_id = fields.Many2one(
-        "product.attribute",
-        string="Atributo Condicional",
-        help=(
-            "Atributo del producto que se debe usar para condicionar "
-            "este plano. "
-            "Si no se define, el plano siempre aplica."
-        ),
-    )
-
-    attribute_value_ids = fields.Many2many(
-        "product.attribute.value",
-        string="Valores que activan este plano",
-        domain="[('attribute_id', '=', attribute_filter_id)]",
-        help=(
-            "Valores del atributo que deben estar presentes para que "
-            "este plano se aplique."
-        ),
+    blueprint_condition_ids = fields.One2many(
+        "product.blueprint.condition",
+        "blueprint_id",
+        string="Conditions",
     )
 
     def _extract_svg_formulas(self):
