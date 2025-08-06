@@ -22,6 +22,7 @@
         "security/ir.model.access.csv",
         "reports/report_paperformat.xml",
         "data/blueprint_report_data.xml",
+        "views/product_blueprint_condition_views.xml",
         "views/sale_order_views.xml",
         "views/product_views.xml",
         "views/product_blueprint_condition_views.xml",
