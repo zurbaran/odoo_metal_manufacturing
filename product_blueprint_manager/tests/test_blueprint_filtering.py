@@ -201,3 +201,54 @@ class TestBlueprintFiltering(TransactionCase):
             names_fail,
             "El plano no debe incluirse si falta una condición",
         )
+
+    def test_blueprint_with_multiple_attribute_conditions_must_all_match(self):
+        """El plano sólo se debe aplicar si TODOS los atributos cumplen"""
+        blueprint = self.env["product.blueprint"].create(
+            {
+                "name": "Plano MultiAtributo",
+                "type": "manufacturing",
+                "product_tmpl_id": self.product_template.id,
+                "blueprint_condition_ids": [
+                    (
+                        0,
+                        0,
+                        {
+                            "attribute_id": self.attr_vidrio.id,
+                            "value_ids": [(6, 0, [self.val_transp.id])],
+                        },
+                    ),
+                    (
+                        0,
+                        0,
+                        {
+                            "attribute_id": self.attr_acabado.id,
+                            "value_ids": [(6, 0, [self.val_pulido.id])],
+                        },
+                    ),
+                ],
+                "svg_file": b"<svg></svg>",
+            }
+        )
+        # Cumple ambos atributos → debe incluirse
+        line_ok = self.env["sale.order.line"].new(
+            {
+                "product_id": self.product.id,
+                "product_template_attribute_value_ids": [
+                    (6, 0, [self.val_transp.id, self.val_pulido.id])
+                ],
+            }
+        )
+        result = line_ok._get_evaluated_blueprint(type_blueprint="manufacturing")
+        names_ok = [b["blueprint_name"] for b in result]
+        self.assertIn(blueprint.name, names_ok)
+        # Falta uno → no debe incluirse
+        line_fail = self.env["sale.order.line"].new(
+            {
+                "product_id": self.product.id,
+                "product_template_attribute_value_ids": [(6, 0, [self.val_transp.id])],
+            }
+        )
+        result_fail = line_fail._get_evaluated_blueprint(type_blueprint="manufacturing")
+        names_fail = [b["blueprint_name"] for b in result_fail]
+        self.assertNotIn(blueprint.name, names_fail)
