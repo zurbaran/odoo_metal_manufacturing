@@ -409,7 +409,7 @@ class SaleOrderLine(models.Model):
 
             skip_blueprint = False
             for condition in blueprint.blueprint_condition_ids:
-                required = set(condition.attribute_value_ids.mapped("name"))
+                required = set(condition.value_ids.mapped("name"))
                 selected = attribute_values.get(condition.attribute_id.id, set())
                 if required and selected.isdisjoint(required):
                     _logger.debug(
