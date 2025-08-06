@@ -24,6 +24,7 @@
         "data/blueprint_report_data.xml",
         "views/sale_order_views.xml",
         "views/product_views.xml",
+        "views/product_blueprint_condition_views.xml",
         "views/menu.xml",
         "reports/sale_order_report.xml",
         "reports/purchase_order_report.xml",
