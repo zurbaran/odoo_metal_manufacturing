@@ -3,10 +3,10 @@
         <field name="name">product.blueprint.condition.tree</field>
         <field name="model">product.blueprint.condition</field>
         <field name="arch" type="xml">
-            <tree>
+            <list>
                 <field name="attribute_id"/>
                 <field name="value_ids" widget="many2many_tags"/>
-            </tree>
+            </list>
         </field>
     </record>
 
