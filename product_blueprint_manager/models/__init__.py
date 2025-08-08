@@ -3,7 +3,6 @@ from . import (
     product_blueprint_condition,
     product_blueprint_formula,
     product_blueprint_formula_name,
-    product_hooks,
     product_template,
     sale_order,
     sale_order_line,
