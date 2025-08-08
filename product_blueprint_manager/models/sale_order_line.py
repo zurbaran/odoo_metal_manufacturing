@@ -26,12 +26,11 @@ class SaleOrderLine(models.Model):
 
     @api.depends("product_id", "product_custom_attribute_value_ids")
     def _compute_blueprint_custom_values(self):
-        hook = self.env["product.blueprint.hook"]
         for line in self:
             _logger.debug(
                 f"[Blueprint] Capturando valores para la línea de pedido {line.id}"
             )
-            blueprint_custom_values = hook.get_attribute_values_for_blueprint(line)
+            blueprint_custom_values = line._get_blueprint_attribute_values()
             line.blueprint_custom_values = str(blueprint_custom_values)
 
     def _extract_formula_name_from_svg_element(self, elem):
@@ -327,11 +326,10 @@ class SaleOrderLine(models.Model):
         """
         _logger.debug(
             f"[Blueprint] Iniciando la captura de variables evaluadas para la línea\
-                  de venta ID: {sale_order_line.id}"
+            de venta ID: {sale_order_line.id}"
         )
 
-        hook = self.env["product.blueprint.hook"]
-        attribute_values = hook.get_attribute_values_for_blueprint(sale_order_line)
+        attribute_values = sale_order_line._get_blueprint_attribute_values()
         _logger.debug(f"[Blueprint] Atributos capturados: {attribute_values}")
 
         variable_mapping = {}
@@ -450,3 +448,112 @@ class SaleOrderLine(models.Model):
             )
 
         return evaluated_svgs
+
+    def _get_blueprint_attribute_values(self):
+        """
+        Devuelve un dict con los valores de variables para las fórmulas del blueprint,
+        igual que hacía el antiguo hook pero sin usar ningún modelo externo.
+        """
+        self.ensure_one()
+        result = {}
+
+        _logger.debug(
+            "[Blueprint][ATTR] Iniciando extracción de variables para fórmulas. "
+            "Linea ID: %s, Producto: %s",
+            self.id,
+            getattr(self, "product_id", False) and self.product_id.display_name or "-",
+        )
+
+        # --- Atributos personalizados (custom) ---
+        for val in self.product_custom_attribute_value_ids:
+            ptav = val.custom_product_template_attribute_value_id
+            if ptav and ptav.is_custom:
+                var_name = ptav.name
+                _logger.debug(
+                    "[Blueprint][ATTR] Encontrado atributo personalizado: %s "
+                    "(is_custom) → variable '%s'",
+                    ptav.display_name,
+                    var_name,
+                )
+                if val.custom_value is not None:
+                    try:
+                        int_value = int(val.custom_value)
+                        result[var_name] = int_value
+                        _logger.info(
+                            "[Blueprint][ATTR] Variable '%s' definida por "
+                            "custom_value: %s (valor crudo: %r)",
+                            var_name,
+                            int_value,
+                            val.custom_value,
+                        )
+                    except Exception as e:
+                        _logger.warning(
+                            "[Blueprint][ATTR] No se pudo convertir custom_value "
+                            "'%r' a int para variable '%s' (Error: %s)",
+                            val.custom_value,
+                            var_name,
+                            e,
+                        )
+                else:
+                    _logger.debug(
+                        "[Blueprint][ATTR] custom_value es None para variable "
+                        "'%s' (atributo: %s)",
+                        var_name,
+                        ptav.display_name,
+                    )
+
+        # --- Atributos estándar proyectados como variable, si el atributo tiene
+        #     is_custom ---
+        std_values = (
+            self.product_template_attribute_value_ids
+            + self.product_no_variant_attribute_value_ids
+        ).filtered(lambda v: not v.is_custom)
+
+        for val in std_values:
+            attr = val.attribute_id
+            custom_vals = attr.value_ids.filtered(lambda v: v.is_custom)
+            if not custom_vals:
+                _logger.debug(
+                    "[Blueprint][ATTR] Atributo '%s' (%s) ignorado: "
+                    "no tiene valores is_custom.",
+                    attr.display_name,
+                    attr.name,
+                )
+                continue  # Este atributo no tiene variable asociada
+            var_name = custom_vals[0].name
+            if var_name in result:
+                _logger.debug(
+                    "[Blueprint][ATTR] Variable '%s' ya fue definida previamente, "
+                    "se omite atributo estándar '%s'.",
+                    var_name,
+                    attr.display_name,
+                )
+                continue
+            try:
+                # Si el nombre es un número (por ejemplo '1500' mmAltura)
+                int_value = int(val.name)
+                result[var_name] = int_value
+                _logger.info(
+                    "[Blueprint][ATTR] Variable '%s' definida a partir de "
+                    "valor estándar: %s (valor: %s)",
+                    var_name,
+                    int_value,
+                    val.display_name,
+                )
+            except ValueError as e:
+                _logger.info(
+                    "[Blueprint][ATTR] Valor estándar '%s' para atributo '%s' "
+                    "no es convertible a int (ignorado). Error: %s",
+                    val.name,
+                    attr.display_name,
+                    e,
+                )
+
+        _logger.debug(
+            "[Blueprint][ATTR] Resultado final de variables extraídas para "
+            "línea %s: %r",
+            self.id,
+            result,
+        )
+
+        return result

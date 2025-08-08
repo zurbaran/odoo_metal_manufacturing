@@ -1,6 +1,6 @@
 {
     "name": "Product Blueprint Manager",
-    "version": "16.0.9.1.3",
+    "version": "16.0.10.1.3",
     "category": "Manufacturing",
     "summary": (
         "Gestione planos de productos y genere documentos de forma dinámica. "
@@ -16,7 +16,6 @@
         "product",
         "sale",
         "sale_management",
-        "product_configurator_attribute_price",
     ],
     "data": [
         "security/ir.model.access.csv",
