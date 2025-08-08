@@ -23,6 +23,21 @@ Ideal para fabricantes de productos a medida: mamparas, ventanas, carpintería m
 - Renderizado directo del SVG evaluado con `t-raw`, o conversión opcional a **PNG** mediante CairoSVG.
 - Conserva estilo visual original (`font-size`, `fill`, etc.), editable por el usuario si se desea.
 
+### Filtrado de planos con condiciones
+
+El filtrado se realiza mediante el modelo `product.blueprint.condition`. Cada registro de condición
+vincula un atributo con los valores que activan el plano. Un mismo plano puede tener varias
+condiciones y **todas** deben cumplirse para que el plano se incluya en el informe.
+
+#### Ejemplo con múltiples condiciones
+
+Plano **"Mampara Premium"**:
+
+1. `Vidrio` debe ser `Transparente` o `Impreso Carglas`.
+2. `Acabado` igual a `Negro`.
+
+El plano solo se generará si la línea del pedido cumple los dos criterios anteriores.
+
 ---
 
 ## 📂 Requisitos
