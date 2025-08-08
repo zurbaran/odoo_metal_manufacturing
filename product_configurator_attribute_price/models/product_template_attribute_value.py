@@ -20,7 +20,7 @@ class ProductTemplateAttributeValue(models.Model):
         help=(
             "Define a formula to calculate the price variation dynamically. "
             "Use 'custom_value' and 'price_so_far' as variables. "
-            "Example: ((custom_value + 49) // 50 - 10) * 5 "
+            "Example: ((custom_value + 49) // 50 - 10) * 5"
             "or (price_so_far * 0.2)"
         ),
     )
