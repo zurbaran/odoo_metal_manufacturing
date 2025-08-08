@@ -3,12 +3,12 @@ import base64
 import logging
 import math
 
-import cairosvg
+import cairosvg  # pyright: ignore[reportMissingImports]
 from lxml import etree
 from markupsafe import Markup
 
-from odoo import _, api, fields, models
-from odoo.exceptions import ValidationError
+from odoo import _, api, fields, models  # pyright: ignore[reportMissingImports]
+from odoo.exceptions import ValidationError  # pyright: ignore[reportMissingImports]
 
 _logger = logging.getLogger(__name__)
 
@@ -390,32 +390,39 @@ class SaleOrderLine(models.Model):
             )
             return []
 
+        attribute_values = {}
+
+        for v in self.product_custom_attribute_value_ids:
+            if v.custom_product_template_attribute_value_id:
+                attr = v.custom_product_template_attribute_value_id.attribute_id
+                attribute_values.setdefault(attr.id, set()).add(v.name)
+        for v in self.product_no_variant_attribute_value_ids:
+            attribute_values.setdefault(v.attribute_id.id, set()).add(v.name)
+        for v in self.product_template_attribute_value_ids:
+            attribute_values.setdefault(v.attribute_id.id, set()).add(v.name)
+
         evaluated_svgs = []
 
         for blueprint in self.product_id.product_tmpl_id.blueprint_ids:
             if blueprint.type_blueprint != type_blueprint:
                 continue
 
-            if blueprint.attribute_filter_id:
-                blueprint_value_names = blueprint.attribute_value_ids.mapped("name")
-                selected_names = []
+            skip_blueprint = False
+            for condition in blueprint.blueprint_condition_ids:
+                required = set(condition.value_ids.mapped("name"))
+                selected = attribute_values.get(condition.attribute_id.id, set())
+                if required and selected.isdisjoint(required):
+                    _logger.debug(
+                        "[Blueprint] → Saltando plano %s por no cumplir "
+                        "condición del atributo %s",
+                        blueprint.name,
+                        condition.attribute_id and condition.attribute_id.name or "-",
+                    )
+                    skip_blueprint = True
+                    break
 
-                for v in self.product_custom_attribute_value_ids:
-                    if (
-                        v.custom_product_template_attribute_value_id
-                        and v.custom_product_template_attribute_value_id.attribute_id
-                        == blueprint.attribute_filter_id
-                    ):
-                        selected_names.append(v.name)
-                for v in self.product_no_variant_attribute_value_ids:
-                    if v.attribute_id == blueprint.attribute_filter_id:
-                        selected_names.append(v.name)
-                for v in self.product_template_attribute_value_ids:
-                    if v.attribute_id == blueprint.attribute_filter_id:
-                        selected_names.append(v.name)
-
-                if not any(name in blueprint_value_names for name in selected_names):
-                    continue
+            if skip_blueprint:
+                continue
 
             _logger.debug(f"[Blueprint] Evaluando plano: {blueprint.name}")
             variables = self._get_evaluated_variables(self)
