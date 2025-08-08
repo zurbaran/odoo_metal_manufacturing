@@ -1,6 +1,6 @@
 import logging
 
-from odoo import fields, models
+from odoo import api, fields, models
 
 _logger = logging.getLogger(__name__)
 
@@ -18,6 +18,11 @@ class ProductTemplate(models.Model):
     )
     formula_ids = fields.One2many(
         "product.blueprint.formula", "product_id", string="Fórmulas"
+    )
+    attribute_ids = fields.Many2many(
+        comodel_name="product.attribute",
+        compute="_compute_attribute_ids",
+        store=False,
     )
 
     def get_custom_attribute_values(self, sale_order_line=None):
@@ -76,3 +81,8 @@ class ProductTemplate(models.Model):
             "product_blueprint_manager.action_report_sale_order_blueprint"
         )
         return report_action.report_action(sale_order_line.order_id)
+
+    @api.depends("attribute_line_ids")
+    def _compute_attribute_ids(self):
+        for product in self:
+            product.attribute_ids = product.attribute_line_ids.mapped("attribute_id")
