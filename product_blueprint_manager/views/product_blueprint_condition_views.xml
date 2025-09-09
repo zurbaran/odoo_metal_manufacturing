@@ -21,11 +21,11 @@
         <field name="name">product.blueprint.condition.tree</field>
         <field name="model">product.blueprint.condition</field>
         <field name="arch" type="xml">
-            <list string="Condiciones de Plano">
+            <tree>
                 <field name="blueprint_id" />
                 <field name="attribute_id" />
                 <field name="value_ids" />
-            </list>
+            </tree>
         </field>
     </record>
 
