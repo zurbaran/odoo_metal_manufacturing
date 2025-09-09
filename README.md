@@ -15,8 +15,8 @@ Cada módulo mantiene su propio `README.md` con detalles específicos.
 Este proyecto sigue el flujo de trabajo recomendado por la **OCA**:
 
 - `16.0`: versión estable para Odoo 16.
-- `17.0`: versión estable y **rama principal de desarrollo** (Odoo 17).
-- `18.0`: versión para Odoo 18 (migrada desde `17.0`).
+- `17.0`: versión estable para Odoo 17. 
+- `18.0`: versión para Odoo 18 y **rama principal de desarrollo** (Odoo 18).
 
 > **Nota:** No existe rama `develop`. Los cambios se realizan directamente en la rama correspondiente a la versión de Odoo (normalmente `17.0`) y, si es necesario, se portan a otras ramas.
 
