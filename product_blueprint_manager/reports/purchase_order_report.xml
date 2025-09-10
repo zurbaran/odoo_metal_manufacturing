@@ -37,9 +37,7 @@
                       t-options="{'widget': 'date'}"
                     /></p>
                                 <h4>Plano:
-                                    <t
-                      t-out="blueprint['blueprint_name']"
-                    />
+                                    <t t-out="blueprint['blueprint_name']" />
                                 </h4>
                                 <img
                     t-if="'png_base64' in blueprint"
