@@ -21,6 +21,7 @@
           class="oe_structure"
           id="oe_structure_purchase_order_header"
         />
+
                 <div class="container">
                     <t t-foreach="doc.order_line" t-as="line">
                         <t
@@ -51,10 +52,12 @@
                         style="vertical-align: top; width: 50%;"
                       >
                                                 <!-- Fecha -->
-                                                <p><span
+                                                <p>
+                                                    <span
                             t-field="doc.date_order"
                             t-options="{'widget': 'date'}"
-                          /></p>
+                          />
+                                                </p>
                                                 <!-- Producto -->
                                                 <p><t
                             t-out="line.product_id.name"
@@ -71,83 +74,20 @@
                         class="compact-lines"
                         style="vertical-align: top; width: 50%;"
                       >
-                                                <!-- Cliente -->
-                                                <p><span
-                            t-field="doc.partner_id.name"
-                          /></p>
-                                                <!-- Direccion -->
-                                                <p>
-                                                    <t
-                            t-if="doc.partner_id.street"
-                          >
-                                                        <t
-                              t-out="doc.partner_id.street"
-                            />
-                                                    </t>
-                                                    <t
-                            t-if="doc.partner_id.street2"
-                          >
-                                                        , <t
-                              t-out="doc.partner_id.street2"
-                            />
-                                                    </t>
-                                                </p>
-                                                <p>
-                                                    <t
-                            t-if="doc.partner_id.zip"
-                          >
-                                                        <t
-                              t-out="doc.partner_id.zip"
-                            />
-                                                    </t>
-                                                    <t
-                            t-if="doc.partner_id.city"
-                          >
-                                                        <t
-                              t-if="doc.partner_id.zip"
-                            >, </t>
-                                                        <t
-                              t-out="doc.partner_id.city"
-                            />
-                                                    </t>
-                                                    <t
-                            t-if="doc.partner_id.state_id"
-                          >
-                                                        <t
-                              t-if="doc.partner_id.city or doc.partner_id.zip"
-                            >, </t>
-                                                        <t
-                              t-out="doc.partner_id.state_id.name"
-                            />
-                                                    </t>
-                                                </p>
-                                                <!-- Telefono -->
-                                                <p
-                          t-if="doc.partner_id.phone or doc.partner_id.mobile"
-                        >
-                                                    <t
-                            t-if="doc.partner_id.phone"
-                          >
-                                                        <span
-                              t-out="doc.partner_id.phone"
-                            />
-                                                    </t>
-                                                    <t
-                            t-if="doc.partner_id.phone and doc.partner_id.mobile"
-                          > / </t>
-                                                    <t
-                            t-if="doc.partner_id.mobile"
-                          >
-                                                        <span
-                              t-out="doc.partner_id.mobile"
-                            />
-                                                    </t>
-                                                </p>
+                                                <div
+                          t-field="doc.partner_id"
+                          t-options="{
+                                                        'widget': 'contact',
+                                                        'fields': ['name', 'address', 'phone', 'mobile', 'email'],
+                                                        'no_marker': True,
+                                                        'phone_icons': True
+                                                    }"
+                        />
                                             </td>
                                         </tr>
                                     </table>
 
-                                    <!-- Mostrar atributos filtrados de la línea (solo los que tengan valor y sean Color, Altura o Vidrio) -->
+                                    <!-- Atributos filtrados -->
                                     <t
                     t-if="line.product_custom_attribute_value_ids or line.product_no_variant_attribute_value_ids"
                   >
@@ -158,13 +98,11 @@
                                             <ul
                         style="padding-left: 15px; margin: 0;"
                       >
-
-                                                <!-- Atributos personalizados (con valor) -->
+                                                <!-- Atributos personalizados -->
                                                 <t
                           t-foreach="line.product_custom_attribute_value_ids"
                           t-as="attr"
                         >
-                                                    <!-- Mostrar solo si el nombre del atributo está en la lista deseada -->
                                                     <t
                             t-if="attr.custom_product_template_attribute_value_id.attribute_id.name in ['Color', 'Altura', 'Vidrio']"
                           >
@@ -179,12 +117,11 @@
                                                     </t>
                                                 </t>
 
-                                                <!-- Atributos sin variante (no editables por el cliente, pero configurados en la plantilla) -->
+                                                <!-- Atributos sin variante -->
                                                 <t
                           t-foreach="line.product_no_variant_attribute_value_ids"
                           t-as="attr"
                         >
-                                                    <!-- Filtramos también por nombre -->
                                                     <t
                             t-if="attr.attribute_id.name in ['Color', 'Altura', 'Vidrio']"
                           >
@@ -198,7 +135,6 @@
                                                         </li>
                                                     </t>
                                                 </t>
-
                                             </ul>
                                         </div>
                                     </t>
@@ -215,6 +151,7 @@
                         </t>
                     </t>
                 </div>
+
                 <div
           class="oe_structure"
           id="oe_structure_purchase_order_footer"
