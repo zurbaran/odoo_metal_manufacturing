@@ -1,0 +1,12 @@
+<odoo>
+    <template id="rm_poweredby__web_login_layout" inherit_id="web.login_layout"
+              name="Remove Powered by - Web Login Layout (Safe)" priority="999">
+        <xpath expr="//div[contains(@class,'text-center') and contains(@class,'border-top')]" position="replace">
+            <div class="text-center small mt-4 pt-3 border-top" t-if="not disable_footer">
+                <t t-if="not disable_database_manager">
+                    <a class="border-end pe-2 me-1" href="/web/database/manager">Manage Databases</a>
+                </t>
+            </div>
+        </xpath>
+    </template>
+</odoo>

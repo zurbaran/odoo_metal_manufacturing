@@ -1,0 +1,12 @@
+<odoo>
+    <template id="rm_poweredby__mail_notification_layout" inherit_id="mail.mail_notification_layout"
+              name="Remove Powered by - Mail Notification Layout (Rebuild)" priority="999">
+        <xpath expr="//div[a[contains(@href,'odoo.com')]]" position="replace">
+            <div t-if="show_footer" style="color: #555555; font-size:11px;">
+                <span id="mail_unfollow">
+                    | <a href="/mail/unfollow" style="text-decoration:none; color:#555555;">Unfollow</a>
+                </span>
+            </div>
+        </xpath>
+    </template>
+</odoo>

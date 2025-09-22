@@ -1,0 +1,6 @@
+<odoo>
+    <template id="rm_poweredby__alert_login_new_device" inherit_id="auth_signup.alert_login_new_device"
+              name="Remove Powered by - Alert Login New Device" priority="999">
+        <xpath expr="//tr[.//a[contains(@href,'odoo.com')]]" position="replace"/>
+    </template>
+</odoo>

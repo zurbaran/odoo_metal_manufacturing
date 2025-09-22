@@ -1,0 +1,8 @@
+<odoo>
+    <template id="rm_poweredby__web_login" inherit_id="web.login"
+              name="Remove Powered by - Web Login" priority="999">
+        <xpath expr="//a[contains(@href,'odoo.com')]" position="replace">
+            <!-- eliminado -->
+        </xpath>
+    </template>
+</odoo>

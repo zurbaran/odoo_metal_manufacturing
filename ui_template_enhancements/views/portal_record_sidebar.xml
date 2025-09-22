@@ -1,0 +1,8 @@
+<odoo>
+    <template id="rm_poweredby__portal_record_sidebar" inherit_id="portal.portal_record_sidebar"
+              name="Remove Powered by - Portal Record Sidebar" priority="999">
+        <xpath expr="//div[contains(@class,'text-muted')][.//a[contains(@href,'odoo.com')]]" position="replace">
+            <!-- eliminado -->
+        </xpath>
+    </template>
+</odoo>

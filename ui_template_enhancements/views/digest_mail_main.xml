@@ -1,0 +1,23 @@
+<odoo>
+    <template id="rm_poweredby__digest_mail_main" inherit_id="digest.digest_mail_main"
+              name="Remove Powered by &amp; Odoo Mobile - Digest Mail Main" priority="999">
+
+        <xpath expr="//div[contains(@class,'by_odoo')]/a[contains(@href,'odoo.com')]" position="replace">
+            <!-- eliminado -->
+        </xpath>
+
+        <xpath expr="//*[@id='powered']" position="replace">
+            <!-- eliminado -->
+        </xpath>
+
+        <xpath expr="//img[contains(@src,'odoo-mobile')]/ancestor::tr[1]" position="replace"/>
+        <xpath expr="//*[contains(translate(normalize-space(string(.)),
+                      'ABCDEFGHIJKLMNOPQRSTUVWXYZÁÉÍÓÚÜ',
+                      'abcdefghijklmnopqrstuvwxyzáéíóúü'),
+                      'odoo mobile')]/ancestor::tr[1]" position="replace"/>
+        <xpath expr="//a[contains(@href,'play.google.com')]/ancestor::tr[1]" position="replace"/>
+        <xpath expr="//a[contains(@href,'itunes.apple.com') or contains(@href,'apps.apple.com')]/ancestor::tr[1]" position="replace"/>
+        <xpath expr="//img[contains(@src,'download.odoocdn.com')]/ancestor::tr[1]" position="replace"/>
+
+    </template>
+</odoo>
