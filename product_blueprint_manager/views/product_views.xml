@@ -15,8 +15,8 @@
                     <group string="Planos">
                         <field name="blueprint_ids" mode="kanban,tree,form">
                             <tree>
-                                <field name="name"/>
-                                <field name="product_id"/>
+                                <field name="name" />
+                                <field name="product_id" />
                             </tree>
                             <form>
                                 <sheet>
@@ -34,10 +34,16 @@
                                         <field name="type_blueprint" />
                     <field name="blueprint_condition_ids">
                         <tree editable="bottom">
-                            <field name="attribute_id" required="1" domain="[]"/>
-                            <field name="value_ids"
-                                domain="[('attribute_id', '=', attribute_id)]"
-                                widget="many2many_tags"/>
+                            <field
+                          name="attribute_id"
+                          required="1"
+                          domain="[]"
+                        />
+                            <field
+                          name="value_ids"
+                          domain="[('attribute_id', '=', attribute_id)]"
+                          widget="many2many_tags"
+                        />
                         </tree>
                     </field>
                                     </group>
