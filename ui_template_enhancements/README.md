@@ -41,10 +41,10 @@ El módulo incluye ajustes en:
 3. Instala el módulo desde la interfaz de Odoo o con:
 
    ```bash
-   odoo-bin -u ui_template_enhancements -d <tu_base_de_datos>
+   odoo-bin -u ui_template_enhancements -d [tu_base_de_datos]
    ```
 
-Advertencia
+## Advertencia
 
 Algunas modificaciones incluidas en este módulo podrían sobrescribir vistas QWeb de módulos nativos. Se recomienda revisar conflictos si otros módulos también personalizan plantillas similares.
 Licencia

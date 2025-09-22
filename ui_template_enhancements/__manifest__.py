@@ -1,7 +1,7 @@
 {
     "name": "UI and Template Enhancements",
     "summary": "Cleans up default branding, enhances reports and email templates.",
-    "version": "18.0.1.0.0",
+    "version": "18.0.1.0.1",
     "category": "Tools",
     "author": "Antonio Caballero",
     "license": "AGPL-3",
@@ -17,7 +17,6 @@
     ],
     "data": [
         "views/login_layout.xml",
-        "views/login.xml",
         "views/mail_notification_light.xml",
         "views/mail_notification_layout.xml",
         "views/portal_record_sidebar.xml",

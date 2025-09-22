@@ -9,7 +9,7 @@
         <xpath expr="//*[@id='powered']" position="replace">
             <!-- eliminado -->
         </xpath>
-
+        <!--
         <xpath expr="//img[contains(@src,'odoo-mobile')]/ancestor::tr[1]" position="replace"/>
         <xpath expr="//*[contains(translate(normalize-space(string(.)),
                       'ABCDEFGHIJKLMNOPQRSTUVWXYZÁÉÍÓÚÜ',
@@ -18,6 +18,6 @@
         <xpath expr="//a[contains(@href,'play.google.com')]/ancestor::tr[1]" position="replace"/>
         <xpath expr="//a[contains(@href,'itunes.apple.com') or contains(@href,'apps.apple.com')]/ancestor::tr[1]" position="replace"/>
         <xpath expr="//img[contains(@src,'download.odoocdn.com')]/ancestor::tr[1]" position="replace"/>
-
+        -->
     </template>
 </odoo>
