@@ -1,0 +1,52 @@
+<odoo>
+  <template
+    id="invoice_report_custom"
+    inherit_id="account.report_invoice_document"
+    name="Custom Invoice Report Enhancements"
+    priority="99"
+  >
+    <!-- Dirección de envío mejorada -->
+    <xpath
+      expr="//div[@name='shipping_address_block']//div[@t-field='o.partner_shipping_id']"
+      position="attributes"
+    >
+      <attribute
+        name="t-options"
+      >{'widget': 'contact', 'fields': ['address', 'name', 'phone', 'mobile', 'email'], 'no_marker': True}</attribute>
+    </xpath>
+
+    <!-- Direcciones combinadas -->
+    <xpath
+      expr="//div[@name='address_not_same_as_shipping']//address[@t-field='o.partner_id']"
+      position="attributes"
+    >
+      <attribute
+        name="t-options"
+      >{'widget': 'contact', 'fields': ['address', 'name', 'phone', 'mobile', 'email'], 'no_marker': True}</attribute>
+    </xpath>
+    <xpath
+      expr="//div[@name='address_same_as_shipping']//address[@t-field='o.partner_id']"
+      position="attributes"
+    >
+      <attribute
+        name="t-options"
+      >{'widget': 'contact', 'fields': ['address', 'name', 'phone', 'mobile', 'email'], 'no_marker': True}</attribute>
+    </xpath>
+    <xpath
+      expr="//div[@name='no_shipping']//address[@t-field='o.partner_id']"
+      position="attributes"
+    >
+      <attribute
+        name="t-options"
+      >{'widget': 'contact', 'fields': ['address', 'name', 'phone', 'mobile', 'email'], 'no_marker': True}</attribute>
+    </xpath>
+
+    <!-- Ocultar columna de impuestos -->
+    <xpath expr="//th[@name='th_taxes']" position="attributes">
+      <attribute name="t-if">False</attribute>
+    </xpath>
+    <xpath expr="//td[@name='td_taxes']" position="replace">
+      <!-- Eliminado -->
+    </xpath>
+  </template>
+</odoo>
