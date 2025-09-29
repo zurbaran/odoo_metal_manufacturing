@@ -1,0 +1,7 @@
+<odoo>
+  <template id="rm_poweredby__digest_section_mobile" name="Replace Digest Mobile Section">
+    <t t-name="digest.digest_section_mobile">
+      <!-- Plantilla eliminada para no mostrar promoción de Odoo Mobile -->
+    </t>
+  </template>
+</odoo>
