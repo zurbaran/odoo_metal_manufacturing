@@ -1,10 +1,10 @@
 <odoo>
   <template
-    id="web.brand_promotion_message"
-    name="Remove Powered by - Web Brand Promotion Message"
+    id="rm_poweredby__web_brand_promotion_message"
+    name="Replace Web Brand Promotion Message"
   >
     <t t-name="web.brand_promotion_message">
-      <!-- Eliminado completamente -->
+      <!-- Plantilla eliminada completamente -->
     </t>
   </template>
 </odoo>
