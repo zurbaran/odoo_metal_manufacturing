@@ -29,6 +29,7 @@ class SaleOrderLine(models.Model):
         "order_id.pricelist_id",
         "product_custom_attribute_value_ids",
         "product_no_variant_attribute_value_ids",
+        "product_template_attribute_value_ids",  # <- añadido
     )
     def _onchange_product_id(self):
         # 1) Primero deja que Odoo calcule el precio base
@@ -42,7 +43,7 @@ class SaleOrderLine(models.Model):
             price_so_far = line.price_unit
             _logger.debug(f"[Line {line.id}] Base Odoo: {price_so_far}")
 
-            # A) Fórmulas que usan custom_value
+            # A) Fórmulas que usan custom_value (de custom_attribute values)
             for cav in line.product_custom_attribute_value_ids:
                 ptav = cav.custom_product_template_attribute_value_id
                 formula = getattr(ptav, "price_formula", False)
@@ -77,6 +78,9 @@ class SaleOrderLine(models.Model):
                 )
 
             # B) Fórmulas que usan price_so_far
+            # Antes solo se miraban los "no_variant"
+            # ahora incluimos también los PTAV seleccionados (variant/dinámico)
+            # Primero procesamos product_no_variant_attribute_value_ids (si los hay)
             for nav in line.product_no_variant_attribute_value_ids:
                 formula = getattr(nav, "price_formula", False)
                 if not formula or "price_so_far" not in formula:
@@ -108,12 +112,46 @@ class SaleOrderLine(models.Model):
                     price_so_far,
                 )
 
-            # C) price_extra al final
+            # Ahora procesamos las selecciones de variante / dinámicas
+            for ptav in line.product_template_attribute_value_ids:
+                formula = getattr(ptav, "price_formula", False)
+                if not formula or "price_so_far" not in formula:
+                    continue
+                try:
+                    incr = safe_eval(
+                        formula,
+                        {"__builtins__": {}},
+                        {"price_so_far": price_so_far},
+                    )
+                    incr = float(incr)
+                except Exception as e:
+                    _logger.exception(
+                        "[Line %s] Error evaluando fórmula %r en %s: %s",
+                        line.id,
+                        formula,
+                        ptav.display_name,
+                        e,
+                    )
+                    incr = 0.0
+                if incr < 0:
+                    incr = 0.0
+                price_so_far += incr
+                _logger.debug(
+                    "[Line %s] +%s por %s → %s",
+                    line.id,
+                    incr,
+                    ptav.display_name,
+                    price_so_far,
+                )
+
+            # C) price_extra al final (sumar price_extra de todos los conjuntos)
             for cav in line.product_custom_attribute_value_ids:
                 ptav = cav.custom_product_template_attribute_value_id
                 price_so_far += ptav.price_extra or 0.0
             for nav in line.product_no_variant_attribute_value_ids:
                 price_so_far += nav.price_extra or 0.0
+            for ptav in line.product_template_attribute_value_ids:
+                price_so_far += ptav.price_extra or 0.0
 
             # 3) Redondeo y asignación final
             final_price = line.currency_id.round(price_so_far)
