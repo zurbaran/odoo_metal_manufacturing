@@ -1,5 +1,6 @@
 <odoo>
     <template id="report_purchase_order_blueprint_document">
+        <t t-set="address_in_layout" t-value="False"/>
         <t t-call="web.basic_layout">
             <div class="page">
                 <div
@@ -37,6 +38,14 @@
                       t-options="{'widget': 'date'}"
                     /></p>
                                 <h4>Plano:
+                                    <t t-set="disp_attrs" t-value="line._get_blueprint_display_attributes()"/>
+                                    <t t-if="disp_attrs">
+                                    <ul style="padding-left: 15px; margin: 5px 0 10px 0;">
+                                        <t t-foreach="disp_attrs" t-as="it">
+                                        <li><t t-esc="it['attr']"/>: <t t-esc="it['value']"/></li>
+                                        </t>
+                                    </ul>
+                                    </t>
                                     <t t-out="blueprint['blueprint_name']" />
                                 </h4>
                                 <img
@@ -61,9 +70,7 @@
     <template id="report_purchase_order_blueprint">
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="doc">
-                <t
-          t-call="product_blueprint_manager.report_purchase_order_blueprint_document"
-        />
+                <t t-call="product_blueprint_manager.report_purchase_order_blueprint_document"/>
             </t>
         </t>
     </template>

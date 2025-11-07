@@ -74,3 +74,7 @@ class ProductBlueprintFormulaName(models.Model):
         if blueprint_id:
             args += [("blueprint_id", "=", blueprint_id)]
         return super().name_search(name, args, operator=operator, limit=limit)
+
+    def _safe_evaluate_formula(self, expression, variables):
+        # reusa la implementación probada de la línea de venta
+        return self.env["sale.order.line"].safe_evaluate_formula(expression, variables)

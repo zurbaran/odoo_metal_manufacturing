@@ -1,113 +1,99 @@
 <odoo>
     <template id="report_sale_order_blueprint_document">
-        <t t-call="web.external_layout">
-            <t t-set="doc" t-value="doc.with_context(lang=doc.partner_id.lang)" />
+    <!-- Para web.external_layout -->
+    <t t-set="o" t-value="doc"/>
+    <t t-set="company_id" t-value="doc.company_id"/>
 
-            <!-- Estilos compactos -->
-            <style>
-                .compact-lines {
-                    line-height: 1.0;
-                }
-                .compact-lines p {
-                    margin: 0 0 4px 0;
-                }
-            </style>
+    <!-- Destinatario y dirección -->
+    <t t-set="doc" t-value="doc.with_context(lang=doc.partner_id.lang)"/>
+    <!-- <t t-set="custom_layout_address" t-value="True"/>-->   <!-- Indica que das tú el bloque -->
+    <t t-set="p" t-value="doc.partner_invoice_id or doc.partner_id"/>
 
-            <div class="page">
-                <div class="oe_structure" id="oe_structure_purchase_order_header" />
+    <!-- Sustituye tu bloque <t t-set="address"> ... </t> por esto -->
+    <t t-set="address">
+    <t t-if="doc.partner_invoice_id">
+        <div t-field="doc.partner_invoice_id"
+            t-options="{
+            'widget':'contact',
+            'fields':['name','address','phone','mobile','email'],
+            'no_marker': True,
+            'phone_icons': True
+            }"/>
+    </t>
+    <t t-else="">
+        <div t-field="doc.partner_id"
+            t-options="{
+            'widget':'contact',
+            'fields':['name','address','phone','mobile','email'],
+            'no_marker': True,
+            'phone_icons': True
+            }"/>
+    </t>
+    </t>
 
-                <div class="container">
-                    <t t-foreach="doc.order_line" t-as="line">
-                        <t t-set="evaluated_blueprints" t-value="line._get_evaluated_blueprint()" />
-                        <t t-if="evaluated_blueprints and len(evaluated_blueprints) > 0">
-                            <t t-set="counter" t-value="0" />
-                            <t t-foreach="evaluated_blueprints" t-as="blueprint">
-                                <div style="page-break-inside: avoid; page-break-after: always;">
-                                    <h2>Planos: <t t-out="doc.name" /></h2>
+    <!-- Si quieres, también: -->
+    <t t-set="forced_vat" t-value="doc.fiscal_position_id.foreign_vat"/>
 
-                                    <!-- Tabla para dividir información -->
-                                    <table style="width: 100%; margin-bottom: 20px;">
-                                        <tr>
-                                            <!-- Columna izquierda: Información del documento -->
-                                            <td class="compact-lines" style="vertical-align: top; width: 50%;">
-                                                <!-- Fecha -->
-                                                <p>
-                                                    <span t-field="doc.date_order" t-options="{'widget': 'date'}" />
-                                                </p>
-                                                <!-- Producto -->
-                                                <p><t t-out="line.product_id.name" /></p>
-                                                <p>Plano:
-                                                    <t t-out="blueprint['blueprint_name']" />
-                                                </p>
-                                            </td>
+    <t t-call="web.external_layout">
+    <style>
+        /* Reduce el margen vertical del bloque de dirección */
+        .o_report_layout_standard .address.row { margin-bottom: 6px !important; }
+        /* Opcional: compactar un poco el título y tablas propias del plano */
+        .pbm-tight h2 { margin: 0 0 4px 0; font-size: 14px; }
+        .pbm-tight table { margin: 4px 0; }
+        .pbm-tight ul { margin: 0; padding-left: 12px; }
+        .pbm-tight .compact-lines { line-height: 1; }
+        .pbm-tight .page { padding-top: 0; }
+    </style>
 
-                                            <!-- Columna derecha: Información del cliente -->
-                                            <td class="compact-lines" style="vertical-align: top; width: 50%;">
-                                                <div
-                                                    t-field="doc.partner_id"
-                                                    t-options="{
-                                                        'widget': 'contact',
-                                                        'fields': ['name', 'address', 'phone', 'mobile', 'email'],
-                                                        'no_marker': True,
-                                                        'phone_icons': True
-                                                    }"
-                                                />
-                                            </td>
-                                        </tr>
-                                    </table>
+    <div class="page pbm-tight">
+        <div>
+        <t t-foreach="doc.order_line" t-as="line">
+            <t t-set="evaluated_blueprints" t-value="line._get_evaluated_blueprint()"/>
+            <t t-if="evaluated_blueprints and len(evaluated_blueprints) > 0">
+            <t t-foreach="evaluated_blueprints" t-as="blueprint">
+                <div style="page-break-inside: avoid; page-break-after: always;">
+                <h2>Planos: <t t-out="doc.name"/></h2>
 
-                                    <!-- Atributos filtrados -->
-                                    <t t-if="line.product_custom_attribute_value_ids or line.product_no_variant_attribute_value_ids">
-                                        <div class="compact-lines" style="margin-top: 10px;">
-                                            <ul style="padding-left: 15px; margin: 0;">
-                                                <!-- Atributos personalizados -->
-                                                <t t-foreach="line.product_custom_attribute_value_ids" t-as="attr">
-                                                    <t t-if="attr.custom_product_template_attribute_value_id.attribute_id.name in ['Color', 'Altura', 'Vidrio']">
-                                                        <li>
-                                                            <t t-out="attr.custom_product_template_attribute_value_id.attribute_id.name" />:
-                                                            <t t-out="attr.name" />
-                                                        </li>
-                                                    </t>
-                                                </t>
-
-                                                <!-- Atributos sin variante -->
-                                                <t t-foreach="line.product_no_variant_attribute_value_ids" t-as="attr">
-                                                    <t t-if="attr.attribute_id.name in ['Color', 'Altura', 'Vidrio']">
-                                                        <li>
-                                                            <t t-out="attr.attribute_id.name" />:
-                                                            <t t-out="attr.name" />
-                                                        </li>
-                                                    </t>
-                                                </t>
-                                            </ul>
-                                        </div>
-                                    </t>
-
-                                    <!-- Imagen del plano -->
-                                    <img
-                                        t-if="'png_base64' in blueprint"
-                                        t-att-src="'data:image/png;base64,' + blueprint['png_base64']"
-                                        style="width:100%; height:auto;"
-                                    />
-                                </div>
-                                <t t-set="counter" t-value="counter + 1" />
+                <table style="width:100%;">
+                    <tr>
+                    <td class="compact-lines" style="vertical-align:top; width:50%;">
+                        <p><span t-field="doc.date_order" t-options="{'widget':'date'}"/></p>
+                        <p><t t-out="line.product_id.name"/></p>
+                        <p>Plano: <t t-out="blueprint['blueprint_name']"/></p>
+                    </td>
+                    <td class="compact-lines" style="vertical-align:top; width:50%;">
+                        <t t-set="disp_attrs" t-value="line._get_blueprint_display_attributes()"/>
+                        <t t-if="disp_attrs">
+                        <ul>
+                            <t t-foreach="disp_attrs" t-as="it">
+                            <li><t t-esc="it['attr']"/>: <t t-esc="it['value']"/></li>
                             </t>
+                        </ul>
                         </t>
-                    </t>
-                </div>
+                    </td>
+                    </tr>
+                </table>
 
-                <div class="oe_structure" id="oe_structure_purchase_order_footer" />
-            </div>
+                <img t-if="'png_base64' in blueprint"
+                    t-att-src="'data:image/png;base64,' + blueprint['png_base64']"
+                    style="width:100%; height:auto;"/>
+                </div>
+            </t>
+            </t>
         </t>
+        </div>
+    </div>
+    </t>
     </template>
 
     <template id="report_sale_order_blueprint">
-        <t t-call="web.html_container">
-            <t t-foreach="docs" t-as="doc">
-                <t t-call="product_blueprint_manager.report_sale_order_blueprint_document" t-lang="doc.partner_id.lang">
-                    <t t-set="doc" t-value="doc" />
-                </t>
-            </t>
+    <t t-call="web.html_container">
+        <t t-foreach="docs" t-as="doc">
+        <t t-set="doc" t-value="doc"/>
+        <t t-call="product_blueprint_manager.report_sale_order_blueprint_document"
+            t-lang="doc.partner_id.lang"/>
         </t>
+    </t>
     </template>
 </odoo>

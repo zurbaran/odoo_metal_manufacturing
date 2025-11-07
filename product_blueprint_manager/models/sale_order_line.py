@@ -24,7 +24,13 @@ class SaleOrderLine(models.Model):
         "ir.attachment", string="Blueprint Attachment"
     )
 
-    @api.depends("product_id", "product_custom_attribute_value_ids")
+    @api.depends(
+        "product_id",
+        "product_no_variant_attribute_value_ids",
+        "product_template_attribute_value_ids",
+        # el campo custom es opcional: solo si existe
+        # no lo ponemos en depends para no crear dependencia dura
+    )
     def _compute_blueprint_custom_values(self):
         for line in self:
             _logger.debug(
@@ -118,11 +124,21 @@ class SaleOrderLine(models.Model):
                                   fórmula='{formula_name}' - style='{style}'"
                         )
 
+                        # for attr in style.split(";"):
+                        #     if "font-size" in attr:
+                        #         font_size = attr.split(":")[1].strip()
+                        #     elif "fill" in attr:
+                        #         fill_color = attr.split(":")[1].strip()
                         for attr in style.split(";"):
-                            if "font-size" in attr:
-                                font_size = attr.split(":")[1].strip()
-                            elif "fill" in attr:
-                                fill_color = attr.split(":")[1].strip()
+                            kv = attr.split(":", 1)
+                            if len(kv) != 2:
+                                continue
+                            k = kv[0].strip()
+                            v = kv[1].strip()
+                            if k == "font-size":
+                                font_size = v
+                            elif k == "fill":
+                                fill_color = v
 
                         # 2. Complementar con atributos directos si faltan
                         if not fill_color and elem.get("fill"):
@@ -390,14 +406,19 @@ class SaleOrderLine(models.Model):
 
         attribute_values = {}
 
-        for v in self.product_custom_attribute_value_ids:
-            if v.custom_product_template_attribute_value_id:
-                attr = v.custom_product_template_attribute_value_id.attribute_id
-                attribute_values.setdefault(attr.id, set()).add(v.name)
-        for v in self.product_no_variant_attribute_value_ids:
-            attribute_values.setdefault(v.attribute_id.id, set()).add(v.name)
+        # a) variantes / dinámicos
         for v in self.product_template_attribute_value_ids:
             attribute_values.setdefault(v.attribute_id.id, set()).add(v.name)
+        # b) no_variant
+        for v in self.product_no_variant_attribute_value_ids:
+            attribute_values.setdefault(v.attribute_id.id, set()).add(v.name)
+        # c) custom (opcional)
+        if "product_custom_attribute_value_ids" in self._fields:
+            for cav in self.product_custom_attribute_value_ids:
+                ptav = getattr(cav, "custom_product_template_attribute_value_id", False)
+                if ptav:
+                    attr = ptav.attribute_id
+                    attribute_values.setdefault(attr.id, set()).add(ptav.name)
 
         evaluated_svgs = []
 
@@ -464,43 +485,44 @@ class SaleOrderLine(models.Model):
             getattr(self, "product_id", False) and self.product_id.display_name or "-",
         )
 
-        # --- Atributos personalizados (custom) ---
-        for val in self.product_custom_attribute_value_ids:
-            ptav = val.custom_product_template_attribute_value_id
-            if ptav and ptav.is_custom:
-                var_name = ptav.name
-                _logger.debug(
-                    "[Blueprint][ATTR] Encontrado atributo personalizado: %s "
-                    "(is_custom) → variable '%s'",
-                    ptav.display_name,
-                    var_name,
-                )
-                if val.custom_value is not None:
-                    try:
-                        int_value = int(val.custom_value)
-                        result[var_name] = int_value
-                        _logger.info(
-                            "[Blueprint][ATTR] Variable '%s' definida por "
-                            "custom_value: %s (valor crudo: %r)",
-                            var_name,
-                            int_value,
-                            val.custom_value,
-                        )
-                    except Exception as e:
-                        _logger.warning(
-                            "[Blueprint][ATTR] No se pudo convertir custom_value "
-                            "'%r' a int para variable '%s' (Error: %s)",
-                            val.custom_value,
-                            var_name,
-                            e,
-                        )
-                else:
+        # --- Atributos personalizados (custom) (opcional) ---
+        if "product_custom_attribute_value_ids" in self._fields:
+            for val in self.product_custom_attribute_value_ids:
+                ptav = val.custom_product_template_attribute_value_id
+                if ptav and ptav.is_custom:
+                    var_name = ptav.name
                     _logger.debug(
-                        "[Blueprint][ATTR] custom_value es None para variable "
-                        "'%s' (atributo: %s)",
-                        var_name,
+                        "[Blueprint][ATTR] Encontrado atributo personalizado: %s "
+                        "(is_custom) → variable '%s'",
                         ptav.display_name,
+                        var_name,
                     )
+                    if val.custom_value is not None:
+                        try:
+                            int_value = int(val.custom_value)
+                            result[var_name] = int_value
+                            _logger.info(
+                                "[Blueprint][ATTR] Variable '%s' definida por "
+                                "custom_value: %s (valor crudo: %r)",
+                                var_name,
+                                int_value,
+                                val.custom_value,
+                            )
+                        except Exception as e:
+                            _logger.warning(
+                                "[Blueprint][ATTR] No se pudo convertir custom_value "
+                                "'%r' a int para variable '%s' (Error: %s)",
+                                val.custom_value,
+                                var_name,
+                                e,
+                            )
+                    else:
+                        _logger.debug(
+                            "[Blueprint][ATTR] custom_value es None para variable "
+                            "'%s' (atributo: %s)",
+                            var_name,
+                            ptav.display_name,
+                        )
 
         # --- Atributos estándar proyectados como variable, si el atributo tiene
         #     is_custom ---
@@ -557,3 +579,29 @@ class SaleOrderLine(models.Model):
         )
 
         return result
+
+    def _get_blueprint_display_attributes(self):
+        """Devuelve lista de dicts [{'attr': 'Color', 'value': 'Blanco'}, ...]
+        sin depender del módulo externo."""
+        self.ensure_one()
+        items = []
+
+        # variantes / dinámicos
+        for v in self.product_template_attribute_value_ids:
+            items.append({"attr": v.attribute_id.name, "value": v.name})
+
+        # no_variant
+        for v in self.product_no_variant_attribute_value_ids:
+            items.append({"attr": v.attribute_id.name, "value": v.name})
+
+        # custom (si existe)
+        if "product_custom_attribute_value_ids" in self._fields:
+            for cav in self.product_custom_attribute_value_ids:
+                ptav = getattr(cav, "custom_product_template_attribute_value_id", False)
+                if ptav:
+                    label = ptav.name
+                    val = getattr(cav, "custom_value", None)
+                    shown = f"{label}: {val}" if val not in (None, False, "") else label
+                    items.append({"attr": ptav.attribute_id.name, "value": shown})
+
+        return items

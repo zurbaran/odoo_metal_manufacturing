@@ -4,10 +4,7 @@
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="sale.view_order_form" />
         <field name="arch" type="xml">
-            <xpath
-        expr="//field[@name='order_line']//field[@name='price_unit']"
-        position="after"
-      >
+            <xpath expr="//field[@name='order_line']//field[@name='price_unit']" position="after">
                 <field name="price_modified" readonly="1" />
             </xpath>
         </field>
