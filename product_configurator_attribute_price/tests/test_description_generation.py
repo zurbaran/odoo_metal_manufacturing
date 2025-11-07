@@ -1,47 +1,36 @@
 from odoo.tests.common import TransactionCase
 
 
-class TestAttributePriceComputation(TransactionCase):
+class TestDescriptionGeneration(TransactionCase):
     def setUp(self):
         super().setUp()
 
         self.attribute = self.env["product.attribute"].create(
-            {"name": "Largo", "create_variant": "no_variant", "is_custom": True}
+            {"name": "Alto", "create_variant": "no_variant", "is_custom": True}
         )
         self.ptav = self.env["product.template.attribute.value"].create(
             {
-                "name": "Valor Largo",
+                "name": "mmA",
                 "attribute_id": self.attribute.id,
-                "price_formula": "custom_value * 0.5",
-                "price_extra": 10,
             }
         )
-        self.product = self.env["product.product"].create(
-            {
-                "name": "Producto Base",
-                "type": "consu",
-                "list_price": 100.0,
-                "standard_price": 80.0,
-            }
-        )
+        self.product = self.env["product.product"].create({"name": "Mampara Base"})
 
-    def test_price_computation_with_formula_and_price_extra(self):
+    def test_description_contains_custom_attribute(self):
         line = self.env["sale.order.line"].new(
             {
                 "product_id": self.product.id,
-                "product_uom_qty": 1.0,
                 "product_custom_attribute_value_ids": [
                     (
                         0,
                         0,
                         {
                             "custom_product_template_attribute_value_id": self.ptav.id,
-                            "custom_value": 200,
+                            "custom_value": 1456,
                         },
                     )
                 ],
             }
         )
         line._onchange_product_id()
-        expected_price = 100 + (200 * 0.5) + 10
-        self.assertEqual(line.price_unit, line.currency_id.round(expected_price))
+        self.assertIn("Alto: mmA: 1456.0", line.name)
