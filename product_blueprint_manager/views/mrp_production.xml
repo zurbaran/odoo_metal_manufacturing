@@ -1,0 +1,19 @@
+<odoo>
+    <!-- Botón Plano Fabricación en Orden de Fabricación -->
+    <record id="mrp_production_form_inherit_blueprint_button" model="ir.ui.view">
+        <field name="name">mrp.production.form.inherit.blueprint.button</field>
+        <field name="model">mrp.production</field>
+        <field name="inherit_id" ref="mrp.mrp_production_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button
+          name="action_print_blueprint_mrp"
+          type="object"
+          string="Plano Fabricación"
+          class="oe_highlight"
+          icon="fa-industry"
+        />
+            </xpath>
+        </field>
+    </record>
+</odoo>

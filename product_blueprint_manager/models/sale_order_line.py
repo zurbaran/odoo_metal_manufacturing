@@ -16,10 +16,14 @@ _logger = logging.getLogger(__name__)
 class SaleOrderLine(models.Model):
     _inherit = "sale.order.line"
 
+    # Campo técnico para guardar, en texto, el dict de variables que se usan
+    # en las fórmulas del plano. Se recalcula cada vez que cambian los atributos.
     blueprint_custom_values = fields.Char(
         compute="_compute_blueprint_custom_values",
     )
 
+    # Último adjunto SVG generado y evaluado para la línea (no es necesario
+    # para el flujo, pero puede ser útil para inspección/debug).
     blueprint_attachment_id = fields.Many2one(
         "ir.attachment", string="Blueprint Attachment"
     )
@@ -32,6 +36,8 @@ class SaleOrderLine(models.Model):
         # no lo ponemos en depends para no crear dependencia dura
     )
     def _compute_blueprint_custom_values(self):
+        """Calcula un resumen con las variables disponibles para las fórmulas
+        del blueprint en esta línea."""
         for line in self:
             _logger.debug(
                 f"[Blueprint] Capturando valores para la línea de pedido {line.id}"
@@ -40,6 +46,14 @@ class SaleOrderLine(models.Model):
             line.blueprint_custom_values = str(blueprint_custom_values)
 
     def _extract_formula_name_from_svg_element(self, elem):
+        """Intenta extraer el nombre de la fórmula a partir del nodo SVG.
+
+        Busca texto en:
+          - elem.text
+          - aria-label / aria-text
+          - descendientes
+        y limpia llaves '{{ }}' para quedarse con el nombre de la variable.
+        """
         candidates = [
             elem.text,
             elem.get("aria-label"),
@@ -67,6 +81,14 @@ class SaleOrderLine(models.Model):
         return None
 
     def _generate_evaluated_blueprint_svg(self, blueprint, evaluated_variables):
+        """Genera el SVG evaluado para un blueprint concreto.
+
+        - Carga el SVG original del blueprint.
+        - Localiza los nodos con class 'odoo-formula'.
+        - Sustituye las fórmulas por los valores evaluados.
+        - Normaliza estilo y font-size para evitar emborronamientos.
+        - Crea un adjunto SVG y un PNG (vía CairoSVG) para incrustar en el PDF.
+        """
         _logger.debug(
             f"[Blueprint] Generando SVG evaluado para el blueprint '{blueprint.name}'"
         )
@@ -75,9 +97,25 @@ class SaleOrderLine(models.Model):
             raise ValidationError(_("No hay archivo SVG en el blueprint."))
 
         try:
+            # Decodificar el archivo SVG del blueprint
             svg_data = base64.b64decode(blueprint.file)
             root = etree.fromstring(svg_data)
 
+            # Limpiar posibles hints de renderizado que causan problemas
+            style_attr = root.get("style")
+            if style_attr:
+                # Opcional: limpiar solo las pistas de render que nos perjudican
+                parts = [
+                    p
+                    for p in style_attr.split(";")
+                    if not p.strip().startswith(("image-rendering", "text-rendering"))
+                ]
+                if parts:
+                    root.set("style", ";".join(parts))
+                else:
+                    root.attrib.pop("style", None)
+
+            # Estilo inyectado para marcar errores de evaluación de fórmulas
             style_element = etree.Element("style")
             style_element.text = """
                 .formula-eval-error {
@@ -87,9 +125,11 @@ class SaleOrderLine(models.Model):
             """
             root.insert(0, style_element)
 
+            # Namespaces del SVG
             nsmap = {"svg": root.nsmap.get(None, "http://www.w3.org/2000/svg")}
             _logger.debug(f"[Blueprint] Espacios de nombres detectados: {nsmap}")
 
+            # Nodos que representan fórmulas (class contiene 'odoo-formula')
             elements = root.xpath(
                 ".//*[@class and contains(@class, 'odoo-formula')]", namespaces=nsmap
             )
@@ -97,6 +137,222 @@ class SaleOrderLine(models.Model):
                 f"[Blueprint] Se encontraron {len(elements)} elementos con fórmulas."
             )
 
+            # ------------------------------------------------------------------
+            # Cálculo del font-size "de referencia" del plano
+            # ------------------------------------------------------------------
+
+            def _parse_font_size(value):
+                """Devuelve el valor numérico del font-size (en px) si se puede.
+
+                Ejemplos soportados:
+                  - '12px'  → 12.0
+                  - '10pt'  → 10.0  (no convertimos unidades, solo el número)
+                  - '8.5'   → 8.5
+                Si no se puede parsear, devuelve None.
+                """
+                if not value:
+                    return None
+                v = value.strip()
+                num = ""
+                for ch in v:
+                    if ch.isdigit() or ch in ".,-":
+                        num += ch
+                    else:
+                        break
+                if not num:
+                    return None
+                try:
+                    return float(num.replace(",", "."))
+                except Exception:
+                    return None
+
+            # Buscamos <text> que NO sean fórmulas para estimar el tamaño
+            # de fuente típico del plano (así evitamos números gigantes).
+            text_nodes = root.xpath(".//svg:text", namespaces=nsmap)
+            formula_ids = {e.get("id") for e in elements}  # noqa: F841
+            size_values = []
+
+            for t in text_nodes:
+                # Saltar textos que también son 'odoo-formula'
+                cls = t.get("class", "")
+                if "odoo-formula" in cls:
+                    continue
+                # Font-size desde style o atributo directo
+                style = t.get("style", "")
+                font_size_candidate = None
+                for attr in style.split(";"):
+                    kv = attr.split(":", 1)
+                    if len(kv) != 2:
+                        continue
+                    k = kv[0].strip()
+                    v = kv[1].strip()
+                    if k == "font-size":
+                        font_size_candidate = v
+                        break
+                if not font_size_candidate and t.get("font-size"):
+                    font_size_candidate = t.get("font-size")
+                if font_size_candidate:
+                    parsed = _parse_font_size(font_size_candidate)
+                    if parsed:
+                        size_values.append(parsed)
+
+            if size_values:
+                avg_size = sum(size_values) / len(size_values)
+                # Redondeamos a entero para algo estable tipo "10px", "12px", etc.
+                default_font_size = f"{int(round(avg_size))}px"
+            else:
+                default_font_size = "12px"
+
+            default_font_size_numeric = _parse_font_size(default_font_size)
+            _logger.debug(
+                "[Blueprint][STYLE] font-size de referencia calculado: %s \
+                    (numérico=%s)",
+                default_font_size,
+                default_font_size_numeric,
+            )
+
+            # ------------------------------------------------------------------
+            # Helper para construir un nodo <text> limpio y legible
+            # ------------------------------------------------------------------
+            def _build_clean_text_node(elem, elem_id, text_value):
+                """Convierte cualquier nodo SVG (text, path, etc.) en un <text>
+                con estilo y posición coherentes para que el valor se vea nítido.
+                """
+                # 1) Extraer estilo original del nodo de origen
+                style = elem.get("style", "")
+                font_size = None
+                fill_color = None
+                font_size_source = "svg"  # por defecto asumimos que viene del SVG
+                _logger.debug(
+                    f"[Blueprint][STYLE] Nodo ID={elem_id} fórmula='{text_value}' \
+                         - style='{style}'"
+                )
+
+                for attr in style.split(";"):
+                    kv = attr.split(":", 1)
+                    if len(kv) != 2:
+                        continue
+                    k = kv[0].strip()
+                    v = kv[1].strip()
+                    if k == "font-size":
+                        font_size = v
+                    elif k == "fill":
+                        fill_color = v
+
+                # 2) Complementar con atributos directos si faltan
+                if not fill_color and elem.get("fill"):
+                    fill_color = elem.get("fill")
+                    _logger.debug(
+                        f"[Blueprint][STYLE] Nodo ID={elem_id} fill \
+                            directo='{fill_color}'"
+                    )
+                if not font_size and elem.get("font-size"):
+                    font_size = elem.get("font-size")
+                    _logger.debug(
+                        f"[Blueprint][STYLE] Nodo ID={elem_id} font-size \
+                            directo='{font_size}'"
+                    )
+
+                # 3) Aplicar estilos desde la fórmula (si están definidos)
+                formula_filtered = blueprint.formula_ids.filtered(
+                    lambda f, _elem_id=elem_id: f.name
+                    and f.name.svg_element_id == _elem_id
+                )
+                formula_obj = formula_filtered[0] if formula_filtered else None
+                if formula_obj:
+                    _logger.debug(
+                        f"[Blueprint] Usando estilo configurado para '{text_value}': "
+                        f"fill={formula_obj.fill_color}, \
+                        font_size={formula_obj.font_size}"
+                    )
+                    if formula_obj.font_size:
+                        font_size = formula_obj.font_size
+                        font_size_source = "formula"
+                    if formula_obj.fill_color:
+                        fill_color = formula_obj.fill_color
+
+                # 4) Defaults si siguen vacíos
+                if not font_size:
+                    font_size = default_font_size
+                    font_size_source = "default"
+                if not fill_color:
+                    fill_color = "#000000"
+
+                # Normalizar font-size desproporcionados (ej. valores enormes
+                # arrastrados desde CorelDraw/Inkscape) SOLO si NO vienen de
+                # una configuración explícita de la fórmula.
+                parsed_font_size = _parse_font_size(font_size)
+                if (
+                    font_size_source != "formula"
+                    and parsed_font_size
+                    and default_font_size_numeric
+                    and parsed_font_size > default_font_size_numeric * 3
+                ):
+                    _logger.debug(
+                        "[Blueprint][STYLE] Nodo ID=%s font-size=%s demasiado grande "
+                        "(fuente: %s). Normalizando a valor de referencia %s.",
+                        elem_id,
+                        font_size,
+                        font_size_source,
+                        default_font_size,
+                    )
+                    font_size = default_font_size
+
+                # Nos aseguramos de que tenga unidad 'px' si no la trae
+                if isinstance(font_size, str) and not font_size.strip().endswith("px"):
+                    # Si es algo como '12', lo convertimos a '12px'
+                    numeric_fs = _parse_font_size(font_size)
+                    if numeric_fs is not None:
+                        font_size = f"{int(round(numeric_fs))}px"
+                    else:
+                        # fallback por si el parse falla
+                        font_size = default_font_size
+
+                final_style = f"fill:{fill_color}; font-size:{font_size};"
+                _logger.debug(
+                    f"[Blueprint][STYLE] Nodo ID={elem_id} estilo aplicado \
+                        final='{final_style}'"
+                )
+
+                # 5) Posición: usamos x/y o, si es un path, el primer punto del 'd'
+                transform = elem.get("transform", "")
+                x = elem.get("x", "0")
+                y = elem.get("y", "0")
+                if elem.tag.endswith("path") and "d" in elem.attrib:
+                    try:
+                        path_commands = elem.attrib["d"].split(" ")
+                        x = (
+                            path_commands[1].split(",")[0]
+                            if len(path_commands) > 1
+                            else "0"
+                        )
+                        y = (
+                            path_commands[1].split(",")[1]
+                            if len(path_commands) > 1
+                            else "0"
+                        )
+                    except Exception:
+                        _logger.debug(
+                            f"[Blueprint] No se pudo obtener la posición \
+                                de {elem_id}, usando (0,0)"
+                        )
+
+                # Construimos el nodo <text> limpio con el valor evaluado
+                text_element = etree.Element(
+                    "text",
+                    {
+                        "x": x,
+                        "y": y,
+                        "style": final_style,
+                        "transform": transform,
+                    },
+                )
+                text_element.text = str(text_value)
+                return text_element
+
+            # ------------------------------------------------------------------
+            # Sustitución de fórmulas y normalización de textos
+            # ------------------------------------------------------------------
             for elem in elements:
                 formula_name = self._extract_formula_name_from_svg_element(elem)
                 elem_id = elem.get("id", "sin ID")
@@ -110,123 +366,25 @@ class SaleOrderLine(models.Model):
 
                     if rounded_value.lower() != "error":
                         _logger.debug(
-                            f"[Blueprint] Sustituyendo '{formula_name}' →\
-                                  '{rounded_value}' en ID={elem_id}"
+                            f"[Blueprint] Sustituyendo '{formula_name}' → \
+                                '{rounded_value}' en ID={elem_id}"
                         )
-
-                        # === 🔧 NUEVA LÓGICA DE ESTILOS ===
-                        # 1. Extraer estilo original
-                        style = elem.get("style", "")
-                        font_size = None
-                        fill_color = None
-                        _logger.debug(
-                            f"[Blueprint][STYLE] Nodo ID={elem_id}\
-                                  fórmula='{formula_name}' - style='{style}'"
+                        text_element = _build_clean_text_node(
+                            elem, elem_id, rounded_value
                         )
-
-                        # for attr in style.split(";"):
-                        #     if "font-size" in attr:
-                        #         font_size = attr.split(":")[1].strip()
-                        #     elif "fill" in attr:
-                        #         fill_color = attr.split(":")[1].strip()
-                        for attr in style.split(";"):
-                            kv = attr.split(":", 1)
-                            if len(kv) != 2:
-                                continue
-                            k = kv[0].strip()
-                            v = kv[1].strip()
-                            if k == "font-size":
-                                font_size = v
-                            elif k == "fill":
-                                fill_color = v
-
-                        # 2. Complementar con atributos directos si faltan
-                        if not fill_color and elem.get("fill"):
-                            fill_color = elem.get("fill")
-                            _logger.debug(
-                                f"[Blueprint][STYLE] Nodo ID={elem_id}\
-                                      fill directo='{fill_color}'"
-                            )
-                        if not font_size and elem.get("font-size"):
-                            font_size = elem.get("font-size")
-                            _logger.debug(
-                                f"[Blueprint][STYLE] Nodo ID={elem_id} font-size\
-                                      directo='{font_size}'"
-                            )
-
-                        # 3. Aplicar estilos desde la fórmula (si están definidos)
-                        formula_filtered = blueprint.formula_ids.filtered(
-                            lambda f, elem_id=elem_id: f.name
-                            and f.name.svg_element_id == elem_id
-                        )
-                        if not formula_filtered:
-                            _logger.warning(
-                                f"[Blueprint] No se encontró fórmula con ID\
-                                      SVG '{elem_id}' para '{formula_name}'"
-                            )
-                        formula_obj = formula_filtered[0] if formula_filtered else None
-                        if formula_obj:
-                            _logger.debug(
-                                f"[Blueprint] Usando estilo configurado para\
-                                      '{formula_name}': fill={formula_obj.fill_color},\
-                                        font_size={formula_obj.font_size}"
-                            )
-                            font_size = formula_obj.font_size or font_size
-                            fill_color = formula_obj.fill_color or fill_color
-
-                        # 4. Defaults si siguen vacíos
-                        font_size = font_size or "12px"
-                        fill_color = fill_color or "#000000"
-
-                        final_style = f"fill:{fill_color}; font-size:{font_size};"
-                        _logger.debug(
-                            f"[Blueprint][STYLE] Nodo ID={elem_id} estilo aplicado\
-                                  final='{final_style}'"
-                        )
-
-                        transform = elem.get("transform", "")
-                        x = elem.get("x", "0")
-                        y = elem.get("y", "0")
-                        if elem.tag.endswith("path") and "d" in elem.attrib:
-                            try:
-                                path_commands = elem.attrib["d"].split(" ")
-                                x = (
-                                    path_commands[1].split(",")[0]
-                                    if len(path_commands) > 1
-                                    else "0"
-                                )
-                                y = (
-                                    path_commands[1].split(",")[1]
-                                    if len(path_commands) > 1
-                                    else "0"
-                                )
-                            except Exception:
-                                _logger.debug(
-                                    f"[Blueprint] No se pudo obtener la posición\
-                                          de {elem_id}, usando (0,0)"
-                                )
-
-                        text_element = etree.Element(
-                            "text",
-                            {
-                                "x": x,
-                                "y": y,
-                                "style": final_style,
-                                "transform": transform,
-                            },
-                        )
-                        text_element.text = rounded_value
                         elem.getparent().replace(elem, text_element)
-
                     else:
+                        # Caso en el que la fórmula devuelve 'Error'
                         _logger.warning(
-                            f"[Blueprint] Valor de fórmula '{formula_name}' es 'error'.\
-                                  No se reemplaza. Se marca el nodo."
+                            f"[Blueprint] Valor de fórmula '{formula_name}' \
+                                es 'error'. "
+                            "No se reemplaza. Se marca el nodo."
                         )
 
                         existing_class = elem.get("class", "")
                         elem.set(
-                            "class", f"{existing_class} formula-eval-error".strip()
+                            "class",
+                            f"{existing_class} formula-eval-error".strip(),
                         )
 
                         x = elem.get("x", "0")
@@ -238,6 +396,7 @@ class SaleOrderLine(models.Model):
                             x_float = 0
                             y_float = 0
 
+                        # Añadimos un "!" rojo cerca como aviso visual
                         warning_text = etree.Element(
                             "text",
                             {
@@ -251,16 +410,33 @@ class SaleOrderLine(models.Model):
                         warning_text.text = "!"
                         elem.getparent().append(warning_text)
                 else:
-                    _logger.debug(
-                        f"[Blueprint] No hay fórmula configurada para '{formula_name}'\
-                            , se mantiene sin cambios en el SVG."
-                    )
+                    # No hay fórmula configurada para este nodo, pero igualmente
+                    # normalizamos el texto para que no se vea borroso en PNG/PDF.
+                    if formula_name:
+                        display_text = formula_name
+                    else:
+                        # fallback: primer texto encontrado en el nodo
+                        texts = []
+                        if elem.text and elem.text.strip():
+                            texts.append(elem.text.strip())
+                        for child in elem.iterdescendants():
+                            if child.text and child.text.strip():
+                                texts.append(child.text.strip())
+                        display_text = texts[0] if texts else ""
 
+                    _logger.debug(
+                        f"[Blueprint] Nodo ID={elem_id} sin fórmula configurada "
+                        f"('{formula_name}'), normalizando estilo."
+                    )
+                    text_element = _build_clean_text_node(elem, elem_id, display_text)
+                    elem.getparent().replace(elem, text_element)
+
+            # Serializamos el SVG resultante (ya evaluado y normalizado)
             new_svg_data = etree.tostring(
                 root, pretty_print=True, encoding="utf-8"
             ).decode("utf-8")
 
-            # Guardar adjunto SVG
+            # Guardar adjunto SVG evaluado
             attachment = self.env["ir.attachment"].create(
                 {
                     "name": f"blueprint_{blueprint.id}_line_{self.id}_evaluated.svg",
@@ -272,14 +448,17 @@ class SaleOrderLine(models.Model):
                 }
             )
 
-            # Convertir a PNG
-            png_output = cairosvg.svg2png(bytestring=new_svg_data.encode("utf-8"))
+            # Convertir a PNG (mantengo tu dpi=300 para mejorar nitidez en PDF)
+            png_output = cairosvg.svg2png(
+                bytestring=new_svg_data.encode("utf-8"),
+                dpi=300,
+            )
             png_base64 = base64.b64encode(png_output).decode("utf-8")
 
             _logger.debug(
-                f"[Blueprint] Adjunto creado: ID={attachment.id}, Nombre=\
-                    {attachment.name}, Res_model={attachment.res_model},\
-                          Res_id={attachment.res_id}"
+                f"[Blueprint] Adjunto creado: ID={attachment.id}, \
+                    Nombre={attachment.name}, "
+                f"Res_model={attachment.res_model}, Res_id={attachment.res_id}"
             )
 
             return {
@@ -345,6 +524,7 @@ class SaleOrderLine(models.Model):
             de venta ID: {sale_order_line.id}"
         )
 
+        # Atributos (custom + estándar) proyectados a variables para fórmulas
         attribute_values = sale_order_line._get_blueprint_attribute_values()
         _logger.debug(f"[Blueprint] Atributos capturados: {attribute_values}")
 
@@ -360,6 +540,8 @@ class SaleOrderLine(models.Model):
             )
             return {}
 
+        # Recorremos todas las fórmulas definidas en la plantilla de producto
+        # y extraemos sólo las variables listadas en available_attributes.
         for formula in sale_order_line.product_id.product_tmpl_id.formula_ids:
             if not formula.formula_expression or not formula.available_attributes:
                 continue
@@ -379,12 +561,20 @@ class SaleOrderLine(models.Model):
         return variable_mapping
 
     def _get_evaluated_blueprint(self, type_blueprint="manufacturing"):
+        """Genera todos los planos evaluados para la línea (por tipo de plano).
+
+        - Limpia adjuntos antiguos de esta línea.
+        - Filtra los blueprints según tipo (fabricación / compra).
+        - Aplica condiciones de atributos.
+        - Evalúa las fórmulas y genera SVG + PNG.
+        """
         self.ensure_one()
         _logger.info(
             f"[Blueprint] Generando planos evaluados para línea {self.id}\
                   (Producto: {self.product_id.name})"
         )
 
+        # Limpiar adjuntos SVG anteriores asociados a esta línea
         old_attachments = self.env["ir.attachment"].search(
             [
                 ("res_model", "=", "sale.order.line"),
@@ -398,12 +588,14 @@ class SaleOrderLine(models.Model):
             )
             old_attachments.unlink()
 
+        # Si el producto no tiene planos, no hacemos nada
         if not self.product_id or not self.product_id.product_tmpl_id.blueprint_ids:
             _logger.warning(
                 f"[Blueprint] No hay blueprints para el producto {self.product_id.name}"
             )
             return []
 
+        # Mapa de atributos seleccionados (para aplicar condiciones de plano)
         attribute_values = {}
 
         # a) variantes / dinámicos
@@ -422,10 +614,12 @@ class SaleOrderLine(models.Model):
 
         evaluated_svgs = []
 
+        # Recorremos todos los planos configurados en la plantilla
         for blueprint in self.product_id.product_tmpl_id.blueprint_ids:
             if blueprint.type_blueprint != type_blueprint:
                 continue
 
+            # Aplicar condiciones de atributos (blueprint_condition_ids)
             skip_blueprint = False
             for condition in blueprint.blueprint_condition_ids:
                 required = set(condition.value_ids.mapped("name"))
@@ -444,6 +638,8 @@ class SaleOrderLine(models.Model):
                 continue
 
             _logger.debug(f"[Blueprint] Evaluando plano: {blueprint.name}")
+
+            # Variables disponibles para las fórmulas de este plano
             variables = self._get_evaluated_variables(self)
             evaluated_values = {}
             for formula in blueprint.formula_ids:
@@ -453,6 +649,7 @@ class SaleOrderLine(models.Model):
                         formula.formula_expression, variables
                     )
 
+            # Generar SVG evaluado + PNG para este blueprint
             result = self._generate_evaluated_blueprint_svg(blueprint, evaluated_values)
             evaluated_svgs.append(
                 {
@@ -474,6 +671,9 @@ class SaleOrderLine(models.Model):
         """
         Devuelve un dict con los valores de variables para las fórmulas del blueprint,
         igual que hacía el antiguo hook pero sin usar ningún modelo externo.
+
+        Claves del dict: nombres de variables (mmA, mmB, etc.).
+        Valores: normalmente enteros (medidas), si se pueden convertir.
         """
         self.ensure_one()
         result = {}
@@ -486,6 +686,7 @@ class SaleOrderLine(models.Model):
         )
 
         # --- Atributos personalizados (custom) (opcional) ---
+        # Cada valor custom con ptav.is_custom=True define una variable (ptav.name)
         if "product_custom_attribute_value_ids" in self._fields:
             for val in self.product_custom_attribute_value_ids:
                 ptav = val.custom_product_template_attribute_value_id
@@ -525,7 +726,7 @@ class SaleOrderLine(models.Model):
                         )
 
         # --- Atributos estándar proyectados como variable, si el atributo tiene
-        #     is_custom ---
+        #     algún valor is_custom (para obtener el "alias" de variable) ---
         std_values = (
             self.product_template_attribute_value_ids
             + self.product_no_variant_attribute_value_ids
@@ -552,7 +753,7 @@ class SaleOrderLine(models.Model):
                 )
                 continue
             try:
-                # Si el nombre es un número (por ejemplo '1500' mmAltura)
+                # Si el nombre del valor es un número (por ejemplo '1500' mmAltura)
                 int_value = int(val.name)
                 result[var_name] = int_value
                 _logger.info(
@@ -582,7 +783,10 @@ class SaleOrderLine(models.Model):
 
     def _get_blueprint_display_attributes(self):
         """Devuelve lista de dicts [{'attr': 'Color', 'value': 'Blanco'}, ...]
-        sin depender del módulo externo."""
+        sin depender del módulo externo.
+
+        Se usa para mostrar, en el plano, un resumen de los atributos seleccionados.
+        """
         self.ensure_one()
         items = []
 

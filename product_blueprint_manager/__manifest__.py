@@ -1,6 +1,6 @@
 {
     "name": "Product Blueprint Manager",
-    "version": "18.0.11.2.5",
+    "version": "18.0.12.2.5",
     "category": "Manufacturing",
     "summary": (
         "Gestione planos de productos y genere documentos de forma dinámica. "
@@ -23,6 +23,7 @@
         "data/blueprint_report_data.xml",
         "views/product_blueprint_condition_views.xml",
         "views/sale_order_views.xml",
+        "views/mrp_production.xml",
         "views/product_views.xml",
         "views/product_blueprint_views.xml",
         "views/product_blueprint_formula_views.xml",
