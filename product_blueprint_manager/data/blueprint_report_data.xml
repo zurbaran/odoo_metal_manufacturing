@@ -1,4 +1,12 @@
 <odoo>
+    <!--
+        Acción de informe para el "Plano Orden de Fabricación".
+        - model: sale.order  → se imprime desde un pedido de venta.
+        - report_type: qweb-pdf → genera un PDF.
+        - report_name: enlaza con la plantilla QWeb definida en reports/sale_order_report.xml.
+        - print_report_name: nombre sugerido del archivo al descargar.
+        - binding_*: hace que el informe aparezca como opción de impresión en sale.order.
+    -->
     <record id="action_report_sale_order_blueprint" model="ir.actions.report">
         <field name="name">Plano Orden de Fabricación</field>
         <field name="model">sale.order</field>
@@ -14,6 +22,11 @@
         <field name="binding_view_types">list,form</field>
     </record>
 
+    <!--
+        Acción de informe para el "Plano Orden de Compra".
+        - Reutiliza el modelo sale.order, pero la plantilla QWeb es específica para compra.
+        - Se usa para generar planos destinados al proveedor (sin datos de cliente).
+    -->
     <record
     id="action_report_purchase_order_blueprint"
     model="ir.actions.report"
@@ -32,12 +45,22 @@
         <field name="binding_view_types">list,form</field>
     </record>
 
+    <!--
+        Acción de ventana para gestionar los registros de product.blueprint.
+        - Se usa en el menú "Blueprints" (ver views/menu.xml).
+        - view_mode: list,form → vista árbol y formulario estándar.
+    -->
     <record id="product_blueprint_action" model="ir.actions.act_window">
         <field name="name">Blueprints</field>
         <field name="res_model">product.blueprint</field>
         <field name="view_mode">list,form</field>
     </record>
 
+    <!--
+        Acción de ventana para gestionar las fórmulas asociadas a los planos.
+        - res_model: product.blueprint.formula → configuración de fórmulas por plano.
+        - Esta acción se utiliza también en el menú "Formulas".
+    -->
     <record id="product_blueprint_formula_action" model="ir.actions.act_window">
         <field name="name">Formulas</field>
         <field name="res_model">product.blueprint.formula</field>

@@ -10,6 +10,22 @@ from markupsafe import Markup
 from odoo import _, api, fields, models  # pyright: ignore[reportMissingImports]
 from odoo.exceptions import ValidationError  # pyright: ignore[reportMissingImports]
 
+# ---------------------------------------------------------------------------
+# Extensión de `sale.order.line` para la gestión de planos SVG con fórmulas.
+#
+# Funciones principales de este módulo:
+# - Capturar atributos (estándar, no_variant y custom) de la línea de venta
+#   y proyectarlos como variables numéricas para las fórmulas de plano.
+# - Evaluar expresiones matemáticas de forma controlada y segura, usando sólo
+#   variables y funciones permitidas (módulo `math`).
+# - Procesar el SVG del plano, localizar los nodos con class "odoo-formula"
+#   y sustituirlos por nodos <text> "limpios" con los valores evaluados.
+# - Generar adjuntos SVG evaluados y PNG (vía CairoSVG) para su inclusión en
+#   reportes QWeb (presupuesto, plano de compra, MO, etc.).
+# - Exponer utilidades para mostrar, en los reportes, las variables usadas y
+#   un resumen de los atributos seleccionados en la línea.
+# ---------------------------------------------------------------------------
+
 _logger = logging.getLogger(__name__)
 
 
@@ -43,6 +59,7 @@ class SaleOrderLine(models.Model):
                 f"[Blueprint] Capturando valores para la línea de pedido {line.id}"
             )
             blueprint_custom_values = line._get_blueprint_attribute_values()
+            # Se guarda en texto para consumo sencillo (ej. en otros modelos/vistas)
             line.blueprint_custom_values = str(blueprint_custom_values)
 
     def _extract_formula_name_from_svg_element(self, elem):
@@ -499,6 +516,7 @@ class SaleOrderLine(models.Model):
             tree = ast.parse(expression, mode="eval")
             compiled = compile(tree, "<string>", "eval")
 
+            # Se evalúa en un entorno sin __builtins__ para evitar accesos peligrosos
             result = eval(compiled, {"__builtins__": {}}, allowed_names)
 
             _logger.debug(f"[Blueprint] Resultado de la evaluación: {result}")

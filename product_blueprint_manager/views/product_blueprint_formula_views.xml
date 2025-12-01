@@ -1,24 +1,80 @@
 <odoo>
+    <!--
+        Vista de lista para el modelo `product.blueprint.formula`.
+        Permite gestionar de forma masiva las fórmulas asociadas a los planos
+        (product.blueprint) de cada plantilla de producto.
+    -->
     <record id="view_product_blueprint_formula_list" model="ir.ui.view">
+        <!-- Nombre técnico de la vista (se usa en el XML y en la base de datos). -->
         <field name="name">product.blueprint.formula.list</field>
+        <!-- Modelo al que pertenece la vista. -->
         <field name="model">product.blueprint.formula</field>
         <field name="arch" type="xml">
+            <!--
+                Definición de la vista tipo lista (tree).
+                Esta vista se usa principalmente desde la acción del menú
+                `product_blueprint_manager.product_blueprint_formula_action`.
+            -->
             <list string="Formulas">
+                <!--
+                    Nombre de la fórmula (Many2one a product.blueprint.formula.name).
+                    Suele corresponder con la etiqueta detectada en el SVG
+                    (por ejemplo: LENGTH, mmA, mmB, etc.).
+                -->
                 <field name="name"/>
+                <!-- Producto (product.template) al que pertenece esta fórmula. -->
                 <field name="product_id"/>
+                <!--
+                    Plano (product.blueprint) sobre el que se aplica la fórmula.
+                    El plano determina el SVG y las posiciones de las fórmulas.
+                -->
                 <field name="blueprint_id"/>
+                <!--
+                    Expresión de la fórmula que se evaluará.
+                    Ejemplos:
+                      - "mmA * 2"
+                      - "math.ceil(mmB / 50) * 50"
+                    Se evalúa de forma segura en sale.order.line.safe_evaluate_formula().
+                -->
                 <field name="formula_expression"/>
+                <!--
+                    Color del texto que se utilizará al renderizar el resultado
+                    en el SVG (heredado de product.blueprint.formula.name por defecto).
+                    Se marca como opcional para no saturar la vista por defecto.
+                -->
                 <field name="fill_color" optional="hide"/>
+                <!--
+                    Tamaño de fuente usado para el texto evaluado en el SVG.
+                    También proviene inicialmente de la detección automática
+                    en el SVG y puede ser ajustado manualmente.
+                -->
                 <field name="font_size" optional="hide"/>
             </list>
         </field>
     </record>
 
     <!-- Hacer que esta vista list sea la principal de la acción del menú -->
+    <!--
+        Este registro vincula explícitamente la vista de lista anterior
+        (`view_product_blueprint_formula_list`) a la acción de ventana
+        `product_blueprint_manager.product_blueprint_formula_action`,
+        de forma que cuando el usuario entra por el menú "Formulas" se abre
+        primero la vista tipo lista.
+    -->
     <record id="product_blueprint_formula_action_view_list" model="ir.actions.act_window.view">
+        <!-- Acción de ventana a la que se asocia esta vista. -->
         <field name="act_window_id" ref="product_blueprint_manager.product_blueprint_formula_action"/>
+        <!--
+            Modo de vista registrado en esta acción (list = tree).
+            Se usa para ordenar qué vista se abre primero según la secuencia.
+        -->
         <field name="view_mode">list</field>
+        <!-- Referencia a la vista de lista definida más arriba. -->
         <field name="view_id" ref="product_blueprint_manager.view_product_blueprint_formula_list"/>
+        <!--
+            Secuencia=1 garantiza que esta será la vista principal por defecto
+            (se abre antes que otras vistas con mayor secuencia).
+        -->
         <field name="sequence">1</field>
     </record>
 </odoo>

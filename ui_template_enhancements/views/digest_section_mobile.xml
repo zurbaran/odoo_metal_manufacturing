@@ -1,4 +1,21 @@
 <odoo>
+  <!--
+    Módulo: ui_template_enhancements
+    Fichero: views/digest_section_mobile.xml
+
+    Objetivo:
+    - Sobrescribir la plantilla original `digest.digest_section_mobile` del módulo `digest`.
+    - Eliminar por completo la sección de promoción de la app móvil de Odoo en los correos de resumen (digest).
+    - Mantener el identificador técnico original de la plantilla (`digest.digest_section_mobile`) para que,
+      cuando se llame a esa plantilla, no se muestre nada (queda vacía).
+
+    Notas:
+    - Se define una nueva plantilla con id propio (`rm_poweredby__digest_section_mobile`) que contiene,
+      a su vez, una plantilla `t` con `t-name="digest.digest_section_mobile"`.
+    - Al redefinir `t-name` con el mismo valor que la plantilla original, se sustituye su contenido.
+    - El cuerpo está vacío a propósito, únicamente con un comentario, para evitar mostrar cualquier
+      contenido promocional relacionado con Odoo Mobile.
+  -->
   <template id="rm_poweredby__digest_section_mobile" name="Replace Digest Mobile Section">
     <t t-name="digest.digest_section_mobile">
       <!-- Plantilla eliminada para no mostrar promoción de Odoo Mobile -->

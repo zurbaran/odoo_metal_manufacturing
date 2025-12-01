@@ -1,9 +1,67 @@
 <odoo>
+    <!--
+        Módulo: ui_template_enhancements
+        Vista: mail_notification_layout.xml
+
+        OBJETIVO:
+        =========
+        Esta plantilla hereda del layout estándar de notificaciones por correo de Odoo
+        (mail.mail_notification_layout) para eliminar el texto "Powered by Odoo" y la
+        referencia comercial a odoo.com, sustituyéndolo por un pie más neutro.
+
+        CONTEXTO:
+        =========
+        - Odoo inyecta un footer en muchos correos de notificación con un enlace a odoo.com.
+        - Este módulo pretende limpiar el branding de Odoo en correos salientes sin romper
+          la estructura del email ni los enlaces funcionales (por ejemplo, "Unfollow").
+    -->
     <template id="rm_poweredby__mail_notification_layout" inherit_id="mail.mail_notification_layout"
               name="Remove Powered by - Mail Notification Layout (Rebuild)" priority="999">
+
+        <!--
+            XPATH OBJETIVO:
+            ===============
+            Selecciona el <div> que contiene cualquier enlace <a> cuyo href contenga "odoo.com".
+            Normalmente es el bloque donde aparece el "Powered by Odoo" u otras referencias
+            a la web oficial de Odoo.
+
+            ESTRATEGIA:
+            ===========
+            - Se usa position="replace" para sustituir por completo ese bloque <div>.
+            - El nuevo contenido mantiene un pie de correo mínimo, centrado y discreto,
+              sin mención a Odoo como proveedor del software.
+
+            NOTA:
+            =====
+            - La expresión //div[a[contains(@href,'odoo.com')]]:
+                * //div            -> cualquier <div> en el documento
+                * [a[contains(...  -> que tenga un <a> hijo cuyo href contenga "odoo.com"
+        -->
         <xpath expr="//div[a[contains(@href,'odoo.com')]]" position="replace">
+            <!--
+                NUEVO FOOTER:
+                =============
+                - Se muestra solo si show_footer es verdadero (condición controlada en la plantilla padre).
+                - Estilo inline sencillo:
+                    * color: #555555;   -> gris oscuro, discreto
+                    * font-size:11px;   -> texto pequeño
+                - Se incluye únicamente un enlace funcional "Unfollow" para permitir al receptor
+                  darse de baja de los hilos de correo, conservando así la funcionalidad nativa
+                  sin el branding comercial de Odoo.
+            -->
             <div t-if="show_footer" style="color: #555555; font-size:11px;">
                 <span id="mail_unfollow">
+                    <!--
+                        Enlace "Unfollow":
+                        ==================
+                        - URL: /mail/unfollow
+                          Gestiona la cancelación de suscripciones a mensajes.
+                        - Estilos:
+                            * text-decoration:none; -> sin subrayado, aspecto más limpio
+                            * color:#555555;        -> mismo gris discreto del resto del texto
+                        - El carácter " | " se mantiene como separador visual por si en el futuro
+                          se añaden más enlaces o elementos al footer.
+                    -->
                     | <a href="/mail/unfollow" style="text-decoration:none; color:#555555;">Unfollow</a>
                 </span>
             </div>

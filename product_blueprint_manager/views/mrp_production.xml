@@ -1,11 +1,81 @@
 <odoo>
+    <!--
+        Módulo: product_blueprint_manager
+        Vista: mrp_production_form_inherit_blueprint_button
+
+        Objetivo:
+        =========
+        Añadir un botón a la cabecera del formulario de Órdenes de Fabricación (mrp.production)
+        para permitir la impresión del "Plano Fabricación" directamente desde la propia MO.
+
+        Este botón llama al método Python:
+            mrp.production.action_print_blueprint_mrp
+
+        que está definido en:
+            product_blueprint_manager/models/mrp_production.py
+
+        Flujo funcional:
+        =================
+        1) El usuario abre una Orden de Fabricación (MO).
+        2) En el header del formulario aparece el botón "Plano Fabricación".
+        3) Al hacer clic:
+           - Se ejecuta action_print_blueprint_mrp() en mrp.production.
+           - Ese método busca el pedido de venta relacionado.
+           - Reutiliza sale.order.action_print_blueprint() para generar
+             el mismo reporte de planos de fabricación que desde el pedido.
+    -->
     <!-- Botón Plano Fabricación en Orden de Fabricación -->
     <record id="mrp_production_form_inherit_blueprint_button" model="ir.ui.view">
+        <!--
+            name:
+            Nombre interno de la vista heredada. No afecta a la lógica, pero sirve
+            para identificar esta personalización en el listado de vistas.
+        -->
         <field name="name">mrp.production.form.inherit.blueprint.button</field>
+
+        <!--
+            model:
+            Modelo de la vista que se hereda:
+                mrp.production  → Orden de Fabricación.
+        -->
         <field name="model">mrp.production</field>
+
+        <!--
+            inherit_id:
+            Referencia a la vista base de Odoo que estamos extendiendo.
+            En este caso, el formulario principal de Órdenes de Fabricación:
+                mrp.mrp_production_form_view
+        -->
         <field name="inherit_id" ref="mrp.mrp_production_form_view"/>
+
+        <!--
+            arch:
+            Definición XML de la herencia de la vista.
+            Usamos un <xpath> para insertar el botón dentro del <header>.
+        -->
         <field name="arch" type="xml">
+            <!--
+                xpath:
+                expr="//header"           → Busca el nodo <header> del formulario.
+                position="inside"         → Inserta el nuevo contenido dentro del header.
+
+                Resultado:
+                El botón aparecerá junto con el resto de botones de acción de la MO.
+            -->
             <xpath expr="//header" position="inside">
+                <!--
+                    button:
+                    - name="action_print_blueprint_mrp"
+                        Método Python en mrp.production a ejecutar al hacer clic.
+                    - type="object"
+                        Indica que se llama a un método del modelo (no smart button ni acción directa).
+                    - string="Plano Fabricación"
+                        Etiqueta visible del botón en la interfaz.
+                    - class="oe_highlight"
+                        Resalta el botón (estilo de Odoo para acciones principales).
+                    - icon="fa-industry"
+                        Icono FontAwesome que se muestra en el botón.
+                -->
                 <button
           name="action_print_blueprint_mrp"
           type="object"

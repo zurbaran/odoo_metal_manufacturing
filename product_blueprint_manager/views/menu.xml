@@ -1,10 +1,36 @@
 <odoo>
+    <!--
+        Menú raíz del módulo "Product Blueprint Manager".
+
+        - id="menu_product_blueprints_root":
+          Elemento de nivel superior que agrupa todas las entradas relacionadas
+          con la gestión de planos de producto.
+        - name="Product Blueprints":
+          Texto visible en el menú principal.
+        - web_icon:
+          Define el icono que se mostrará en el menú, apuntando al recurso
+          estático del módulo (static/description/icon.png).
+        - sequence:
+          Orden relativo entre otros menús de nivel superior.
+    -->
     <menuitem
     id="menu_product_blueprints_root"
     name="Product Blueprints"
     web_icon="product_blueprint_manager,static/description/icon.png"
     sequence="100"
   />
+
+    <!--
+        Menú secundario: acceso a la lista de "Blueprints" (planos).
+
+        - parent="menu_product_blueprints_root":
+          Indica que este menú cuelga del menú raíz definido arriba.
+        - action="product_blueprint_manager.product_blueprint_action":
+          Acción de tipo ir.actions.act_window definida en data/blueprint_report_data.xml
+          que abre el modelo `product.blueprint` (vista list/form).
+        - sequence:
+          Controla el orden dentro del grupo de menús hijos del menú raíz.
+    -->
     <menuitem
     id="menu_product_blueprints"
     name="Blueprints"
@@ -12,6 +38,18 @@
     action="product_blueprint_manager.product_blueprint_action"
     sequence="10"
   />
+
+    <!--
+        Menú secundario: acceso a las "Formulas" asociadas a los planos.
+
+        - parent="menu_product_blueprints_root":
+          También cuelga del menú raíz principal.
+        - action="product_blueprint_manager.product_blueprint_formula_action":
+          Acción que abre el modelo `product.blueprint.formula` en vistas
+          list/form para configurar fórmulas, expresiones y estilos.
+        - sequence:
+          Posición relativa respecto al menú "Blueprints".
+    -->
     <menuitem
     id="menu_product_blueprint_formulas"
     name="Formulas"

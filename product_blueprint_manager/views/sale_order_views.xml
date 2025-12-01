@@ -1,10 +1,64 @@
 <odoo>
+    <!--
+        Vista heredada del formulario de pedidos de venta.
+
+        Objetivo:
+        Añadir dos botones en el encabezado del pedido de venta para:
+          - Imprimir el plano de fabricación asociado al pedido.
+          - Imprimir el plano de compra asociado al pedido.
+
+        Ambos botones llaman a métodos Python definidos en el modelo `sale.order`
+        (ver modelo extendido en `product_blueprint_manager/models/sale_order.py`).
+    -->
     <record id="view_order_form_inherit_blueprint_buttons" model="ir.ui.view">
+        <!-- Nombre técnico descriptivo de la vista heredada. Solo informativo. -->
         <field name="name">sale.order.form.inherit.blueprint.buttons</field>
+
+        <!-- Modelo sobre el que actúa esta vista: pedidos de venta. -->
         <field name="model">sale.order</field>
+
+        <!--
+            Vista base que se hereda.
+
+            `sale.view_order_form` es el formulario estándar de pedidos de venta.
+            Sobre esta vista se aplicará el XPath definido más abajo.
+        -->
         <field name="inherit_id" ref="sale.view_order_form" />
+
+        <!--
+            Definición de la arquitectura XML que se inyectará en la vista
+            original mediante XPath.
+        -->
         <field name="arch" type="xml">
+            <!--
+                Localiza el nodo <header> del formulario del pedido de venta
+                y añade los nuevos botones dentro de él.
+
+                position="inside" indica que se insertan como hijos del header,
+                respetando el resto de elementos definidos por Odoo.
+            -->
             <xpath expr="//header" position="inside">
+                <!--
+                    Botón: "Plano Fabricación"
+
+                    - name="action_print_blueprint":
+                      Llama al método Python `action_print_blueprint` del modelo
+                      `sale.order`. Ese método es el que dispara el informe
+                      QWeb de planos de fabricación.
+
+                    - type="object":
+                      Indica que el botón ejecuta un método del modelo.
+
+                    - string="Plano Fabricación":
+                      Texto que verá el usuario en el botón.
+
+                    - class="oe_highlight":
+                      Aplica el estilo visual de botón resaltado (uso habitual en
+                      acciones principales del formulario).
+
+                    - icon="fa-industry":
+                      Icono de Font Awesome que complementa el texto del botón.
+                -->
                 <button
           name="action_print_blueprint"
           type="object"
@@ -12,6 +66,24 @@
           class="oe_highlight"
           icon="fa-industry"
         />
+                <!--
+                    Botón: "Plano Compra"
+
+                    - name="action_print_purchase_blueprint":
+                      Llama al método Python `action_print_purchase_blueprint`
+                      del modelo `sale.order`. Este método lanza el reporte
+                      específico para planos de orden de compra.
+
+                    - type="object":
+                      Igual que el anterior, ejecuta un método del modelo.
+
+                    - string="Plano Compra":
+                      Texto visible del botón.
+
+                    - icon="fa-truck":
+                      Icono de camión para identificar visualmente que se trata
+                      de un plano orientado a compras/proveedor.
+                -->
                 <button
           name="action_print_purchase_blueprint"
           type="object"

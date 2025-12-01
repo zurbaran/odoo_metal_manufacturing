@@ -1,7 +1,71 @@
 <odoo>
+    <!--
+        Template: rm_poweredby__portal_record_sidebar
+        ==============================================
+        - Objetivo:
+          Esta vista heredada se utiliza para eliminar el bloque de
+          "Powered by Odoo" (o mensajes promocionales similares) del
+          *sidebar* del portal (portal de clientes / portal web).
+
+        - inherit_id="portal.portal_record_sidebar":
+          Indica que estamos heredando la plantilla estándar del módulo
+          'portal', concretamente la plantilla 'portal.portal_record_sidebar'.
+          No creamos una plantilla nueva desde cero, solo modificamos la ya
+          existente.
+
+        - name:
+          Nombre descriptivo de la vista para identificar fácilmente que su
+          finalidad es eliminar el "Powered by" en el sidebar del portal.
+
+        - priority="999":
+          Se establece una prioridad muy alta para asegurarnos de que esta
+          vista heredada se aplique después de otras posibles vistas que
+          también modifiquen la misma plantilla, garantizando que el
+          contenido de branding se elimine siempre al final.
+    -->
     <template id="rm_poweredby__portal_record_sidebar" inherit_id="portal.portal_record_sidebar"
               name="Remove Powered by - Portal Record Sidebar" priority="999">
+
+        <!--
+            xpath:
+            ======
+            expr="//div[contains(@class,'text-muted')][.//a[contains(@href,'odoo.com')]]"
+
+            - Selecciona:
+              Cualquier <div> dentro de la plantilla original que cumpla:
+                * Tiene en su atributo "class" la cadena 'text-muted'.
+                * Contiene en su interior (en cualquier nivel) un enlace <a>
+                  cuyo atributo href incluya la cadena 'odoo.com'.
+
+              Normalmente este bloque es donde Odoo coloca el texto
+              "Powered by Odoo" y/o un enlace a la web de Odoo.
+
+            - position="replace":
+              En lugar de insertar antes o después, sustituimos COMPLETAMENTE
+              el nodo seleccionado por el contenido definido dentro del xpath.
+              En este caso, el contenido nuevo es únicamente un comentario,
+              por lo que el bloque se elimina de manera efectiva.
+
+            Nota:
+            Si en futuras versiones de Odoo cambia la estructura del HTML
+            del sidebar (clases, jerarquía, etc.), este xpath podría dejar
+            de encontrar el bloque y, por tanto, el "Powered by" podría
+            reaparecer. En ese caso habría que ajustar la expresión xpath.
+        -->
         <xpath expr="//div[contains(@class,'text-muted')][.//a[contains(@href,'odoo.com')]]" position="replace">
+            <!--
+                Eliminado:
+                ==========
+                No se añade ningún contenido sustituto, sólo se deja
+                un comentario para dejar constancia de que el bloque
+                original ha sido intencionadamente eliminado.
+
+                Efecto visual:
+                - El texto "Powered by Odoo" o equivalente desaparece
+                  del sidebar del portal.
+                - No se muestra ningún texto alternativo ni hueco visible,
+                  ya que el bloque se suprime por completo.
+            -->
             <!-- eliminado -->
         </xpath>
     </template>

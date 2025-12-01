@@ -1,21 +1,95 @@
 <odoo>
+    <!--
+        Vista tipo "list" principal para el modelo product.blueprint.
+
+        - Muestra la lista de planos disponibles.
+        - Se utilizará como vista por defecto en la acción de menú
+          configurada más abajo (ir.actions.act_window.view).
+    -->
     <record id="view_product_blueprint_list" model="ir.ui.view">
+        <!--
+            Nombre técnico de la vista. No afecta al funcionamiento,
+            pero es útil para localizarla vía XML-ID o en el depurador.
+        -->
         <field name="name">product.blueprint.list</field>
+
+        <!--
+            Modelo al que se asocia esta vista.
+            En este caso, el modelo definido en el módulo:
+            'product.blueprint'.
+        -->
         <field name="model">product.blueprint</field>
+
+        <!--
+            Definición de la arquitectura de la vista.
+            type="xml" indica que se trata de estructura XML QWeb/Views.
+        -->
         <field name="arch" type="xml">
+            <!--
+                Vista en modo "tree/list" (según traducción de Odoo).
+                Se mostrará como una tabla con las columnas indicadas.
+            -->
             <list string="Blueprints">
+                <!--
+                    Campo 'name': nombre del plano.
+                    Es la descripción corta con la que el usuario identificará el plano.
+                -->
                 <field name="name"/>
+
+                <!--
+                    Campo 'product_id': producto (product.template) al que está asociado el plano.
+                    Permite ver a qué plantilla de producto pertenece cada blueprint.
+                -->
                 <field name="product_id"/>
+
+                <!--
+                    Campo 'type_blueprint': tipo de plano (fabricación/compra).
+                    Es un selection definido en el modelo product.blueprint, que
+                    diferencia si el plano es para Orden de Fabricación o Orden de Compra.
+                -->
                 <field name="type_blueprint"/>
             </list>
         </field>
     </record>
 
-    <!-- Vincular esta vista list a la acción del menú para que sea la principal -->
+    <!--
+        Vincular esta vista list a la acción del menú para que sea la principal.
+
+        Este registro define la relación entre:
+          - La acción de apertura de ventanas (ir.actions.act_window)
+          - Y la vista de tipo "list" que se usará por defecto.
+
+        De esta forma, al entrar al menú "Blueprints", el usuario verá
+        directamente la lista anterior y no otra vista alternativa.
+    -->
     <record id="product_blueprint_action_view_list" model="ir.actions.act_window.view">
+        <!--
+            Referencia a la acción de ventana donde se quiere inyectar
+            esta vista como principal. Esta acción está definida en:
+              data/blueprint_report_data.xml
+            con el id: product_blueprint_manager.product_blueprint_action
+        -->
         <field name="act_window_id" ref="product_blueprint_manager.product_blueprint_action"/>
+
+        <!--
+            Modo de vista que aplica esta entrada de configuración.
+            En este caso se indica "list", por lo que esta configuración se
+            aplicará cuando la acción se abra en modo lista.
+        -->
         <field name="view_mode">list</field>
+
+        <!--
+            Vista que se quiere usar como principal para ese modo.
+            Se referencia la vista definida más arriba.
+        -->
         <field name="view_id" ref="product_blueprint_manager.view_product_blueprint_list"/>
+
+        <!--
+            Secuencia de prioridad para esta vista dentro de la acción.
+            Cuanto menor es el número, mayor prioridad tiene. Con '1'
+            nos aseguramos de que esta vista sea la primera y, por tanto,
+            la que se muestre por defecto.
+        -->
         <field name="sequence">1</field>
     </record>
 </odoo>

@@ -1,9 +1,45 @@
 <odoo>
+    <!--
+        Archivo: ui_template_enhancements/views/login_layout.xml
+        Propósito:
+        - Heredar la plantilla de login principal de Odoo (`web.login_layout`)
+        - Sustituir el bloque de pie de página donde aparece el "Powered by Odoo"
+          por una versión sin publicidad, manteniendo únicamente el enlace al
+          gestor de bases de datos cuando esté permitido.
+    -->
     <template id="rm_poweredby__web_login_layout" inherit_id="web.login_layout"
               name="Remove Powered by - Web Login Layout (Safe)" priority="999">
+        <!--
+            xpath:
+            - Selecciona el <div> del pie de página del login que:
+              * tenga la clase 'text-center'
+              * y la clase 'border-top'
+            - `position="replace"` elimina el contenido original del pie de página
+              y lo reemplaza por el bloque definido a continuación.
+        -->
         <xpath expr="//div[contains(@class,'text-center') and contains(@class,'border-top')]" position="replace">
+            <!--
+                Nuevo pie de página del login:
+                - Se mantiene el estilo visual básico (text-center, small, mt-4, pt-3, border-top)
+                - Se controla su visualización con `t-if="not disable_footer"`, de modo que
+                  otros módulos o contextos puedan ocultar el footer si lo desean.
+                - Ya no se muestra "Powered by Odoo" ni enlaces promocionales.
+            -->
             <div class="text-center small mt-4 pt-3 border-top" t-if="not disable_footer">
+                <!--
+                    Bloque condicional:
+                    - Solo se muestra el enlace "Manage Databases" si `disable_database_manager`
+                      es falso.
+                    - Esta variable la controla el propio Odoo dependiendo de la configuración
+                      (por ejemplo, para ocultar el gestor de bases en servidores en producción).
+                -->
                 <t t-if="not disable_database_manager">
+                    <!--
+                        Enlace al gestor de bases de datos nativo de Odoo:
+                        - URL fija: /web/database/manager
+                        - Clases CSS heredadas del diseño de Odoo para mantener consistencia
+                          visual (border-end, pe-2, me-1).
+                    -->
                     <a class="border-end pe-2 me-1" href="/web/database/manager">Manage Databases</a>
                 </t>
             </div>

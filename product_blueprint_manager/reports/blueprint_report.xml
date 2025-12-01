@@ -1,13 +1,53 @@
 <odoo>
+    <!--
+        Plantilla QWeb para mostrar un único plano (blueprint) sencillo.
+
+        - Se espera que el documento (doc) sea un registro de sale.order.
+        - El contenido se envuelve con web.external_layout para reutilizar
+          la cabecera y el pie estándar de los informes de Odoo.
+    -->
     <template id="report_blueprint_template">
+        <!--
+            web.external_layout:
+            - Aplica el layout estándar (cabecera, pie, márgenes, etc.)
+            - Dentro definimos el contenido específico de este informe.
+        -->
         <t t-call="web.external_layout">
             <div class="page">
                 <main>
+                    <!-- Título fijo del bloque de plano -->
                     <h2>Blueprint</h2>
+
+                    <!--
+                        evaluated_blueprint:
+                        - Variable de plantilla que almacenará el resultado de
+                          llamar a _get_evaluated_blueprint() sobre la primera
+                          línea de pedido del documento.
+                        - doc.order_line[0] hace referencia a la primera línea
+                          de doc (sale.order).
+                        - Se asume que _get_evaluated_blueprint() devuelve una
+                          cadena en base64 con el contenido del SVG a mostrar.
+                          (esta lógica se implementa en el modelo Python).
+                    -->
                     <t
             t-set="evaluated_blueprint"
             t-value="doc.order_line[0]._get_evaluated_blueprint()"
           />
+
+                    <!--
+                        Imagen del plano:
+
+                        t-att-src:
+                        - Construye el atributo src del <img> concatenando:
+                          "data:image/svg+xml;base64," + evaluated_blueprint
+                        - El navegador interpretará el contenido como un SVG
+                          embebido en base64 (data URL).
+
+                        style:
+                        - width:100%  → el plano ocupa todo el ancho disponible
+                          del contenedor.
+                        - height:auto → mantiene la proporción original del SVG.
+                    -->
                     <img
             t-att-src="'data:image/svg+xml;base64,' + evaluated_blueprint"
             style="width:100%; height:auto;"

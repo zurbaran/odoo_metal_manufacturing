@@ -1,14 +1,45 @@
 <odoo>
+    <!--
+        Plantilla principal del reporte de planos de ORDEN DE VENTA (fabricación).
+        Esta plantilla se encarga de:
+        - Preparar el contexto estándar que espera web.external_layout.
+        - Definir el bloque de dirección del cliente (address).
+        - Recorrer las líneas del pedido y mostrar los planos evaluados
+          (imágenes PNG generadas a partir de los SVG del blueprint).
+    -->
     <template id="report_sale_order_blueprint_document">
     <!-- Para web.external_layout -->
+    <!--
+        'o' es la variable estándar usada por web.external_layout.
+        Se iguala a 'doc' (el pedido de venta actual).
+    -->
     <t t-set="o" t-value="doc"/>
+    <!--
+        company_id se usa también dentro de web.external_layout
+        para pintar los datos de la empresa.
+    -->
     <t t-set="company_id" t-value="doc.company_id"/>
 
     <!-- Destinatario y dirección -->
+    <!--
+        Se fuerza el contexto de idioma al del partner del pedido
+        para que los textos del reporte se traduzcan correctamente.
+    -->
     <t t-set="doc" t-value="doc.with_context(lang=doc.partner_id.lang)"/>
     <!-- <t t-set="custom_layout_address" t-value="True"/>-->   <!-- Indica que das tú el bloque -->
+    <!--
+        'p' es el partner al que se dirige la factura/pedido:
+        - Si hay partner de factura, se usa ese.
+        - Si no, se usa el partner del pedido.
+    -->
     <t t-set="p" t-value="doc.partner_invoice_id or doc.partner_id"/>
 
+    <!--
+        Bloque de dirección que será usado por web.external_layout.
+        Se ha sobreescrito para aprovechar el widget 'contact' y
+        mostrar nombre + dirección + teléfonos + email en un formato
+        estándar de Odoo, reduciendo duplicaciones de código.
+    -->
     <!-- Sustituye tu bloque <t t-set="address"> ... </t> por esto -->
     <t t-set="address">
     <t t-if="doc.partner_invoice_id">
@@ -32,11 +63,26 @@
     </t>
 
     <!-- Si quieres, también: -->
+    <!--
+        Campo auxiliar por si se quiere mostrar el NIF extranjero
+        definido en la posición fiscal (no se usa en este propio
+        fragmento, pero queda disponible en el contexto).
+    -->
     <t t-set="forced_vat" t-value="doc.fiscal_position_id.foreign_vat"/>
 
+    <!--
+        Llamada al layout estándar de Odoo (web.external_layout), que
+        se encargará de pintar:
+        - Cabecera con datos de la compañía.
+        - Bloque de dirección usando la variable 'address'.
+        - Estructura general de página.
+        Dentro de este t-call, se define el contenido concreto
+        del reporte de planos.
+    -->
     <t t-call="web.external_layout">
     <style>
-        /* Reduce el margen vertical del bloque de dirección */
+        /* Reduce el margen vertical del bloque de dirección
+           para disminuir el "hueco" entre datos de empresa y cliente. */
         .o_report_layout_standard .address.row { margin-bottom: 6px !important; }
         /* Opcional: compactar un poco el título y tablas propias del plano */
         .pbm-tight h2 { margin: 0 0 4px 0; font-size: 14px; }
@@ -46,23 +92,56 @@
         .pbm-tight .page { padding-top: 0; }
     </style>
 
+    <!--
+        Contenido específico del reporte de planos de fabricación:
+        - Se recorre cada línea de pedido.
+        - Para cada línea se obtienen los blueprints evaluados
+          (SVG → PNG) mediante line._get_evaluated_blueprint().
+        - Por cada plano se genera una "página" con los datos
+          de cabecera de línea + atributos + imagen.
+    -->
     <div class="page pbm-tight">
         <div>
+        <!-- Recorre todas las líneas del pedido -->
         <t t-foreach="doc.order_line" t-as="line">
+            <!--
+                evaluated_blueprints es una LISTA de dicts devueltos por
+                line._get_evaluated_blueprint(), con claves:
+                - attachment_id
+                - markup (SVG evaluado)
+                - png_base64 (imagen renderizada)
+                - blueprint_name (nombre del plano)
+            -->
             <t t-set="evaluated_blueprints" t-value="line._get_evaluated_blueprint()"/>
+            <!-- Solo entra si hay al menos un plano generado para esta línea -->
             <t t-if="evaluated_blueprints and len(evaluated_blueprints) > 0">
+            <!-- Recorre todos los blueprints aplicables a esta línea -->
             <t t-foreach="evaluated_blueprints" t-as="blueprint">
+                <!--
+                    page-break-after: always;
+                    Cada plano se fuerza a empezar en una página nueva
+                    para evitar que se mezclen planos de líneas distintas.
+                -->
                 <div style="page-break-inside: avoid; page-break-after: always;">
                 <h2>Planos: <t t-out="doc.name"/></h2>
 
                 <table style="width:100%;">
                     <tr>
                     <td class="compact-lines" style="vertical-align:top; width:50%;">
+                        <!-- Fecha del pedido -->
                         <p><span t-field="doc.date_order" t-options="{'widget':'date'}"/></p>
+                        <!-- Nombre del producto de la línea -->
                         <p><t t-out="line.product_id.name"/></p>
+                        <!-- Nombre del plano generado -->
                         <p>Plano: <t t-out="blueprint['blueprint_name']"/></p>
                     </td>
                     <td class="compact-lines" style="vertical-align:top; width:50%;">
+                        <!--
+                            Resumen legible de los atributos seleccionados
+                            en la línea (Color, Vidrio, Altura, etc.),
+                            devuelto como lista de dicts:
+                            [{'attr': 'Color', 'value': 'Blanco'}, ...]
+                        -->
                         <t t-set="disp_attrs" t-value="line._get_blueprint_display_attributes()"/>
                         <t t-if="disp_attrs">
                         <ul>
@@ -75,6 +154,13 @@
                     </tr>
                 </table>
 
+                <!--
+                    Imagen del plano:
+                    - 'png_base64' es la conversión a PNG del SVG evaluado
+                      generada en sale.order.line._generate_evaluated_blueprint_svg().
+                    - Se usa data:image/png;base64 para incrustar directamente
+                      la imagen en el reporte PDF.
+                -->
                 <img t-if="'png_base64' in blueprint"
                     t-att-src="'data:image/png;base64,' + blueprint['png_base64']"
                     style="width:100%; height:auto;"/>
@@ -87,6 +173,13 @@
     </t>
     </template>
 
+    <!--
+        Plantilla "envoltorio" del reporte:
+        - web.html_container se encarga de la estructura HTML general.
+        - Se recorre 'docs' (lista de sale.order) y para cada uno se llama
+          a la plantilla principal 'report_sale_order_blueprint_document'.
+        - t-lang ajusta el idioma a la lengua del partner del pedido.
+    -->
     <template id="report_sale_order_blueprint">
     <t t-call="web.html_container">
         <t t-foreach="docs" t-as="doc">

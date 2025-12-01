@@ -1,16 +1,49 @@
 <odoo>
+    <!--
+        Vista heredada del formulario de "Valores de atributo de plantilla de producto"
+        (product.template.attribute.value).
+
+        Objetivo:
+        - Añadir un nuevo campo de configuración "price_formula" junto al campo nativo
+          "price_extra", para permitir definir fórmulas de precio dinámicas.
+    -->
     <record
     id="view_product_template_attribute_value_form_inherit"
     model="ir.ui.view"
   >
+        <!-- Nombre interno de la vista heredada -->
         <field name="name">product.template.attribute.value.form.inherit</field>
+
+        <!-- Modelo al que aplica la vista -->
         <field name="model">product.template.attribute.value</field>
+
+        <!--
+            Referencia a la vista original que se hereda.
+            En este caso, el formulario estándar de product.template.attribute.value.
+        -->
         <field
       name="inherit_id"
       ref="product.product_template_attribute_value_view_form"
     />
+
+        <!--
+            Definición de la arquitectura heredada, usando xpath para insertar campos
+            adicionales en posiciones concretas del formulario original.
+        -->
         <field name="arch" type="xml">
+            <!--
+                Localizamos el campo nativo "price_extra" en el formulario original
+                y, justo después de él (position="after"), insertamos el nuevo campo
+                "price_formula".
+            -->
             <xpath expr="//field[@name='price_extra']" position="after">
+                <!--
+                    Campo "price_formula":
+                    - Almacenado en el modelo product.template.attribute.value.
+                    - Permite definir fórmulas de precio usando variables como
+                      "custom_value" y "price_so_far".
+                    - El placeholder ofrece ejemplos de uso habituales.
+                -->
                 <field
           name="price_formula"
           string="Fórmula de Precio"

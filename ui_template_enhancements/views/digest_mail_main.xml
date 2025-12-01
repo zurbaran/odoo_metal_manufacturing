@@ -1,14 +1,116 @@
 <odoo>
+    <!--
+        Módulo: ui_template_enhancements
+        Vista: digest_mail_main.xml
+
+        OBJETIVO GENERAL
+        =================
+        Esta plantilla hereda de "digest.digest_mail_main" para eliminar
+        referencias de branding a Odoo (enlaces "Powered by" y promoción
+        de Odoo Mobile) en los correos de resumen (digest) enviados por Odoo.
+
+        PUNTOS CLAVE
+        - Se usa un template heredado (inherit_id="digest.digest_mail_main").
+        - Se emplean expresiones XPath para localizar elementos concretos
+          relacionados con:
+            * Bloque "Powered by" / "by Odoo".
+            * Sección con id="powered".
+            * (Opcional/comentado) filas de tabla que promocionan Odoo Mobile.
+        - La estrategia es "position='replace'" con contenido vacío o comentarios,
+          lo que efectivamente elimina esos elementos del HTML final.
+    -->
     <template id="rm_poweredby__digest_mail_main" inherit_id="digest.digest_mail_main"
               name="Remove Powered by &amp; Odoo Mobile - Digest Mail Main" priority="999">
 
+        <!--
+            PRIMER XPATH: ELIMINAR ENLACE "BY ODOO"
+            =======================================
+            Expr:
+              //div[contains(@class,'by_odoo')]/a[contains(@href,'odoo.com')]
+
+            - Busca un <div> que tenga en su atributo class la cadena 'by_odoo'.
+            - Dentro de ese <div>, localiza un <a> cuyo href contenga 'odoo.com'.
+            - Normalmente corresponde al enlace "Powered by Odoo" o similar
+              situado en el pie del correo digest.
+
+            Acción:
+            position="replace" sustituye el <a> encontrado por el contenido
+            indicado entre las etiquetas <xpath>...</xpath>.
+
+            En este caso solo se deja un comentario HTML,
+            por lo que el enlace desaparece del HTML final.
+        -->
         <xpath expr="//div[contains(@class,'by_odoo')]/a[contains(@href,'odoo.com')]" position="replace">
             <!-- eliminado -->
         </xpath>
 
+        <!--
+            SEGUNDO XPATH: ELIMINAR BLOQUE CON ID="POWERED"
+            ================================================
+            Expr:
+              //*[@id='powered']
+
+            - Localiza cualquier nodo (normalmente un <div> o similar) que tenga
+              el atributo id="powered".
+            - Este bloque suele agrupar el texto y/o el enlace de "Powered by".
+
+            Acción:
+            - De nuevo se usa position="replace" para sustituir por un simple
+              comentario HTML, lo que elimina completamente el contenido visual
+              del bloque en el correo.
+        -->
         <xpath expr="//*[@id='powered']" position="replace">
             <!-- eliminado -->
         </xpath>
+
+        <!--
+            XPATH ADICIONALES (COMENTADOS)
+            ==============================
+            Los siguientes XPaths están comentados (no se ejecutan) pero se
+            dejan en el código como referencia para futuras ampliaciones.
+
+            OBJETIVO:
+
+            - Eliminar también cualquier rastro de promoción de la aplicación
+              Odoo Mobile (imágenes, textos, enlaces a App Store / Play Store).
+
+            DETALLE DE CADA XPATH:
+
+            1) Eliminar fila que contiene imagen de Odoo Mobile:
+               //img[contains(@src,'odoo-mobile')]/ancestor::tr[1]
+               - Busca una imagen cuyo src contenga 'odoo-mobile'
+               - Sube al primer <tr> ancestro para eliminar toda la fila
+                 de la tabla que contiene la promoción.
+
+            2) Eliminar fila con texto que contenga "odoo mobile" (case-insensitive):
+               //*[contains(translate(normalize-space(string(.)),
+                             'ABCDEFGHIJKLMNOPQRSTUVWXYZÁÉÍÓÚÜ',
+                             'abcdefghijklmnopqrstuvwxyzáéíóúü'),
+                             'odoo mobile')]/ancestor::tr[1]
+               - Normaliza el espacio, pasa el texto a minúsculas (incluyendo
+                 acentos) y comprueba si contiene 'odoo mobile'.
+               - Elimina la primera fila <tr> ancestro que contenga ese texto.
+
+            3) Eliminar fila con enlace a Google Play:
+               //a[contains(@href,'play.google.com')]/ancestor::tr[1]
+               - Si hay un enlace a la tienda de Android, se elimina toda
+                 la fila que lo contiene.
+
+            4) Eliminar fila con enlace a iTunes / App Store:
+               //a[contains(@href,'itunes.apple.com') or contains(@href,'apps.apple.com')]/ancestor::tr[1]
+               - Detecta enlaces a las tiendas de Apple (iTunes o App Store)
+                 y elimina su fila de tabla.
+
+            5) Eliminar fila con imagen descargada desde download.odoocdn.com:
+               //img[contains(@src,'download.odoocdn.com')]/ancestor::tr[1]
+               - Suele corresponder a banners o imágenes promocionales
+                 alojadas en el CDN oficial de Odoo.
+
+            NOTA:
+            - Estos XPaths están listos para ser activados si en el futuro
+              se desea eliminar también toda promoción gráfica de Odoo Mobile.
+            - Para activarlos bastaría con descomentar el bloque completo.
+        -->
         <!--
         <xpath expr="//img[contains(@src,'odoo-mobile')]/ancestor::tr[1]" position="replace"/>
         <xpath expr="//*[contains(translate(normalize-space(string(.)),

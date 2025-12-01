@@ -1,10 +1,120 @@
 <odoo>
+    <!--
+        Módulo: ui_template_enhancements
+        Archivo: views/mail_notification_light.xml
+
+        Objetivo principal:
+        - Heredar la plantilla estándar de Odoo 'mail.mail_notification_light'
+          para eliminar el texto de promoción "Powered by Odoo" en las
+          notificaciones de correo.
+        - Sustituir la fila (<tr>) que contiene enlaces hacia 'odoo.com' por
+          un pie de correo simplificado que muestre únicamente un enlace
+          para "Unfollow" (dejar de seguir).
+
+        Notas:
+        - priority="999" da una prioridad muy alta a esta vista heredada,
+          de modo que sus cambios prevalezcan sobre otros módulos que también
+          puedan heredar la misma plantilla.
+        - No se modifica la lógica de envío de correo, únicamente la parte
+          visual del layout.
+    -->
     <template id="rm_poweredby__mail_notification_light" inherit_id="mail.mail_notification_light"
               name="Remove Powered by - Mail Notification Light (Rebuild)" priority="999">
+        <!--
+            Atributos de la plantilla:
+
+            - id="rm_poweredby__mail_notification_light":
+              Identificador técnico de esta plantilla heredada dentro del
+              módulo. Suele seguir una convención que indica el propósito
+              (rm_poweredby = remove powered by).
+
+            - inherit_id="mail.mail_notification_light":
+              Indica que esta plantilla no es nueva, sino que extiende
+              (hereda) la plantilla ya existente 'mail.mail_notification_light'
+              definida en el módulo 'mail'.
+
+            - name="Remove Powered by - Mail Notification Light (Rebuild)":
+              Nombre descriptivo, utilizado principalmente a nivel técnico
+              o en herramientas de depuración.
+
+            - priority="999":
+              Cuanto mayor es la prioridad, más tarde se aplica la vista
+              heredada. Con 999 nos aseguramos de que esta modificación se
+              aplique por encima de otras herencias sobre la misma plantilla.
+        -->
         <xpath expr="//tr[.//a[contains(@href,'odoo.com')]]" position="replace">
+            <!--
+                XPath:
+
+                - expr="//tr[.//a[contains(@href,'odoo.com')]]":
+                  Selecciona cualquier fila de tabla (<tr>) que contenga
+                  en algún nivel inferior un enlace (<a>) cuyo atributo
+                  href incluya la cadena 'odoo.com'.
+
+                  En la plantilla original, esto corresponde normalmente
+                  a la fila que muestra la frase de promoción "Powered by
+                  Odoo" con un enlace a la web oficial.
+
+                - position="replace":
+                  Indica que se debe reemplazar por completo el nodo
+                  seleccionado (la fila <tr> encontrada) por el contenido
+                  definido a continuación. Es decir, eliminamos totalmente
+                  el pie promocional original y lo sustituimos por uno
+                  propio.
+            -->
             <tr>
                 <td align="center" style="min-width: 590px;">
+                    <!--
+                        Celda del pie del correo:
+
+                        - align="center":
+                          Centra horizontalmente el contenido de la celda,
+                          lo que suele mejorar la visualización en clientes
+                          de correo.
+
+                        - style="min-width: 590px;":
+                          Establece un ancho mínimo de 590 píxeles para
+                          asegurar que el contenido se muestre de forma
+                          razonable en múltiples clientes y tamaños de
+                          pantalla. Este valor suele alinearse con los
+                          anchos utilizados en las plantillas estándar
+                          de correos de Odoo.
+                    -->
                     <span id="mail_unfollow">
+                        <!--
+                            Span con enlace para darse de baja / dejar de seguir:
+
+                            - id="mail_unfollow":
+                              Identificador asignado para mantener
+                              compatibilidad con otros fragmentos de código
+                              (JS, CSS o tests) que puedan buscar este
+                              identificador para mostrar/ocultar el enlace
+                              o aplicar estilos.
+
+                            - Contenido:
+                              El texto comienza con un carácter '|' a modo
+                              de separador visual (tube pipe) y a continuación
+                              un enlace "Unfollow".
+
+                            - Enlace:
+                              <a href="/mail/unfollow" ...>Unfollow</a>
+
+                              · href="/mail/unfollow":
+                                URL estándar de Odoo que permite al usuario
+                                dejar de seguir la conversación o el hilo
+                                asociado a la notificación de correo.
+
+                              · style="text-decoration:none; color:#555555;":
+                                Estiliza el enlace para que:
+                                  - No aparezca subrayado.
+                                  - Tenga un color gris discreto (#555555),
+                                    acorde con un pie de correo poco intrusivo.
+
+                              · Texto visible: "Unfollow"
+                                Indica de forma clara al usuario que puede
+                                dejar de seguir (unsubscribe/unfollow) la
+                                conversación.
+                        -->
                         | <a href="/mail/unfollow" style="text-decoration:none; color:#555555;">Unfollow</a>
                     </span>
                 </td>

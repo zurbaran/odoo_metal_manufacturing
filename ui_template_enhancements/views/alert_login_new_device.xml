@@ -1,6 +1,51 @@
 <odoo>
+    <!--
+        Módulo: ui_template_enhancements
+        Archivo: views/alert_login_new_device.xml
+
+        OBJETIVO GENERAL
+        =================
+        Elimina la fila de "Powered by Odoo" (o cualquier enlace a odoo.com)
+        de la plantilla de correo que avisa de un nuevo dispositivo de acceso.
+
+        DETALLES TÉCNICOS
+        ==================
+        - inherit_id="auth_signup.alert_login_new_device":
+          Hereda la plantilla estándar de Odoo para el correo de "nuevo dispositivo".
+
+        - id="rm_poweredby__alert_login_new_device":
+          Identificador técnico propio de este módulo para la vista heredada.
+
+        - name="Remove Powered by - Alert Login New Device":
+          Descripción legible indicando que se usa para eliminar el texto "Powered by".
+
+        - priority="999":
+          Se usa una prioridad muy alta para asegurarse de que esta vista heredada
+          se aplique después de otras posibles personalizaciones sobre la misma
+          plantilla, ganando en orden de resolución.
+    -->
     <template id="rm_poweredby__alert_login_new_device" inherit_id="auth_signup.alert_login_new_device"
               name="Remove Powered by - Alert Login New Device" priority="999">
+        <!--
+            XPATH
+            =====
+            expr="//tr[.//a[contains(@href,'odoo.com')]]"
+            - Busca cualquier fila <tr> que contenga en su interior un enlace <a>
+              cuya URL (href) incluya la cadena "odoo.com".
+            - Es el patrón típico del pie de correo donde Odoo añade el enlace
+              publicitario o de marca hacia su web.
+
+            position="replace"
+            - Sustituye por completo el nodo encontrado.
+            - Al usar una etiqueta vacía (sin contenido interno) se consigue
+              eliminar por completo la fila del pie sin añadir nada en su lugar.
+
+            EFECTO FINAL
+            ============
+            - El contenido principal del correo (mensaje al usuario sobre el
+              nuevo dispositivo) permanece intacto.
+            - Solo desaparece la fila de branding / publicidad con enlace a Odoo.
+        -->
         <xpath expr="//tr[.//a[contains(@href,'odoo.com')]]" position="replace"/>
     </template>
 </odoo>

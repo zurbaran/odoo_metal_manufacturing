@@ -1,25 +1,141 @@
 <odoo>
+  <!--
+    ============================================================================
+    Template: invoice_report_custom
+    ============================================================================
+    - Hereda de: account.report_invoice_document
+    - Propósito general:
+      * Mejorar cómo se muestran las direcciones (facturación/envío) en el informe
+        de factura estándar de Odoo, usando el widget 'contact' con campos
+        adicionales (teléfono, móvil y email).
+      * Unificar y enriquecer los bloques de dirección para que siempre se muestren
+        los mismos datos de contacto relevantes.
+      * Ocultar la columna de impuestos a nivel de líneas de factura, manteniendo
+        la lógica de impuestos en el total pero sin mostrar la columna específica.
+    - Prioridad:
+      * priority="99" hace que esta herencia se aplique después de la mayoría
+        de otras herencias, pero sin llegar a los valores extremos (tipo 999)
+        que se suelen reservar para overrides muy agresivos.
+  -->
   <template id="invoice_report_custom" inherit_id="account.report_invoice_document" name="Custom Invoice Report Enhancements" priority="99">
-    <!-- Dirección de envío mejorada -->
+    <!--
+      ==========================================================================
+      Dirección de envío mejorada
+      ==========================================================================
+      XPath:
+        //div[@name='shipping_address_block']//div[@t-field='o.partner_shipping_id']
+      - Selecciona el bloque de dirección de envío dentro del informe de factura.
+      - Modificación:
+        * Se reemplazan los atributos del nodo seleccionado para añadir
+          t-options con el widget 'contact'.
+      - Efecto del widget 'contact':
+        * 'fields': ['address', 'name', 'phone', 'mobile', 'email']
+          - address: dirección postal completa.
+          - name: nombre del contacto o empresa.
+          - phone: teléfono principal.
+          - mobile: móvil (si existe).
+          - email: dirección de correo electrónico.
+        * 'no_marker': True
+          - Evita que aparezca el típico marcador (icono o viñeta) antes del
+            contacto, de forma que la salida sea más limpia.
+    -->
     <xpath expr="//div[@name='shipping_address_block']//div[@t-field='o.partner_shipping_id']" position="attributes">
+      <!--
+        t-options:
+        - Se pasa un diccionario de opciones al widget 'contact' para controlar
+          qué campos se imprimen y cómo.
+        - Importante: se mantiene la sintaxis de diccionario Python, tal y como
+          espera QWeb, sin modificar la lógica original.
+      -->
       <attribute name="t-options">{'widget': 'contact', 'fields': ['address', 'name', 'phone', 'mobile', 'email'], 'no_marker': True}</attribute>
     </xpath>
 
-    <!-- Direcciones combinadas -->
+    <!--
+      ==========================================================================
+      Direcciones combinadas (Facturación / Variantes de envío)
+      ==========================================================================
+      Estas tres reglas ajustan distintas situaciones de dirección en el informe:
+
+      1) address_not_same_as_shipping:
+         - Caso en el que la dirección de facturación es distinta de la de envío.
+         - Se mejora la visualización de la dirección de facturación usando el
+           widget 'contact' con los mismos campos extendidos.
+
+      2) address_same_as_shipping:
+         - Caso en el que la dirección de facturación y envío coinciden.
+         - Se muestra la dirección de facturación (que se entiende compartida),
+           igualmente con datos de contacto extendidos.
+
+      3) no_shipping:
+         - Caso en el que no hay dirección de envío definida (solo facturación).
+         - Se muestra la dirección principal del partner (o.partner_id) con el
+           mismo formato enriquecido.
+    -->
+    <!-- Dirección de facturación cuando ES distinta de la de envío -->
     <xpath expr="//div[@name='address_not_same_as_shipping']//address[@t-field='o.partner_id']" position="attributes">
-      <attribute name="t-options">{'widget': 'contact', 'fields': ['address', 'name', 'phone', 'mobile', 'email'], 'no_marker': True}</attribute>
-    </xpath>
-    <xpath expr="//div[@name='address_same_as_shipping']//address[@t-field='o.partner_id']" position="attributes">
-      <attribute name="t-options">{'widget': 'contact', 'fields': ['address', 'name', 'phone', 'mobile', 'email'], 'no_marker': True}</attribute>
-    </xpath>
-    <xpath expr="//div[@name='no_shipping']//address[@t-field='o.partner_id']" position="attributes">
+      <!--
+        Se fuerza el uso del widget 'contact' para la dirección de facturación,
+        con los mismos campos de contacto unificados.
+      -->
       <attribute name="t-options">{'widget': 'contact', 'fields': ['address', 'name', 'phone', 'mobile', 'email'], 'no_marker': True}</attribute>
     </xpath>
 
-    <!-- Ocultar columna de impuestos -->
+    <!-- Dirección de facturación cuando ES la misma que la de envío -->
+    <xpath expr="//div[@name='address_same_as_shipping']//address[@t-field='o.partner_id']" position="attributes">
+      <!--
+        Mismo patrón: dirección de facturación (que coincide con la de envío)
+        enriquecida con teléfono, móvil y email.
+      -->
+      <attribute name="t-options">{'widget': 'contact', 'fields': ['address', 'name', 'phone', 'mobile', 'email'], 'no_marker': True}</attribute>
+    </xpath>
+
+    <!-- Dirección cuando NO hay envío (solo facturación) -->
+    <xpath expr="//div[@name='no_shipping']//address[@t-field='o.partner_id']" position="attributes">
+      <!--
+        Caso sin dirección de envío:
+        - Se presenta la dirección del partner principal con el mismo formato,
+          manteniendo consistencia visual y funcional en todos los casos.
+      -->
+      <attribute name="t-options">{'widget': 'contact', 'fields': ['address', 'name', 'phone', 'mobile', 'email'], 'no_marker': True}</attribute>
+    </xpath>
+
+    <!--
+      ==========================================================================
+      Ocultar columna de impuestos en la tabla de líneas de la factura
+      ==========================================================================
+      Objetivo:
+      - El informe estándar muestra una columna de impuestos por línea
+        (th_taxes / td_taxes).
+      - En algunos casos se prefiere:
+        * Simplificar la tabla de líneas.
+        * Evitar mostrar el detalle de impuestos por línea, dejando la
+          información de impuestos sólo en los totales.
+    -->
+
+    <!--
+      Cabecera de la columna de impuestos
+      XPath:
+        //th[@name='th_taxes']
+      - Modificación:
+        * Se añade un atributo t-if="False" para ocultar la cabecera.
+      - Efecto:
+        * t-if="False" hace que ese nodo no se renderice nunca, por lo que la
+          cabecera de la columna de impuestos desaparece del informe.
+    -->
     <xpath expr="//th[@name='th_taxes']" position="attributes">
       <attribute name="t-if">False</attribute>
     </xpath>
+
+    <!--
+      Celdas de datos de la columna de impuestos
+      XPath:
+        //td[@name='td_taxes']
+      - position="replace":
+        * Reemplaza completamente el contenido de la celda por un comentario.
+      - En este caso, la celda queda vacía (sólo con un comentario XML), por
+        lo que no se muestra información de impuestos en las líneas de la
+        factura.
+    -->
     <xpath expr="//td[@name='td_taxes']" position="replace">
       <!-- Eliminado -->
     </xpath>

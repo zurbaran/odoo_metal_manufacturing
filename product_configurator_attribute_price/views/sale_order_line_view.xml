@@ -1,10 +1,66 @@
 <odoo>
+    <!--
+        Vista heredada del formulario de pedido de venta (sale.order).
+
+        Objetivo:
+        =========
+        Añadir, justo después del campo 'price_unit' de cada línea de pedido,
+        un campo calculado 'price_modified' que muestra el precio final
+        tras aplicar la lógica del módulo (fórmulas sobre atributos, etc.).
+
+        Notas:
+        - Esta vista NO sustituye el comportamiento estándar, solo añade
+          un campo informativo adicional.
+        - El campo 'price_modified' es de solo lectura y se calcula en
+          el modelo 'sale.order.line'.
+    -->
     <record id="view_sale_order_line_form_inherit" model="ir.ui.view">
+        <!--
+            Nombre técnico de la vista en Odoo, usado solo a nivel interno
+            para identificar la vista heredada.
+        -->
         <field name="name">sale.order.form.inherit.product.configurator</field>
+
+        <!--
+            Modelo base sobre el que actúa la vista (formulario de pedidos de venta).
+        -->
         <field name="model">sale.order</field>
+
+        <!--
+            Vista original que se está heredando: formulario estándar de pedidos.
+            A partir de esta se aplican los xpath definidos en <arch>.
+        -->
         <field name="inherit_id" ref="sale.view_order_form" />
+
+        <!--
+            Definición del árbol XML donde se aplican las modificaciones
+            mediante expresiones xpath.
+        -->
         <field name="arch" type="xml">
+            <!--
+                XPath:
+                ======
+                - Localiza el campo 'price_unit' dentro del árbol de la
+                  one2many 'order_line' (líneas del pedido).
+                - Inserta a continuación el campo 'price_modified'.
+
+                Motivo:
+                =======
+                Mostrar al usuario, junto al precio unitario estándar,
+                el precio resultante tras las modificaciones por atributos,
+                para que pueda comparar visualmente ambos valores.
+            -->
             <xpath expr="//field[@name='order_line']//field[@name='price_unit']" position="after">
+                <!--
+                    Campo monetario calculado (no almacenado) definido
+                    en el modelo 'sale.order.line'.
+
+                    Características:
+                    - readonly="1": el usuario no puede modificarlo manualmente.
+                    - Su valor se calcula en el método _compute_price_modified
+                      (en models/sale_order_line.py), normalmente igual al
+                      price_unit final tras las fórmulas de atributos.
+                -->
                 <field name="price_modified" readonly="1" />
             </xpath>
         </field>

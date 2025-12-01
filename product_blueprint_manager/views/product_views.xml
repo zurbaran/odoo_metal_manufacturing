@@ -1,40 +1,105 @@
 <odoo>
+    <!--
+        Vista heredada del formulario de product.template para añadir
+        una pestaña específica donde gestionar:
+
+        - Planos SVG asociados al producto (product.blueprint)
+        - Fórmulas de esos planos (product.blueprint.formula)
+
+        La pestaña "Planos y Fórmulas" sólo se muestra en el formulario del producto.
+    -->
     <record
     id="view_product_template_form_inherit_blueprint"
     model="ir.ui.view"
   >
+        <!-- Nombre interno de la vista heredada -->
         <field name="name">product.template.form.inherit.blueprint</field>
+        <!-- Modelo sobre el que actúa la vista -->
         <field name="model">product.template</field>
+        <!-- Vista base de producto que se hereda (solo formulario) -->
         <field
       name="inherit_id"
       ref="product.product_template_only_form_view"
     />
+        <!-- Definición de la arquitectura XML que se inserta/inyecta -->
         <field name="arch" type="xml">
+            <!-- Insertamos una nueva pestaña dentro del notebook principal del producto -->
             <xpath expr="//sheet/notebook" position="inside">
+                <!-- Pestaña dedicada a la configuración de planos y fórmulas -->
                 <page string="Planos y Fórmulas">
+                    <!-- BLOQUE: Gestión de planos asociados al producto -->
                     <group string="Planos">
+                        <!--
+                            One2many blueprint_ids (product.blueprint) mostrado como:
+
+                            - Kanban: vista visual de plano (si se define)
+                            - Lista: listado simple de planos
+                            - Formulario: edición del plano seleccionado
+
+                            Este campo se apoya en los modelos:
+                            - product.blueprint
+                            - product.blueprint.condition
+                        -->
                         <field name="blueprint_ids" mode="kanban,list,form">
+                            <!-- Vista tipo lista de los planos del producto -->
                             <list>
+                                <!-- Nombre del plano -->
                                 <field name="name"/>
+                                <!-- Producto al que está vinculado el plano -->
                                 <field name="product_id"/>
                             </list>
+                            <!-- Vista formulario de cada plano dentro del producto -->
                             <form>
                                 <sheet>
+                                    <!-- Datos básicos del plano -->
                                     <group>
+                                        <!-- Nombre legible del plano -->
                                         <field name="name" />
+                                        <!--
+                                            Archivo SVG del plano.
+
+                                            - widget="image": Odoo lo muestra como imagen.
+                                            - required="1": obligatorio para poder guardar.
+                                        -->
                                         <field
                       name="file"
                       widget="image"
                       string="Archivo SVG"
                       required="1"
                     />
+                                        <!-- Producto (plantilla) al que se asocia este plano -->
                                         <field name="product_id" required="1" />
                                     </group>
+                                    <!-- Configuración funcional del plano -->
                                     <group string="Configuración del Plano">
+                                        <!--
+                                            type_blueprint:
+                                            - manufacturing: Orden de Fabricación
+                                            - purchase: Orden de Compra
+                                            Este campo determina en qué tipo de reporte se usará.
+                                        -->
                                         <field name="type_blueprint" />
+                    <!--
+                        Condiciones del plano:
+                        - Permiten filtrar qué planos se aplican según los valores de atributos
+                          seleccionados en la línea de venta.
+                        - Cada registro es product.blueprint.condition.
+                    -->
                     <field name="blueprint_condition_ids">
+                        <!--
+                            Edición en línea de las condiciones:
+                            - attribute_id: atributo sobre el que se aplica la condición
+                            - value_ids: valores de atributo requeridos
+                        -->
                         <list editable="bottom">
+                            <!-- Atributo requerido por esta condición; dominio se ajusta en el modelo -->
                             <field name="attribute_id" required="1" domain="[]"/>
+                            <!--
+                                Valores aceptados para el atributo.
+
+                                El dominio se ajusta para que sólo muestre valores del atributo
+                                seleccionado (ver lógica en product_blueprint_condition.py).
+                            -->
                             <field name="value_ids"
                                 domain="[('attribute_id', '=', attribute_id)]"
                                 widget="many2many_tags"/>
@@ -45,30 +110,67 @@
                             </form>
                         </field>
                     </group>
+
+                    <!-- BLOQUE: Configuración de fórmulas asociadas al producto -->
                     <group string="Fórmulas">
+                        <!--
+                            One2many formula_ids (product.blueprint.formula):
+
+                            Cada registro representa una fórmula de cálculo que:
+                            - Se vincula a un plano concreto (blueprint_id)
+                            - Se asocia a una etiqueta detectada en el SVG
+                              (product.blueprint.formula.name)
+                            - Usa variables obtenidas de atributos del producto
+                        -->
                         <field
               name="formula_ids"
               context="{'reload_on_create': True}"
             >
+                            <!-- Vista lista de fórmulas -->
                             <list>
+                                <!-- Nombre de la fórmula (Many2one a product.blueprint.formula.name) -->
                                 <field name="name" />
+                                <!-- Plano al que se aplica esta fórmula -->
                                 <field name="blueprint_id" />
+                                <!-- Expresión de la fórmula (ej: 'mmA * 2') -->
                                 <field name="formula_expression" />
                             </list>
+                            <!-- Formulario de edición de una fórmula -->
                             <form>
                                 <sheet>
                                     <group>
+                                        <!-- Producto al que pertenece esta fórmula -->
                                         <field name="product_id" required="1" />
+                                        <!--
+                                            Plano asociado.
+                                            - options="{'no_create': True}": no permite crear nuevos planos desde aquí.
+                                            - domain: sólo muestra planos del producto seleccionado.
+                                        -->
                                         <field
                       name="blueprint_id"
                       required="1"
                       options="{'no_create': True}"
                       domain="[('product_id', '=', product_id)]"
                     />
+                                        <!--
+                                            Campo técnico que almacena las etiquetas de fórmula
+                                            disponibles (product.blueprint.formula.name) para
+                                            este plano. Se usa para limitar el domain de name.
+                                        -->
                                         <field
                       name="available_name_ids"
                       invisible="1"
                     />
+                                        <!--
+                                            Nombre de la fórmula (Many2one):
+
+                                            - options="{'no_create': True}": no permite crear etiquetas aquí.
+                                            - force_save="1": permite guardar aunque la etiqueta
+                                              no estuviese en cache del cliente.
+                                            - domain: limita a etiquetas disponibles en este plano
+                                              y no usadas en otras fórmulas (evita duplicados lógicos).
+                                            - context: pasa blueprint_id para filtrar en name_search.
+                                        -->
                                         <field
                       name="name"
                       required="1"
@@ -77,25 +179,49 @@
                       domain="[('id', 'in', available_name_ids)]"
                       context="{'blueprint_id': blueprint_id}"
                     />
+                                        <!--
+                                            Expresión de la fórmula:
+
+                                            - Debe ser una expresión válida evaluable en Python
+                                              (usando las variables listadas en 'Atributos Disponibles').
+                                        -->
                                         <field
                       name="formula_expression"
                       required="1"
                     />
+                                        <!--
+                                            Campo informativo:
+
+                                            - Muestra, en texto, las variables de fórmula
+                                              disponibles según los atributos del producto
+                                              (ej: 'mmA, mmB, ...').
+                                        -->
                                         <field
                       name="available_attributes"
                       readonly="1"
                       string="Atributos Disponibles"
                     />
                                     </group>
+                                    <!--
+                                        Bloque para mostrar y ajustar el estilo visual
+                                        detectado en el SVG para la etiqueta de fórmula:
+
+                                        - fill_color: color de texto
+                                        - font_size: tamaño de fuente
+                                        Estos campos se usan para renderizar el valor evaluado
+                                        de la fórmula de forma legible en el plano.
+                                    -->
                                     <group
                     string="Estilo Visual Detectado"
                     col="2"
                   >
+                                        <!-- Color del texto evaluado de la fórmula -->
                                         <field
                       name="fill_color"
                       string="Color del Texto"
                       placeholder="#000000"
                     />
+                                        <!-- Tamaño de fuente del texto evaluado -->
                                         <field
                       name="font_size"
                       string="Tamaño de Fuente"

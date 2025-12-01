@@ -1,12 +1,37 @@
 <odoo>
+    <!--
+        Vistas para el modelo `product.blueprint.condition`.
+
+        Este modelo permite definir condiciones basadas en atributos de producto
+        que deben cumplirse para que un plano (product.blueprint) se aplique a
+        una línea de pedido (o a un flujo determinado).
+    -->
+
+    <!--
+        Vista formulario: edición de una única condición de plano.
+
+        - `blueprint_id`: plano al que pertenece esta regla/condición.
+        - `attribute_id`: atributo del producto que se va a evaluar.
+        - `value_ids`: valores del atributo que deben estar presentes
+          en el producto para que la condición se considere cumplida.
+    -->
     <record id="view_product_blueprint_condition_form" model="ir.ui.view">
         <field name="name">product.blueprint.condition.form</field>
         <field name="model">product.blueprint.condition</field>
         <field name="arch" type="xml">
             <form string="Condición de Plano">
                 <group>
+                    <!-- Plano de producto sobre el que aplica esta condición -->
                     <field name="blueprint_id" required="1" />
+                    <!-- Atributo que se evaluará (ej. Vidrio, Acabado, etc.) -->
                     <field name="attribute_id" required="1" domain="[]"/>
+                    <!--
+                        Valores del atributo que deben coincidir para que
+                        el plano se aplique.
+
+                        El dominio restringe los valores al atributo elegido
+                        y `many2many_tags` facilita una selección visual rápida.
+                    -->
                     <field name="value_ids"
                         domain="[('attribute_id', '=', attribute_id)]"
                         widget="many2many_tags"/>
@@ -15,24 +40,43 @@
         </field>
     </record>
 
+    <!--
+        Vista árbol: listado de condiciones de plano.
+
+        Útil para tener una visión rápida de todas las reglas definidas para
+        cada plano, viendo de un vistazo el plano, el atributo y los valores
+        que activan la condición.
+    -->
     <record id="view_product_blueprint_condition_tree" model="ir.ui.view">
         <field name="name">product.blueprint.condition.tree</field>
         <field name="model">product.blueprint.condition</field>
         <field name="arch" type="xml">
             <list string="Condiciones de Plano">
+                <!-- Plano al que pertenece la condición -->
                 <field name="blueprint_id"/>
+                <!-- Atributo evaluado -->
                 <field name="attribute_id"/>
+                <!-- Valores del atributo que activan la condición -->
                 <field name="value_ids"/>
             </list>
         </field>
     </record>
 
+    <!--
+        Acción de ventana: entrada de menú para gestionar las condiciones.
+
+        Abre el modelo `product.blueprint.condition` en modo lista+formulario
+        y muestra un texto de ayuda explicando el propósito funcional.
+    -->
     <record id="action_product_blueprint_condition" model="ir.actions.act_window">
         <field name="name">Condiciones de Planos</field>
         <field name="res_model">product.blueprint.condition</field>
         <field name="view_mode">tree,form</field>
         <field name="help" type="html">
-            <p>Configura aquí las condiciones basadas en atributos que debe cumplir un producto para que se genere un plano específico.</p>
+            <p>
+                Configura aquí las condiciones basadas en atributos que debe
+                cumplir un producto para que se genere un plano específico.
+            </p>
         </field>
     </record>
 </odoo>

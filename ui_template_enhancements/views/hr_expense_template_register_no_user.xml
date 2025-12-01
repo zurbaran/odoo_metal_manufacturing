@@ -1,9 +1,43 @@
 <odoo>
+    <!--
+        Template heredada de hr_expense.hr_expense_template_register_no_user
+        Objetivo:
+          - Eliminar (u ocultar) el texto "Powered by Odoo" u otros enlaces
+            promocionales hacia odoo.com en la plantilla de email que se envía
+            cuando se registra un gasto y el empleado no tiene usuario.
+
+        Notas:
+          - Se usa inherit_id para modificar una plantilla existente sin tocar
+            el código fuente original del módulo hr_expense.
+          - priority="999" garantiza que este heredado se aplique lo más tarde
+            posible, sobrescribiendo otros heredados con menor prioridad.
+    -->
     <template id="rm_poweredby__hr_expense_template_register_no_user"
               inherit_id="hr_expense.hr_expense_template_register_no_user"
               name="Remove Powered by - HR Expense No User" priority="999">
+
+        <!--
+            XPATH de sustitución del bloque "Powered by Odoo"
+            expr:
+              //p[a[contains(@href,'odoo.com')]]
+                - Selecciona cualquier etiqueta <p> que contenga dentro un
+                  <a> cuyo atributo href contenga la cadena 'odoo.com'.
+                - Es una forma genérica de localizar el párrafo donde Odoo
+                  inserta el enlace promocional hacia su web.
+
+            position="replace":
+              - Reemplaza por completo ese <p> y su contenido por lo que
+                se defina dentro del xpath.
+              - En este caso, se deja el bloque vacío (solo un comentario),
+                por lo que efectivamente se oculta/elimina el contenido
+                promocional del email.
+
+            Efecto:
+              - El correo se envía sin el texto/enlace "Powered by Odoo" u
+                otro branding que apunte a odoo.com dentro de ese párrafo.
+        -->
         <xpath expr="//p[a[contains(@href,'odoo.com')]]" position="replace">
-            <!-- eliminado -->
+            <!-- eliminado: se suprime el párrafo con el enlace a odoo.com -->
         </xpath>
     </template>
 </odoo>

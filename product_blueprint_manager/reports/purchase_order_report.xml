@@ -1,8 +1,31 @@
 <odoo>
+    <!--
+        Plantilla principal del reporte de planos para Orden de Compra.
+
+        - Se usa sobre el modelo `purchase.order` (vinculado vía ir.actions.report).
+        - Para cada línea de pedido se obtienen los planos evaluados con
+          `line._get_evaluated_blueprint(type_blueprint='purchase')`.
+        - Cada plano se imprime en una página independiente con su imagen PNG.
+    -->
     <template id="report_purchase_order_blueprint_document">
+        <!--
+            Desactiva la dirección por defecto en el layout básico.
+            Esto permite controlar manualmente el encabezado del documento.
+        -->
         <t t-set="address_in_layout" t-value="False"/>
+        <!--
+            Se reutiliza el layout estándar `web.basic_layout`, que ya aporta:
+            - Encabezado y pie de página básicos.
+            - Variables estándar como `res_company`.
+        -->
         <t t-call="web.basic_layout">
             <div class="page">
+                <!--
+                    Cabecera simple:
+                    - Nombre de la compañía (`res_company.name`).
+                    - Dirección de contacto de la empresa.
+                    Se coloca centrada para diferenciarla visualmente del contenido.
+                -->
                 <div
           class="header"
           style="text-align: center; margin-bottom: 20px;"
@@ -10,34 +33,96 @@
                     <h2 t-out="res_company.name" />
                     <p t-out="res_company.partner_id.contact_address" />
                 </div>
+                <!--
+                    Estructuras vacías para permitir al usuario extender el reporte
+                    desde otros módulos usando `xpath` si lo necesita.
+                -->
                 <div
           class="oe_structure"
           id="oe_structure_purchase_order_header"
         />
+                <!--
+                    Contenedor principal del cuerpo del informe.
+                    Se recorre cada línea de la orden y se imprimen únicamente
+                    aquellas que tengan planos evaluados.
+                -->
                 <div class="container">
+                <!--
+                    Aseguramos que la variable `doc` está disponible en el cuerpo.
+                    En este contexto, `doc` es el pedido de compra/sale asociado.
+                -->
                 <t t-set="doc" t-value="doc" />
+                <!--
+                    Recorremos todas las líneas de la orden (`doc.order_line`).
+                    Cada `line` representa una `purchase.order.line`/`sale.order.line`
+                    según cómo se haya vinculado el reporte.
+                -->
                 <t t-foreach="doc.order_line" t-as="line">
+                    <!--
+                        Obtenemos los planos evaluados para esta línea, filtrando
+                        solo los de tipo 'purchase' (orden de compra).
+
+                        El método `_get_evaluated_blueprint(type_blueprint='purchase')`
+                        devuelve una lista de dicts con, entre otros:
+                        - 'blueprint_name': nombre del plano.
+                        - 'png_base64': imagen PNG generada desde el SVG.
+                        - 'attachment_id': adjunto SVG evaluado.
+                    -->
                     <t
               t-set="evaluated_blueprints"
               t-value="line._get_evaluated_blueprint(type_blueprint='purchase')"
             />
+                    <!--
+                        Solo imprimimos bloques si realmente hay planos generados
+                        (lista no vacía).
+                    -->
                     <t
               t-if="evaluated_blueprints and len(evaluated_blueprints) > 0"
             >
+                        <!--
+                            Contador genérico disponible por si en el futuro
+                            se quiere numerar los planos. Actualmente no se usa,
+                            pero se deja preparado.
+                        -->
                         <t t-set="counter" t-value="0" />
+                        <!--
+                            Recorremos cada plano evaluado para esta línea.
+                            Cada iteración genera una página/bloque con:
+                            - Datos del pedido.
+                            - Atributos visuales seleccionados.
+                            - Imagen del plano en PNG.
+                        -->
                         <t t-foreach="evaluated_blueprints" t-as="blueprint">
+                            <!--
+                                Evita que el contenido de un mismo plano se divida
+                                entre páginas y fuerza que cada plano termine en
+                                salto de página.
+                            -->
                             <div
                   style="page-break-inside: avoid; page-break-after: always;"
                 >
                                 <h2>Plano Orden de Compra</h2>
+                                <!-- Referencia del documento de pedido -->
                                 <p>Referencia de Pedido: <span
                       t-field="doc.name"
                     /></p>
+                                <!-- Fecha del pedido, usando widget de fecha -->
                                 <p>Fecha: <span
                       t-field="doc.date_order"
                       t-options="{'widget': 'date'}"
                     /></p>
+                                <!--
+                                    Encabezado del plano:
+                                    - Muestra el resumen de atributos seleccionados
+                                      para la línea (`_get_blueprint_display_attributes()`).
+                                    - Muestra el nombre del plano actual.
+                                -->
                                 <h4>Plano:
+                                    <!--
+                                        Obtiene la lista de atributos elegibles para
+                                        mostrar en el informe del plano, en formato:
+                                        [{'attr': 'Color', 'value': 'Blanco'}, ...]
+                                    -->
                                     <t t-set="disp_attrs" t-value="line._get_blueprint_display_attributes()"/>
                                     <t t-if="disp_attrs">
                                     <ul style="padding-left: 15px; margin: 5px 0 10px 0;">
@@ -46,19 +131,38 @@
                                         </t>
                                     </ul>
                                     </t>
+                                    <!-- Nombre del plano devuelto en el dict -->
                                     <t t-out="blueprint['blueprint_name']" />
                                 </h4>
+                                <!--
+                                    Imagen del plano:
+
+                                    - Se muestra solo si la clave 'png_base64' está
+                                      disponible en el dict `blueprint`.
+                                    - La imagen proviene del SVG evaluado convertido
+                                      a PNG via CairoSVG.
+                                    - Se incrusta como data URI base64.
+                                -->
                                 <img
                     t-if="'png_base64' in blueprint"
                     t-att-src="'data:image/png;base64,' + blueprint['png_base64']"
                     style="width:100%; height:auto;"
                   />
                             </div>
+                            <!--
+                                Incrementamos el contador de planos por línea
+                                (actualmente solo a efectos informativos si se
+                                quiere usar más adelante).
+                            -->
                             <t t-set="counter" t-value="counter + 1" />
                         </t>
                     </t>
                 </t>
                 </div>
+                <!--
+                    Estructura para permitir extensiones en el pie del reporte
+                    desde otros módulos (xpaths sobre este bloque).
+                -->
                 <div
           class="oe_structure"
           id="oe_structure_purchase_order_footer"
@@ -67,6 +171,14 @@
         </t>
     </template>
 
+    <!--
+        Plantilla contenedora del reporte:
+
+        - `docs` es el conjunto de registros (pedidos) sobre los que
+          se lanza el informe.
+        - Para cada `doc` se llama a la plantilla principal
+          `report_purchase_order_blueprint_document`.
+    -->
     <template id="report_purchase_order_blueprint">
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="doc">

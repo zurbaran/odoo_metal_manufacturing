@@ -1,5 +1,33 @@
 <odoo>
+  <!--
+    Este archivo redefine la plantilla QWeb responsable del mensaje de
+    autopromoción de Odoo en la interfaz web.
+
+    Objetivo:
+    - Sustituir el contenido estándar de `web.brand_promotion_message`.
+    - Eliminar por completo el bloque de promoción de la marca Odoo en la interfaz.
+    - Mantener la llamada a la plantilla (mismo nombre), pero con contenido vacío/
+      neutral para que no aparezca nada visualmente.
+
+    Contexto:
+    - `web.brand_promotion_message` es una plantilla del módulo `web` que muestra
+      el típico mensaje "Powered by Odoo" u otros textos de autopromoción.
+    - En lugar de modificar el core, heredamos y sobrescribimos la plantilla
+      para mantener la solución limpia y compatible con futuras actualizaciones.
+  -->
   <template id="rm_poweredby__web_brand_promotion_message" name="Replace Web Brand Promotion Message">
+    <!--
+      Redefinimos la plantilla QWeb con el mismo nombre lógico (`t-name`) que
+      la plantilla original de Odoo.
+
+      - t-name="web.brand_promotion_message":
+        Indica que esta definición sustituye a la plantilla original del módulo
+        `web` con ese nombre. Cualquier lugar del código que invoque
+        `t-call="web.brand_promotion_message"` usará ahora este bloque.
+
+      - No se añade contenido visual dentro del bloque, por lo que el mensaje de
+        promoción deja de mostrarse en la interfaz de usuario.
+    -->
     <t t-name="web.brand_promotion_message">
       <!-- Plantilla eliminada completamente -->
     </t>
