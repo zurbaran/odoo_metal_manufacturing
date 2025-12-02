@@ -27,11 +27,11 @@ class SaleOrderLine(models.Model):
     # a la línea de pedido de venta. Cada registro almacena:
     #   - El atributo de plantilla (product.template.attribute.value).
     #   - El valor numérico introducido (custom_value).
-    product_custom_attribute_value_ids = fields.One2many(
-        "product.custom.attribute.value",
-        "sale_order_line_id",
-        string="Valores personalizados de atributos",
-    )
+    # product_custom_attribute_value_ids = fields.One2many(
+    #     "product.custom.attribute.value",
+    #     "sale_order_line_id",
+    #     string="Valores personalizados de atributos",
+    # )
 
     # Campo calculado que refleja el precio final que se ha modificado
     # mediante las fórmulas y los incrementos de atributo.
