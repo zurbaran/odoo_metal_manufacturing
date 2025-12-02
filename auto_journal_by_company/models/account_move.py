@@ -1,9 +1,7 @@
-import logging  # Módulo estándar de Python para gestión de logs
+import logging
 
-from odoo import api, models  # Importación de la API de Odoo para modelos y decoradores
+from odoo import api, models
 
-# Instancia de logger específica para este módulo, usando el nombre completo
-# del módulo como identificador.
 _logger = logging.getLogger(__name__)
 
 
@@ -23,6 +21,96 @@ class AccountMove(models.Model):
 
     _inherit = "account.move"
 
+    # -------------------------------------------------------------------------
+    # Lógica común
+    # -------------------------------------------------------------------------
+    def _auto_assign_journal(self):
+        """
+        Asigna automáticamente un diario adecuado en función de:
+
+          - company_id del movimiento
+          - move_type (out_invoice / in_invoice)
+
+        Reglas:
+          - Si ya hay journal_id y pertenece a la misma compañía, no se toca.
+          - Solo se actúa cuando:
+              * existe company_id
+              * move_type es soportado (out_invoice / in_invoice)
+          - Si no se encuentra diario compatible, se deja tal cual y se hace
+            un log WARNING.
+        """
+        for move in self:
+            _logger.debug(
+                "[auto_journal_by_company] AUTO: evaluating move %s "
+                "(company_id=%s, move_type=%s, journal_id=%s)",
+                move.id or "(new)",
+                move.company_id.id if move.company_id else None,
+                move.move_type,
+                move.journal_id.id if move.journal_id else None,
+            )
+
+            # Si ya hay diario y es de la misma compañía, no hacemos nada
+            if move.journal_id and move.journal_id.company_id == move.company_id:
+                _logger.debug(
+                    "[auto_journal_by_company] AUTO: keeping existing "
+                    "journal_id=%s for move %s",
+                    move.journal_id.id,
+                    move.id or "(new)",
+                )
+                continue
+
+            # Determinar tipo de diario según el tipo de movimiento
+            journal_type = {
+                "out_invoice": "sale",
+                "in_invoice": "purchase",
+                # Si quisieras incluir abonos en el futuro:
+                # "out_refund": "sale",
+                # "in_refund": "purchase",
+            }.get(move.move_type)
+
+            if not journal_type or not move.company_id:
+                _logger.debug(
+                    "[auto_journal_by_company] AUTO: skipping move %s "
+                    "(journal_type=%s, company_id=%s)",
+                    move.id or "(new)",
+                    journal_type,
+                    move.company_id.id if move.company_id else None,
+                )
+                continue
+
+            # Buscar diario adecuado para esa empresa y tipo
+            journal = self.env["account.journal"].search(
+                [
+                    ("type", "=", journal_type),
+                    ("company_id", "=", move.company_id.id),
+                    ("active", "=", True),
+                ],
+                limit=1,
+            )
+
+            if journal:
+                move.journal_id = journal
+                _logger.info(
+                    "[auto_journal_by_company] AUTO: journal_id set to %s (%s) "
+                    "for move %s (company_id=%s, move_type=%s)",
+                    journal.id,
+                    journal.name,
+                    move.id or "(new)",
+                    move.company_id.id,
+                    move.move_type,
+                )
+            else:
+                _logger.warning(
+                    "[auto_journal_by_company] AUTO: no journal found for "
+                    "type '%s' and company %s (move %s)",
+                    journal_type,
+                    move.company_id.name,
+                    move.id or "(new)",
+                )
+
+    # -------------------------------------------------------------------------
+    # Onchange
+    # -------------------------------------------------------------------------
     @api.onchange("company_id", "move_type")
     def _onchange_company_or_type(self):
         """
@@ -35,167 +123,56 @@ class AccountMove(models.Model):
               * Para `in_invoice`  -> diario de tipo `purchase`
 
         Detalles:
-          - Si `journal_id` ya está establecido, no se modifica (se respeta
-            una posible selección manual u otro mecanismo previo).
-          - Se registran logs en nivel DEBUG, INFO y WARNING para facilitar
-            el diagnóstico de la selección automática.
+          - Si `journal_id` ya está establecido y pertenece a la misma empresa,
+            no se modifica (se respeta la selección manual o por defecto).
+          - Se apoyan los logs definidos en `_auto_assign_journal`.
         """
-        # El onchange se aplica sobre todos los registros en el recordset "self"
-        for move in self:
-            # Log de depuración: muestra los valores relevantes antes de la lógica
-            _logger.debug(
-                (
-                    "[auto_journal_by_company] ONCHANGE triggered: "
-                    "company_id=%s, move_type=%s, journal_id=%s"
-                ),
-                move.company_id.id,
-                move.move_type,
-                move.journal_id.id if move.journal_id else None,
-            )
+        self._auto_assign_journal()
 
-            # Si el diario ya está definido, no hacemos nada más para este registro
-            if move.journal_id:
-                _logger.debug(
-                    (
-                        "[auto_journal_by_company] journal_id already set "
-                        "(%s), skipping auto-selection"
-                    ),
-                    move.journal_id.id,
-                )
-                # `continue` pasa al siguiente `move` del recordset
-                continue
-
-            # Determinación del tipo de diario en función del tipo de movimiento
-            journal_type = False
-            if move.move_type == "out_invoice":
-                # Facturas de cliente usan diarios de tipo 'sale'
-                journal_type = "sale"
-            elif move.move_type == "in_invoice":
-                # Facturas de proveedor usan diarios de tipo 'purchase'
-                journal_type = "purchase"
-
-            # Solo si se ha determinado un tipo de diario y hay compañía definida
-            if journal_type and move.company_id:
-                # Búsqueda del diario adecuado para esa empresa y tipo
-                journal = self.env["account.journal"].search(
-                    [
-                        ("type", "=", journal_type),
-                        ("company_id", "=", move.company_id.id),
-                        ("active", "=", True),
-                    ],
-                    limit=1,  # Solo el primer diario encontrado
-                )
-                if journal:
-                    # Asignación del diario encontrado al movimiento
-                    move.journal_id = journal
-                    _logger.info(
-                        (
-                            "[auto_journal_by_company] ONCHANGE: "
-                            "journal_id set to %s (%s)"
-                        ),
-                        journal.id,
-                        journal.name,
-                    )
-                else:
-                    # Aviso si no se encuentra ningún diario compatible
-                    _logger.warning(
-                        (
-                            "[auto_journal_by_company] ONCHANGE: "
-                            "No journal found for type '%s' and company %s"
-                        ),
-                        journal_type,
-                        move.company_id.name,
-                    )
-
+    # -------------------------------------------------------------------------
+    # Create
+    # -------------------------------------------------------------------------
     @api.model_create_multi
     def create(self, vals_list):
         """
-        Sobrescritura del método `create` para aplicar la misma lógica de
+        Sobrescritura del método `create` para aplicar la lógica de
         asignación automática de diario durante la creación de movimientos.
-
-        Parámetros:
-          - vals_list: lista de diccionarios con los valores de los campos
-            para cada registro a crear.
 
         Comportamiento:
           - Se llama primero a `super().create(vals_list)` para que Odoo
             cree los registros.
           - Para cada movimiento creado:
-              * Si `journal_id` NO se ha especificado en vals
-              * Y existen `company_id` y `move_type` en vals
-                => se intenta localizar un diario apropiado:
-                    - `out_invoice`  -> `sale`
-                    - `in_invoice`   -> `purchase`
-              * Si se encuentra un diario, se asigna al movimiento.
-          - Si `journal_id` está definido o faltan datos, se deja tal cual.
-
-        Notas:
-          - Se usa `zip(moves, vals_list, strict=False)` para iterar en
-            paralelo sobre los registros creados y sus valores originales.
-          - Se registran logs de tipo INFO y WARNING para trazar el proceso.
+              * Si `journal_id` SE HA especificado en vals -> se respeta.
+              * Si no se ha especificado, se llama a `_auto_assign_journal`
+                para que el diario se asigne en función de company_id y
+                move_type finales del movimiento.
+          - No se sobrescribe un diario ya correcto de la misma empresa.
         """
-        # Creación real de los movimientos mediante la implementación nativa
         moves = super().create(vals_list)
 
-        # Recorremos simultáneamente cada movimiento creado y su diccionario de valores
-        for move, vals in zip(moves, vals_list, strict=False):
-            # Condición principal: solo si NO se indicó `journal_id`
-            # y SI hay `company_id` y `move_type` en los valores de creación.
-            if (
-                not vals.get("journal_id")
-                and vals.get("company_id")
-                and vals.get("move_type")
-            ):
-                # Mapeo desde move_type al tipo de diario correspondiente
-                journal_type = {
-                    "out_invoice": "sale",
-                    "in_invoice": "purchase",
-                }.get(vals["move_type"])
+        auto_moves = self.browse()
+        manual_moves = self.browse()
 
-                if journal_type:
-                    # Búsqueda del diario que encaja con tipo y compañía
-                    journal = self.env["account.journal"].search(
-                        [
-                            ("type", "=", journal_type),
-                            ("company_id", "=", vals["company_id"]),
-                            ("active", "=", True),
-                        ],
-                        limit=1,
-                    )
-                    if journal:
-                        # Asignación del diario al movimiento recién creado
-                        move.journal_id = journal
-                        message = (
-                            "[auto_journal_by_company] CREATE: "
-                            "Asignado journal_id=%s (%s) para company_id=%s"
-                        )
-                        _logger.info(
-                            message,
-                            journal.id,
-                            journal.name,
-                            vals["company_id"],
-                        )
-                    else:
-                        # No se encontró diario compatible: se lanza un warning
-                        _logger.warning(
-                            (
-                                "[auto_journal_by_company] CREATE: "
-                                "No se encontró diario para tipo '%s' y "
-                                "empresa %s"
-                            ),
-                            journal_type,
-                            vals["company_id"],
-                        )
+        # Clasificamos movimientos según si venían con journal_id explícito
+        for move, vals in zip(moves, vals_list):
+            if vals.get("journal_id"):
+                manual_moves |= move
             else:
-                # Caso en el que ya existe un diario en vals o faltan datos mínimos:
-                # se deja la lógica por defecto y solo se registra en DEBUG.
-                _logger.debug(
-                    (
-                        "[auto_journal_by_company] CREATE: journal_id ya "
-                        "definido o datos insuficientes para move_type=%s"
-                    ),
-                    vals.get("move_type"),
-                )
+                auto_moves |= move
 
-        # Devolvemos el recordset creado, como en el comportamiento estándar
+        if manual_moves:
+            _logger.debug(
+                "[auto_journal_by_company] CREATE: %s moves with manual "
+                "journal_id, skipping auto-assignment",
+                len(manual_moves),
+            )
+
+        if auto_moves:
+            _logger.debug(
+                "[auto_journal_by_company] CREATE: %s moves without "
+                "journal_id in vals, running auto-assignment",
+                len(auto_moves),
+            )
+            auto_moves._auto_assign_journal()
+
         return moves

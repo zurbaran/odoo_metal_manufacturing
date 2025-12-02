@@ -1,6 +1,6 @@
 {
     "name": "Product Configurator Attribute Price",
-    "version": "18.0.4.3.4",
+    "version": "18.0.5.3.4",
     "category": "Manufacturing",
     "summary": """Configura precios dinámicos con fórmulas en atributos de producto""",
     "author": "Antonio Caballero",
