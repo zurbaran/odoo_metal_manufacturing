@@ -18,6 +18,7 @@
     "data": [
         "views/alert_login_new_device.xml",
         "views/brand_promotion_message.xml",
+        "views/digest_disable_mobile.xml",
         "views/digest_mail_main.xml",
         "views/digest_section_mobile.xml",
         "views/hr_expense_template_register_no_user.xml",
@@ -28,6 +29,7 @@
         "views/portal_record_sidebar.xml",
         "views/reset_password_email.xml",
         "views/sale_order_report_custom.xml",
+        "views/report_layout_fix.xml",
     ],
     "installable": True,
     "application": False,

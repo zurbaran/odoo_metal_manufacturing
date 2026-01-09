@@ -1,0 +1,12 @@
+<odoo>
+  <template id="ui_disable_digest_section_mobile"
+            inherit_id="digest.digest_section_mobile"
+            priority="99">
+
+    <!-- Desactiva la sección completa -->
+    <xpath expr="//td[@colspan='3']" position="attributes">
+      <attribute name="t-if">False</attribute>
+    </xpath>
+
+  </template>
+</odoo>
