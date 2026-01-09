@@ -28,6 +28,7 @@
         "views/portal_record_sidebar.xml",
         "views/reset_password_email.xml",
         "views/sale_order_report_custom.xml",
+        "views/report_layout_fix.xml",
     ],
     "installable": True,
     "application": False,

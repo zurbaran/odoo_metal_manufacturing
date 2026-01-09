@@ -19,6 +19,11 @@
             - Variables estándar como `res_company`.
         -->
         <t t-call="web.basic_layout">
+        <style>
+            .pbm-po-head h2 { margin: 0 0 4px 0; }
+            .pbm-po-head p  { margin: 0; line-height: 1.1; }
+        </style>
+
             <div class="page">
                 <!--
                     Cabecera simple:
@@ -57,7 +62,7 @@
                     Cada `line` representa una `purchase.order.line`/`sale.order.line`
                     según cómo se haya vinculado el reporte.
                 -->
-                <t t-foreach="doc.order_line" t-as="line">
+                <t t-foreach="doc.order_line" t-as="line" t-index="line_index">
                     <!--
                         Obtenemos los planos evaluados para esta línea, filtrando
                         solo los de tipo 'purchase' (orden de compra).
@@ -98,42 +103,24 @@
                                 entre páginas y fuerza que cada plano termine en
                                 salto de página.
                             -->
-                            <div
-                  style="page-break-inside: avoid; page-break-after: always;"
-                >
+                            <div class="pbm-po-head" style="page-break-inside: avoid; page-break-after: always;">
                                 <h2>Plano Orden de Compra</h2>
                                 <!-- Referencia del documento de pedido -->
-                                <p>Referencia de Pedido: <span
-                      t-field="doc.name"
-                    /></p>
+                                <p>Referencia de Pedido: <span t-field="doc.name"/></p>
+                                <!-- Nº de línea REAL (1,2,3...) -->
+                                <p>Línea del pedido: <t t-esc="line_index + 1"/></p>
                                 <!-- Fecha del pedido, usando widget de fecha -->
-                                <p>Fecha: <span
-                      t-field="doc.date_order"
-                      t-options="{'widget': 'date'}"
-                    /></p>
+                                <p>Fecha: <span t-field="doc.date_order" t-options="{'widget': 'date'}"/></p>
                                 <!--
                                     Encabezado del plano:
                                     - Muestra el resumen de atributos seleccionados
                                       para la línea (`_get_blueprint_display_attributes()`).
                                     - Muestra el nombre del plano actual.
                                 -->
-                                <h4>Plano:
-                                    <!--
-                                        Obtiene la lista de atributos elegibles para
-                                        mostrar en el informe del plano, en formato:
-                                        [{'attr': 'Color', 'value': 'Blanco'}, ...]
-                                    -->
-                                    <t t-set="disp_attrs" t-value="line._get_blueprint_display_attributes()"/>
-                                    <t t-if="disp_attrs">
-                                    <ul style="padding-left: 15px; margin: 5px 0 10px 0;">
-                                        <t t-foreach="disp_attrs" t-as="it">
-                                        <li><t t-esc="it['attr']"/>: <t t-esc="it['value']"/></li>
-                                        </t>
-                                    </ul>
-                                    </t>
+                                <p>Plano:
                                     <!-- Nombre del plano devuelto en el dict -->
                                     <t t-out="blueprint['blueprint_name']" />
-                                </h4>
+                                </p>
                                 <!--
                                     Imagen del plano:
 
@@ -143,11 +130,9 @@
                                       a PNG via CairoSVG.
                                     - Se incrusta como data URI base64.
                                 -->
-                                <img
-                    t-if="'png_base64' in blueprint"
-                    t-att-src="'data:image/png;base64,' + blueprint['png_base64']"
-                    style="width:100%; height:auto;"
-                  />
+                                <img t-if="'png_base64' in blueprint"
+                                     t-att-src="'data:image/png;base64,' + blueprint['png_base64']"
+                                     style="max-width:100%; max-height:650px; height:auto; width:auto; display:block; margin:0 auto;"/>
                             </div>
                             <!--
                                 Incrementamos el contador de planos por línea
