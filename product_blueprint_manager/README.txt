@@ -76,7 +76,7 @@ La práctica recomendada es utilizar:
 
 #### Ejemplo:
 
-```xml
+```
 <text x="100" y="50" font-size="12" fill="#000000"
       class="odoo-formula"
       aria-label="AnchoCalculado">
@@ -187,6 +187,7 @@ product_blueprint_manager/
 │   └── purchase_order_report.xml         # Reporte de planos para orden de compra
 └── static/
     └── ...
+'''
 
 
 ## 💡 Consejo práctico
