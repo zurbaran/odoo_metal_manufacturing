@@ -30,7 +30,7 @@ El módulo incluye ajustes en:
 
 ## Compatibilidad
 
-- Compatible con Odoo 18.0 Community Edition.
+- Compatible con Odoo 19.0 Community Edition.
 - No requiere dependencias externas.
 - Puede coexistir con otros módulos que personalicen informes o correos, siempre que no sobrescriban exactamente las mismas vistas.
 

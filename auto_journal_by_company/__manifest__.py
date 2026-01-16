@@ -1,6 +1,6 @@
 {
     "name": "Auto Journal by Company",
-    "version": "18.0.2.1.2",
+    "version": "19.0.2.1.2",
     "category": "Accounting",
     "summary": "Set default journal based on company and invoice type",
     "author": "Antonio Caballero",

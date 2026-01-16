@@ -1,7 +1,7 @@
 {
     "name": "UI and Template Enhancements",
     "summary": "Cleans up default branding, enhances reports and email templates.",
-    "version": "18.0.1.0.2",
+    "version": "19.0.1.0.2",
     "category": "Tools",
     "author": "Antonio Caballero",
     "license": "AGPL-3",
