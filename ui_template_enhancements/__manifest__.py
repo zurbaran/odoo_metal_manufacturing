@@ -14,6 +14,10 @@
         "auth_signup",
         "mail",
         "hr_expense",
+        "sale",
+        "purchase",
+        "account",
+        "sale_order_secondary_unit",
     ],
     "data": [
         "views/alert_login_new_device.xml",
@@ -30,6 +34,7 @@
         "views/reset_password_email.xml",
         "views/sale_order_report_custom.xml",
         "views/report_layout_fix.xml",
+        "views/report_paperformat.xml",
     ],
     "installable": True,
     "application": False,

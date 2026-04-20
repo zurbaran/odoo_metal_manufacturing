@@ -24,7 +24,12 @@
       - Todos los cambios se realizan mediante xpath sobre la plantilla original.
       ============================================================================
   -->
-  <template id="ui_template_enhancements_sale_report_mod" inherit_id="sale.report_saleorder_document" name="Custom Sale Order Report Enhancements" priority="99">
+  <template
+    id="ui_template_enhancements_sale_report_mod"
+    inherit_id="sale.report_saleorder_document"
+    name="Custom Sale Order Report Enhancements"
+    priority="1001"
+  >
 
     <!--
         ==========================================================================
@@ -77,7 +82,10 @@
         ==========================================================================
     -->
     <xpath expr="//t[@t-set='information_block']/div" position="replace">
-      <div t-field="doc.partner_invoice_id" t-options="{'widget': 'contact', 'fields': ['address', 'name', 'phone', 'mobile', 'email'], 'no_marker': True, 'phone_icons': True}"/>
+      <div
+        t-field="doc.partner_invoice_id"
+        t-options="{'widget': 'contact', 'fields': ['address', 'name', 'phone', 'mobile', 'email'], 'no_marker': True, 'phone_icons': True}"
+      />
     </xpath>
 
     <!--
@@ -96,10 +104,16 @@
         - Se respeta la lógica de Odoo de no duplicar información cuando las
           direcciones de envío y facturación son iguales.
     -->
-    <xpath expr="//t[@t-set='information_block']/t[@t-if='doc.partner_shipping_id != doc.partner_invoice_id']" position="replace">
+    <xpath
+      expr="//t[@t-set='information_block']/t[@t-if='doc.partner_shipping_id != doc.partner_invoice_id']"
+      position="replace"
+    >
       <t t-if="doc.partner_shipping_id != doc.partner_invoice_id">
         <strong>Shipping Address:</strong>
-        <div t-field="doc.partner_shipping_id" t-options="{'widget': 'contact', 'fields': ['address', 'name', 'phone', 'mobile', 'email'], 'no_marker': True, 'phone_icons': True}"/>
+        <div
+          t-field="doc.partner_shipping_id"
+          t-options="{'widget': 'contact', 'fields': ['address', 'name', 'phone', 'mobile', 'email'], 'no_marker': True, 'phone_icons': True}"
+        />
       </t>
     </xpath>
 
@@ -122,13 +136,8 @@
           impuestos, evitando que se rendericen datos de impuestos línea a línea.
         ==========================================================================
     -->
-    <xpath expr="//th[@name='th_taxes']" position="attributes">
-      <attribute name="class">d-none</attribute>
-    </xpath>
-    <xpath expr="//td[@name='td_taxes']" position="replace">
-      <!-- Eliminado -->
-    </xpath>
-
+    <xpath expr="//th[@name='th_taxes']" position="replace"/>
+    <xpath expr="//td[@name='td_taxes']" position="replace"/>
     <!--
         ==========================================================================
         4) TABLA DE OPCIONES DE PRODUCTOS (sale_order_option_ids)
@@ -157,8 +166,10 @@
             Determina si hay alguna opción con descuento != 0.0
             - Esto permite mostrar la columna de descuento solo cuando es relevante.
         -->
-        <t t-set="has_option_discount" t-value="any(option.discount != 0.0 for option in doc.sale_order_option_ids)"/>
-
+        <t
+          t-set="has_option_discount"
+          t-value="any(option.discount != 0.0 for option in doc.sale_order_option_ids)"
+        />
         <!-- Título del bloque de opciones de productos -->
         <h4 name="h_optional_products">
           <span>Options</span>
@@ -177,7 +188,6 @@
                   - Muestra el nombre/breve descripción de la opción.
               -->
               <th name="th_option_name" class="text-start">Description</th>
-
               <!--
                   Columna: Descuento %
                   - Solo se muestra si has_option_discount es True.
@@ -185,8 +195,12 @@
                     * Solo visible para usuarios con el grupo que permite ver descuentos
                       por línea de pedido.
               -->
-              <th t-if="has_option_discount" name="th_option_discount" groups="product.group_discount_per_so_line" class="text-start">Disc.%</th>
-
+              <th
+                t-if="has_option_discount"
+                name="th_option_discount"
+                groups="product.group_discount_per_so_line"
+                class="text-start"
+              >Disc.%</th>
               <!--
                   Columna: Precio unitario
                   - Muestra el precio unitario de la opción.
@@ -210,7 +224,6 @@
               <td name="td_option_name">
                 <span t-field="option.name"/>
               </td>
-
               <!--
                   Celda: Descuento %
                   - Solo se muestra si has_option_discount y el usuario pertenece
@@ -218,7 +231,11 @@
                   - Se muestra el porcentaje solo cuando option.discount != 0.0.
                   - class="text-info": estilo resaltado para el valor del descuento.
               -->
-              <td t-if="has_option_discount" name="td_option_discount" groups="product.group_discount_per_so_line">
+              <td
+                t-if="has_option_discount"
+                name="td_option_discount"
+                groups="product.group_discount_per_so_line"
+              >
                 <strong t-if="option.discount != 0.0" class="text-info">
                   <!--
                       Formato del descuento:
@@ -256,9 +273,17 @@
               -->
               <td name="td_option_price_unit">
                 <strong class="text-end">
-                  <div t-field="option.price_unit" t-options="{'widget': 'monetary', 'display_currency': doc.pricelist_id.currency_id}" t-att-style="option.discount and 'text-decoration: line-through' or None" t-att-class="option.discount and 'text-danger' or None"/>
+                  <div
+                    t-field="option.price_unit"
+                    t-options="{'widget': 'monetary', 'display_currency': doc.pricelist_id.currency_id}"
+                    t-att-style="option.discount and 'text-decoration: line-through' or None"
+                    t-att-class="option.discount and 'text-danger' or None"
+                  />
                   <div t-if="option.discount">
-                    <t t-out="((1-option.discount / 100.0) * option.price_unit)" t-options="{'widget': 'monetary', 'display_currency': doc.currency_id}"/>
+                    <t
+                      t-out="((1-option.discount / 100.0) * option.price_unit)"
+                      t-options="{'widget': 'monetary', 'display_currency': doc.currency_id}"
+                    />
                   </div>
                 </strong>
               </td>
@@ -267,5 +292,16 @@
         </table>
       </div>
     </xpath>
+    <!--
+        ==========================================================================
+        6) OCULTAR COLUMNA DE CANTIDAD SECUNDARIA
+        ==========================================================================
+        Se usa t-if="False" en lugar de position="replace" para evitar errores
+        si el módulo de UOM secundaria no está activo o el nodo no existe aún
+        en el momento de resolver la herencia.
+        ==========================================================================
+    -->
+    <xpath expr="//th[@name='th_secondary_uom_id']" position="replace"/>
+    <xpath expr="//td[@name='td_secondary_uom_id']" position="replace"/>
   </template>
 </odoo>
