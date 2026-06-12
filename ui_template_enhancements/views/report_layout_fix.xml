@@ -12,8 +12,6 @@
       expr="//div[contains(@t-attf-class,'article')]/t[@t-call='web.address_layout']"
       position="replace"
     >
-      <!-- Ajusta la altura si quieres más/menos espacio -->
-      <div style="height: 6mm;">&#160;</div>
     </xpath>
 
     <!-- 2) Insertar columna derecha (destinatario) en el header, alineada con la empresa -->
