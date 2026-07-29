@@ -73,10 +73,15 @@ class ProductBlueprintFormulaName(models.Model):
     # Restricciones de integridad
     # -------------------------------------------------------------------------
 
-    _unique_formula_per_node = models.Constraint(
-        "unique(name, blueprint_id, svg_element_id)",
-        "Cada f\u00f3rmula debe ser \u00fanica por ID SVG dentro del mismo plano.",
-    )
+    _sql_constraints = [
+        (
+            "unique_formula_per_node",
+            "unique(name, blueprint_id, svg_element_id)",
+            # Garantiza que no haya duplicados de la misma fórmula en el mismo
+            # nodo SVG y plano. Evita inconsistencias al configurar fórmulas.
+            "Cada fórmula debe ser única por ID SVG dentro del mismo plano.",
+        )
+    ]
 
     # -------------------------------------------------------------------------
     # Overrides de create/write/unlink para logging detallado

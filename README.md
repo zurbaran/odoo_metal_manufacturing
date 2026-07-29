@@ -17,7 +17,7 @@ Este proyecto sigue el flujo de trabajo recomendado por la **OCA**:
 - `16.0`: versión estable para Odoo 16.
 - `17.0`: versión estable para Odoo 17. 
 - `18.0`: versión para Odoo 18 y **rama principal de desarrollo** (Odoo 18).
-- `19.0`: versión para Odoo 18 y **rama principal de desarrollo** (Odoo 18).
+- `19.0`: versión para Odoo 19.
 
 ---
 

@@ -326,7 +326,13 @@ class ProductBlueprintFormula(models.Model):
     # Restricciones SQL
     # -------------------------------------------------------------------------
 
-    _unique_formula_per_blueprint = models.Constraint(
-        "unique(name, blueprint_id)",
-        "Ya existe una f\u00f3rmula configurada para esta etiqueta en este plano.",
-    )
+    _sql_constraints = [
+        (
+            # Evita que el mismo nombre de fórmula (etiqueta del SVG) se use
+            # más de una vez dentro del mismo plano. Cada etiqueta detectada
+            # debe tener, como máximo, una única fórmula asociada en un plano.
+            "unique_formula_per_blueprint",
+            "unique(name, blueprint_id)",
+            ("Ya existe una fórmula configurada para esta etiqueta " "en este plano."),
+        ),
+    ]
