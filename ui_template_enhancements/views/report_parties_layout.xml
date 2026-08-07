@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <!--
+      ============================================================================
+      Diseño global para web.external_layout_standard
+      ============================================================================
+      - Logo y lema permanecen en la cabecera PDF.
+      - Datos de empresa y destinatario se sitúan al inicio del cuerpo.
+      - Empresa: 5/12.
+      - Separación: 1/12.
+      - Destinatario / información del documento: 6/12.
+      - web.address_layout se conserva para no perder su lógica funcional.
+      ============================================================================
+  -->
+  <template
+    id="ui_external_layout_standard_parties"
+    inherit_id="web.external_layout_standard"
+    name="External Layout Standard - Company and Recipient"
+    priority="99"
+  >
+    <!-- Fila original de los datos de empresa. -->
+    <xpath
+      expr="//div[contains(@t-attf-class, 'header')]/div[contains(concat(' ', normalize-space(@class), ' '), ' row ')][div[@name='company_address']]"
+      position="attributes"
+    >
+      <attribute name="class">row align-items-start mb-4 ute-report-parties</attribute>
+    </xpath>
+
+    <!-- Empresa: 5/12. -->
+    <xpath
+      expr="//div[contains(@t-attf-class, 'header')]//div[@name='company_address']"
+      position="attributes"
+    >
+      <attribute name="class">col-5 pe-2 ute-report-company</attribute>
+      <attribute name="style">min-width:0; overflow-wrap:break-word; word-wrap:break-word;</attribute>
+    </xpath>
+
+    <!-- Separación + columna derecha. -->
+    <xpath
+      expr="//div[contains(@t-attf-class, 'header')]//div[@name='company_address']"
+      position="after"
+    >
+      <div class="col-1"/>
+      <div
+        class="col-6 ps-0 ute-report-recipient"
+        style="min-width:0; overflow-wrap:break-word; word-wrap:break-word;"
+      >
+        <t t-call="web.address_layout">
+          <t t-set="custom_layout_address" t-value="'ute_report_parties'"/>
+        </t>
+      </div>
+    </xpath>
+
+    <!--
+        Sustituimos la llamada original a address_layout por:
+        1) CSS local y específico del nuevo bloque.
+        2) La fila de empresa/destinatario movida desde el header.
+
+        Se fuerza display:block en la estructura interna de address_layout.
+        Esto evita que Bootstrap intente mantener information_block y address
+        como columnas horizontales dentro de una columna que ya es estrecha.
+    -->
+    <xpath
+      expr="//div[contains(@t-attf-class, 'article')]/t[@t-call='web.address_layout']"
+      position="replace"
+    >
+      <style>
+        .ute-report-parties {
+          page-break-inside: avoid;
+        }
+
+        .ute-report-recipient .address.row,
+        .ute-report-recipient #verifactu_row {
+          display: block !important;
+          margin-left: 0 !important;
+          margin-right: 0 !important;
+          padding-top: 0 !important;
+          width: 100% !important;
+        }
+
+        .ute-report-recipient .address.row [name="information_block"],
+        .ute-report-recipient .address.row [name="address"],
+        .ute-report-recipient #verifactu_row [name="information_block"],
+        .ute-report-recipient #verifactu_row [name="address"] {
+          display: block !important;
+          float: none !important;
+          flex: none !important;
+          width: 100% !important;
+          max-width: 100% !important;
+          margin-left: 0 !important;
+          margin-right: 0 !important;
+          padding-left: 0 !important;
+          padding-right: 0 !important;
+        }
+
+        .ute-report-recipient .address.row [name="information_block"],
+        .ute-report-recipient #verifactu_row [name="information_block"] {
+          margin-bottom: 0.5rem !important;
+        }
+
+        .ute-report-recipient #verifactu {
+          display: block !important;
+          float: none !important;
+          width: 100% !important;
+          max-width: 100% !important;
+          margin-left: 0 !important;
+          margin-right: 0 !important;
+          padding-left: 0 !important;
+          padding-right: 0 !important;
+          margin-bottom: 0.5rem !important;
+        }
+
+        .ute-report-recipient .o_force_ltr,
+        .ute-report-recipient a {
+          text-align: left !important;
+        }
+      </style>
+
+      <xpath
+        expr="//div[contains(@t-attf-class, 'header')]/div[contains(concat(' ', normalize-space(@class), ' '), ' row ')][div[@name='company_address']]"
+        position="move"
+      />
+    </xpath>
+  </template>
+
+  <!--
+      ============================================================================
+      Evitar duplicación de dirección en ventas
+      ============================================================================
+      En sale.order, information_block ya puede contener facturación + envío.
+      Si address representa exactamente una de esas direcciones, no se vuelve
+      a imprimir. En compras y resto de documentos no se elimina address.
+      ============================================================================
+  -->
+  <template
+    id="ui_address_layout_for_parties"
+    inherit_id="web.address_layout"
+    name="Address Layout - Avoid Duplicate Sale Address"
+    priority="1100"
+  >
+    <xpath
+      expr="//div[contains(@t-attf-class, 'address row')]/div[@name='address']"
+      position="attributes"
+    >
+      <attribute name="t-if">
+        not (
+          custom_layout_address == 'ute_report_parties'
+          and information_block
+          and o
+          and o._name == 'sale.order'
+          and (
+            o.partner_id == o.partner_invoice_id
+            or o.partner_id == o.partner_shipping_id
+          )
+        )
+      </attribute>
+    </xpath>
+  </template>
+</odoo>

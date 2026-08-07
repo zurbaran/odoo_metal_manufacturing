@@ -1,27 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
 <odoo>
   <!--
       ============================================================================
-      Módulo: ui_template_enhancements
-      Archivo: sale_order_report_custom.xml
-      Plantilla: ui_template_enhancements_sale_report_mod
-      Hereda de: sale.report_saleorder_document
-
-      OBJETIVO GENERAL
-      - Mejorar la presentación de direcciones en el presupuesto / pedido de venta.
-      - Unificar el uso del widget 'contact' para mostrar:
-          * Dirección
-          * Nombre
-          * Teléfono
-          * Móvil
-          * Email
-      - Ocultar la columna de impuestos en la tabla de líneas de pedido.
-      - Añadir una tabla con las opciones de pedido (sale_order_option_ids) al final,
-        mostrando descripción, descuento y precio unitario (incluido precio con descuento).
-
-      NOTAS:
-      - priority="99" asegura que esta vista se aplique después de la mayoría de herencias,
-        pero permite que otras con prioridad mayor (p.ej. 100+) la sobreescriban si fuese necesario.
-      - Todos los cambios se realizan mediante xpath sobre la plantilla original.
+      Personalización del presupuesto / pedido de venta
+      ============================================================================
+      - Amplía los datos de contacto.
+      - Mantiene las direcciones de facturación y envío.
+      - Conserva el NIF de la dirección de facturación cuando el bloque principal
+        duplicado se oculte en el diseño global.
+      - Oculta impuestos por línea.
+      - Oculta unidades secundarias en ventas.
+      - No crea otra tabla de productos opcionales: se usa la nativa.
       ============================================================================
   -->
   <template
@@ -30,86 +19,43 @@
     name="Custom Sale Order Report Enhancements"
     priority="1001"
   >
-
-    <!--
-        ==========================================================================
-        1) MODIFICAR CAMPOS ADICIONALES EN LA DIRECCIÓN PRINCIPAL
-        - Objetivo: enriquecer el bloque de dirección ya definido en la plantilla
-          original.
-        - xpath: localiza el <div> dentro del t-set="address".
-        - Acción: sobrescribir los atributos del <div> para usar el widget 'contact'.
-
-        t-options utilizado:
-        {
-          'widget': 'contact',
-          'fields': ['address', 'name', 'phone', 'mobile', 'email'],
-          'no_marker': True
-        }
-
-        Explicación:
-        - 'widget': 'contact'     => Renderiza el partner con formato estándar de Odoo.
-        - 'fields': [...]         => Campos que se mostrarán del partner.
-        - 'no_marker': True       => Evita mostrar el "bullet" / marcador (estilo carta).
-        ==========================================================================
-    -->
+    <!-- Dirección principal enriquecida. -->
     <xpath expr="//t[@t-set='address']/div" position="attributes">
-      <attribute name="t-options">{'widget': 'contact', 'fields': ['address', 'name', 'phone', 'mobile', 'email'], 'no_marker': True}</attribute>
+      <attribute name="t-options">
+        {'widget': 'contact', 'fields': ['address', 'name', 'phone', 'mobile', 'email'], 'no_marker': True}
+      </attribute>
     </xpath>
 
     <!--
-        ==========================================================================
-        2) ACTUALIZAR DIRECCIONES DE FACTURACIÓN Y ENVÍO
-        - Se actúa sobre el bloque t-set="information_block" de la plantilla
-          original de sale.report_saleorder_document.
-        - Se sustituye completamente el contenido de:
-            //t[@t-set='information_block']/div
-          para mostrar la dirección de facturación con el widget 'contact'.
-
-        doc.partner_invoice_id:
-        - Partner a nombre del cual se emite la factura.
-        - Se renderiza con el widget 'contact' + iconos de teléfono.
-
-        t-options utilizado:
-        {
-          'widget': 'contact',
-          'fields': ['address', 'name', 'phone', 'mobile', 'email'],
-          'no_marker': True,
-          'phone_icons': True
-        }
-
-        'phone_icons': True:
-        - Muestra iconos junto a los teléfonos, mejorando la legibilidad visual.
-        ==========================================================================
+        Dirección de facturación enriquecida.
+        Se añade también el NIF para no perderlo cuando partner_id coincide con
+        una dirección que ya está representada en information_block.
     -->
-    <xpath expr="//t[@t-set='information_block']/div" position="replace">
+    <xpath
+      expr="//t[@t-set='information_block']/div[@t-field='doc.partner_invoice_id']"
+      position="replace"
+    >
       <div
         t-field="doc.partner_invoice_id"
         t-options="{'widget': 'contact', 'fields': ['address', 'name', 'phone', 'mobile', 'email'], 'no_marker': True, 'phone_icons': True}"
       />
+      <p t-if="doc.partner_invoice_id.vat" class="mb-0">
+        <t
+          t-if="doc.company_id.account_fiscal_country_id.vat_label"
+          t-out="doc.company_id.account_fiscal_country_id.vat_label"
+        />
+        <t t-else="">Tax ID</t>:
+        <span t-field="doc.partner_invoice_id.vat"/>
+      </p>
     </xpath>
 
-    <!--
-        2.b) Bloque condicional de dirección de envío
-        - Se reemplaza el t-if original por uno completo que:
-            * Muestra un título "Shipping Address:".
-            * Muestra la dirección de envío formateada con el widget 'contact'.
-        - Solo se muestra cuando:
-            doc.partner_shipping_id != doc.partner_invoice_id
-
-        doc.partner_shipping_id:
-        - Partner/ dirección utilizada para el envío de la mercancía.
-        - Se renderiza con el mismo formato que la dirección de facturación.
-
-        Nota:
-        - Se respeta la lógica de Odoo de no duplicar información cuando las
-          direcciones de envío y facturación son iguales.
-    -->
+    <!-- Dirección de envío enriquecida cuando es distinta. -->
     <xpath
       expr="//t[@t-set='information_block']/t[@t-if='doc.partner_shipping_id != doc.partner_invoice_id']"
       position="replace"
     >
       <t t-if="doc.partner_shipping_id != doc.partner_invoice_id">
-        <strong>Shipping Address:</strong>
+        <strong class="d-block mt-3">Shipping Address</strong>
         <div
           t-field="doc.partner_shipping_id"
           t-options="{'widget': 'contact', 'fields': ['address', 'name', 'phone', 'mobile', 'email'], 'no_marker': True, 'phone_icons': True}"
@@ -117,190 +63,17 @@
       </t>
     </xpath>
 
-    <!--
-        ==========================================================================
-        3) OCULTAR LA COLUMNA DE IMPUESTOS EN LA TABLA DE LÍNEAS
-        - Se actúa sobre:
-            //th[@name='th_taxes']  => cabecera de la columna de impuestos.
-            //td[@name='td_taxes']  => celdas de la columna de impuestos.
-
-        3.a) Cabecera de la columna de impuestos:
-        - Se modifica el atributo "class" para añadir "d-none" (clase de Bootstrap
-          que oculta el elemento).
-        - Esto hace que la cabecera de impuestos no se vea visualmente, pero se
-          mantiene el nodo por compatibilidad con otras vistas/herencias.
-
-        3.b) Celdas de impuestos:
-        - Se reemplaza el <td> por un comentario de "Eliminado".
-        - El xpath en "position='replace'" elimina toda la celda de la columna de
-          impuestos, evitando que se rendericen datos de impuestos línea a línea.
-        ==========================================================================
-    -->
+    <!-- Ocultar impuestos por línea; los totales fiscales permanecen. -->
     <xpath expr="//th[@name='th_taxes']" position="replace"/>
     <xpath expr="//td[@name='td_taxes']" position="replace"/>
+
     <!--
-        ==========================================================================
-        4) TABLA DE OPCIONES DE PRODUCTOS (sale_order_option_ids)
-        - Se inserta una tabla adicional justo después del bloque con name='signature':
-            xpath: //div[@name='signature']
-            position="after"
-
-        Condición de visualización:
-        t-if="doc.sale_order_option_ids and doc.state in ['draft', 'sent']"
-
-        - Solo muestra la tabla cuando:
-            * Existen opciones configuradas en el pedido (doc.sale_order_option_ids).
-            * El pedido está en estado 'draft' (borrador) o 'sent' (enviado).
-        - Esto está orientado a mostrar opciones al cliente antes de la confirmación.
-
-        Variable auxiliar:
-        <t t-set="has_option_discount" t-value="any(option.discount != 0.0 for option in doc.sale_order_option_ids)"/>
-
-        - Calcula si al menos una opción tiene descuento distinto de 0.0.
-        - Si es True, se muestra la columna "Disc.%" en la tabla.
-        ==========================================================================
+        No se redefine table_optional_products.
+        sale_management conserva su tabla nativa, incluida la columna de
+        descuento condicional.
     -->
-    <xpath expr="//div[@name='signature']" position="after">
-      <div t-if="doc.sale_order_option_ids and doc.state in ['draft', 'sent']">
-        <!--
-            Determina si hay alguna opción con descuento != 0.0
-            - Esto permite mostrar la columna de descuento solo cuando es relevante.
-        -->
-        <t
-          t-set="has_option_discount"
-          t-value="any(option.discount != 0.0 for option in doc.sale_order_option_ids)"
-        />
-        <!-- Título del bloque de opciones de productos -->
-        <h4 name="h_optional_products">
-          <span>Options</span>
-        </h4>
 
-        <!--
-            Tabla de opciones:
-            - name="table_optional_products" => identificador lógico para otras vistas.
-            - class="table table-sm"         => estilos Bootstrap de tabla compacta.
-        -->
-        <table name="table_optional_products" class="table table-sm">
-          <thead>
-            <tr>
-              <!--
-                  Columna: Descripción de la opción
-                  - Muestra el nombre/breve descripción de la opción.
-              -->
-              <th name="th_option_name" class="text-start">Description</th>
-              <!--
-                  Columna: Descuento %
-                  - Solo se muestra si has_option_discount es True.
-                  - groups="product.group_discount_per_so_line":
-                    * Solo visible para usuarios con el grupo que permite ver descuentos
-                      por línea de pedido.
-              -->
-              <th
-                t-if="has_option_discount"
-                name="th_option_discount"
-                groups="product.group_discount_per_so_line"
-                class="text-start"
-              >Disc.%</th>
-              <!--
-                  Columna: Precio unitario
-                  - Muestra el precio unitario de la opción.
-              -->
-              <th name="th_option_price_unit" class="text-end">Unit Price</th>
-            </tr>
-          </thead>
-
-          <!--
-              Cuerpo de la tabla:
-              - class="sale_tbody": mantiene coherencia con otras tablas de venta.
-              - t-foreach="doc.sale_order_option_ids" t-as="option":
-                * Itera sobre cada opción configurada en el pedido.
-          -->
-          <tbody class="sale_tbody">
-            <tr t-foreach="doc.sale_order_option_ids" t-as="option">
-              <!--
-                  Celda: Nombre / descripción de la opción
-                  - option.name es un campo de texto descriptivo.
-              -->
-              <td name="td_option_name">
-                <span t-field="option.name"/>
-              </td>
-              <!--
-                  Celda: Descuento %
-                  - Solo se muestra si has_option_discount y el usuario pertenece
-                    al grupo de descuentos por línea.
-                  - Se muestra el porcentaje solo cuando option.discount != 0.0.
-                  - class="text-info": estilo resaltado para el valor del descuento.
-              -->
-              <td
-                t-if="has_option_discount"
-                name="td_option_discount"
-                groups="product.group_discount_per_so_line"
-              >
-                <strong t-if="option.discount != 0.0" class="text-info">
-                  <!--
-                      Formato del descuento:
-                      - ((option.discount % 1) and '%s' or '%d') % option.discount
-                      - Si tiene decimales, muestra con formato %s, si no, %d.
-                      - Al final se añade el símbolo '%' fuera del t-out.
-                  -->
-                  <t t-out="((option.discount % 1) and '%s' or '%d') % option.discount"/>%
-                </strong>
-              </td>
-
-              <!--
-                  Celda: Precio unitario / Precio con descuento
-                  - Muestra:
-                      1) Precio unitario (si hay descuento, se muestra tachado y en rojo).
-                      2) Precio final con descuento (si option.discount != 0.0).
-
-                  Estructura:
-                  - <div t-field="option.price_unit" ... />
-                      * Renderiza el precio unitario con el widget 'monetary'.
-                      * display_currency = doc.pricelist_id.currency_id:
-                        moneda de la tarifa de venta.
-
-                      * t-att-style:
-                          - Si hay descuento, aplica 'text-decoration: line-through'
-                            para indicar que el precio base está rebajado.
-                      * t-att-class:
-                          - Si hay descuento, se añade 'text-danger' para colorear en rojo.
-
-                  - <div t-if="option.discount">
-                      * Calcula el precio final con descuento:
-                        (1 - option.discount / 100.0) * option.price_unit
-                      * Se renderiza también con widget 'monetary', pero usando
-                        doc.currency_id como moneda de visualización.
-              -->
-              <td name="td_option_price_unit">
-                <strong class="text-end">
-                  <div
-                    t-field="option.price_unit"
-                    t-options="{'widget': 'monetary', 'display_currency': doc.pricelist_id.currency_id}"
-                    t-att-style="option.discount and 'text-decoration: line-through' or None"
-                    t-att-class="option.discount and 'text-danger' or None"
-                  />
-                  <div t-if="option.discount">
-                    <t
-                      t-out="((1-option.discount / 100.0) * option.price_unit)"
-                      t-options="{'widget': 'monetary', 'display_currency': doc.currency_id}"
-                    />
-                  </div>
-                </strong>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </xpath>
-    <!--
-        ==========================================================================
-        6) OCULTAR COLUMNA DE CANTIDAD SECUNDARIA
-        ==========================================================================
-        Se usa t-if="False" en lugar de position="replace" para evitar errores
-        si el módulo de UOM secundaria no está activo o el nodo no existe aún
-        en el momento de resolver la herencia.
-        ==========================================================================
-    -->
+    <!-- Ocultar unidades secundarias únicamente en ventas. -->
     <xpath expr="//th[@name='th_secondary_uom_id']" position="replace"/>
     <xpath expr="//td[@name='td_secondary_uom_id']" position="replace"/>
   </template>
