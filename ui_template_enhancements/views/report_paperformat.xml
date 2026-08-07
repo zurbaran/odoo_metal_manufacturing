@@ -1,99 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- =========================
-            PAPERFORMATS ESPECÍFICOS
-            ========================= -->
+  <!--
+      Formato único para documentos externos con direcciones.
 
-    <record id="paperformat_ute_sale_external" model="report.paperformat">
-        <field name="name">A4 - UTE Venta</field>
-        <field name="default" eval="False"/>
-        <field name="format">A4</field>
-        <field name="page_height">0</field>
-        <field name="page_width">0</field>
-        <field name="orientation">Portrait</field>
-        <field name="margin_top">72</field>
-        <field name="margin_bottom">32</field>
-        <field name="margin_left">0</field>
-        <field name="margin_right">0</field>
-        <field name="header_line" eval="False"/>
-        <field name="header_spacing">72</field>
-        <field name="dpi">90</field>
-        <field name="css_margins" eval="True"/>
-    </record>
+      La cabecera contiene únicamente logo/lema.
+      Los datos de empresa y destinatario están en el cuerpo del documento.
 
-    <record id="paperformat_ute_purchase_external" model="report.paperformat">
-        <field name="name">A4 - UTE Compra</field>
-        <field name="default" eval="False"/>
-        <field name="format">A4</field>
-        <field name="page_height">0</field>
-        <field name="page_width">0</field>
-        <field name="orientation">Portrait</field>
-        <field name="margin_top">86</field>
-        <field name="margin_bottom">32</field>
-        <field name="margin_left">0</field>
-        <field name="margin_right">0</field>
-        <field name="header_line" eval="False"/>
-        <field name="header_spacing">86</field>
-        <field name="dpi">90</field>
-        <field name="css_margins" eval="True"/>
-    </record>
+      margin_top=45:
+      - reserva la zona superior para la cabecera.
 
-    <record id="paperformat_ute_account_external" model="report.paperformat">
-        <field name="name">A4 - UTE Factura</field>
-        <field name="default" eval="False"/>
-        <field name="format">A4</field>
-        <field name="page_height">0</field>
-        <field name="page_width">0</field>
-        <field name="orientation">Portrait</field>
-        <field name="margin_top">80</field>
-        <field name="margin_bottom">32</field>
-        <field name="margin_left">0</field>
-        <field name="margin_right">0</field>
-        <field name="header_line" eval="False"/>
-        <field name="header_spacing">80</field>
-        <field name="dpi">90</field>
-        <field name="css_margins" eval="True"/>
-    </record>
+      header_spacing=40:
+      - mantiene logo/lema suficientemente arriba;
+      - evita que la cabecera invada las direcciones;
+      - es menor que los 52 mm estándar de Odoo para aprovechar mejor
+        el espacio vertical.
+  -->
+  <record id="paperformat_ute_external_compact" model="report.paperformat">
+    <field name="name">A4 - UTE Externo Compacto</field>
+    <field name="default" eval="False"/>
+    <field name="format">A4</field>
+    <field name="page_height">0</field>
+    <field name="page_width">0</field>
+    <field name="orientation">Portrait</field>
+    <field name="margin_top">34</field>
+    <field name="margin_bottom">32</field>
+    <field name="margin_left">0</field>
+    <field name="margin_right">0</field>
+    <field name="header_line" eval="False"/>
+    <field name="header_spacing">29</field>
+    <field name="dpi">90</field>
+    <field name="css_margins" eval="True"/>
+  </record>
 
-
-    <!-- =========================
-            ASIGNAR A INFORMES VENTA
-            ========================= -->
-
-    <record id="sale.action_report_saleorder" model="ir.actions.report">
-        <field name="paperformat_id" ref="ui_template_enhancements.paperformat_ute_sale_external"/>
-    </record>
-
-    <record id="sale.action_report_pro_forma_invoice" model="ir.actions.report">
-        <field name="paperformat_id" ref="ui_template_enhancements.paperformat_ute_sale_external"/>
-    </record>
-
-
-    <!-- =========================
-            ASIGNAR A INFORMES COMPRA
-            ========================= -->
-
-    <record id="purchase.action_report_purchase_order" model="ir.actions.report">
-        <field name="paperformat_id" ref="ui_template_enhancements.paperformat_ute_purchase_external"/>
-    </record>
-
-    <record id="purchase.report_purchase_quotation" model="ir.actions.report">
-        <field name="paperformat_id" ref="ui_template_enhancements.paperformat_ute_purchase_external"/>
-    </record>
-
-
-    <!-- =========================
-            ASIGNAR A INFORMES FACTURA
-            ========================= -->
-
-    <record id="account.account_invoices_without_payment" model="ir.actions.report">
-        <field name="paperformat_id" ref="ui_template_enhancements.paperformat_ute_account_external"/>
-    </record>
-
-    <record id="account.account_invoices" model="ir.actions.report">
-        <field name="paperformat_id" ref="ui_template_enhancements.paperformat_ute_account_external"/>
-    </record>
-
-    <record id="account.action_account_original_vendor_bill" model="ir.actions.report">
-        <field name="paperformat_id" ref="ui_template_enhancements.paperformat_ute_account_external"/>
-    </record>
+  <function
+    model="ir.actions.report"
+    name="_ute_apply_compact_external_paperformat"
+  />
 </odoo>
