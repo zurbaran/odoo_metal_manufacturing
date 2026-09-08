@@ -40,12 +40,12 @@ jobs:
 
     steps:
       - name: Checkout custom modules
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           path: custom-addons
 
       - name: Checkout Odoo 18
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: odoo/odoo
           ref: "18.0"
@@ -53,7 +53,7 @@ jobs:
           fetch-depth: 1
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.11"
           cache: pip
