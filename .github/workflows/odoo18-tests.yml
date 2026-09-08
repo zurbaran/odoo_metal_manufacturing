@@ -110,6 +110,6 @@ jobs:
             --db_password=odoo \
             --addons-path=odoo/addons,custom-addons \
             --init=product_blueprint_manager,product_configurator_attribute_price \
-            --test-enable \
+            --test-tags=/product_blueprint_manager,/product_configurator_attribute_price \
             --stop-after-init \
             --log-level=test
