@@ -30,11 +30,32 @@ _COMPARE_OPERATORS = {
     ast.GtE: operator.ge,
 }
 _SAFE_FUNCTIONS = {
-    name: value
-    for name, value in math.__dict__.items()
-    if not name.startswith("_") and callable(value)
+    "abs": abs,
+    "min": min,
+    "max": max,
+    "round": round,
+    "ceil": math.ceil,
+    "floor": math.floor,
+    "trunc": math.trunc,
+    "sqrt": math.sqrt,
+    "fabs": math.fabs,
+    "sin": math.sin,
+    "cos": math.cos,
+    "tan": math.tan,
+    "asin": math.asin,
+    "acos": math.acos,
+    "atan": math.atan,
+    "atan2": math.atan2,
+    "degrees": math.degrees,
+    "radians": math.radians,
+    "log": math.log,
+    "log10": math.log10,
+    "log2": math.log2,
+    "exp": math.exp,
+    "hypot": math.hypot,
+    "fmod": math.fmod,
+    "copysign": math.copysign,
 }
-_SAFE_FUNCTIONS.update({"abs": abs, "min": min, "max": max, "round": round})
 _SAFE_CONSTANTS = {"pi": math.pi, "e": math.e, "tau": math.tau}
 
 
