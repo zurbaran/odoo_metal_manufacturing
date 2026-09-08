@@ -2,14 +2,16 @@ from odoo.tests.common import TransactionCase
 
 
 class TestConfiguratorSecurity(TransactionCase):
-    def test_custom_acl_is_not_granted_to_all_internal_users(self):
-        system_group = self.env.ref("base.group_system")
+    def test_custom_acls_do_not_grant_permissions(self):
         for xmlid in (
             "product_configurator_attribute_price.access_product_template_attribute_value",
             "product_configurator_attribute_price.access_sale_order_line",
         ):
             access = self.env.ref(xmlid)
-            self.assertEqual(access.group_id, system_group)
+            self.assertFalse(access.perm_read)
+            self.assertFalse(access.perm_write)
+            self.assertFalse(access.perm_create)
+            self.assertFalse(access.perm_unlink)
 
     def test_safe_formula_evaluation(self):
         model = self.env["product.template.attribute.value"]
