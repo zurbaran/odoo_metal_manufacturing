@@ -32,6 +32,8 @@ class TestBlueprintSecurity(TransactionCase):
         cls.product_template = cls.env["product.template"].create(
             {"name": "Blueprint Security Product"}
         )
+        partner = cls.env["res.partner"].create({"name": "Blueprint Security Partner"})
+        cls.sale_order = cls.env["sale.order"].create({"partner_id": partner.id})
 
     def test_employee_has_no_blueprint_model_access(self):
         for model_name in _BLUEPRINT_MODELS:
@@ -77,6 +79,55 @@ class TestBlueprintSecurity(TransactionCase):
         blueprint_product = self.product_template.with_user(self.blueprint_user)
         self.assertEqual(blueprint_product.get_custom_attribute_values(), {})
         self.assertFalse(blueprint_product.generate_blueprint_report())
+
+    def test_sale_report_rpc_actions_require_blueprint_group(self):
+        order = self.sale_order.with_user(self.employee)
+        for method_name in (
+            "action_print_blueprint",
+            "action_print_purchase_blueprint",
+        ):
+            with self.subTest(method=method_name), self.assertRaises(AccessError):
+                getattr(order, method_name)()
+
+    def test_security_metadata_restricts_menus_and_actions(self):
+        blueprint_user_group = self.env.ref(
+            "product_blueprint_manager.group_product_blueprint_user"
+        )
+        manager_group = self.env.ref(
+            "product_blueprint_manager.group_product_blueprint_manager"
+        )
+
+        for xmlid in (
+            "product_blueprint_manager.action_report_sale_order_blueprint",
+            "product_blueprint_manager.action_report_purchase_order_blueprint",
+        ):
+            with self.subTest(report=xmlid):
+                self.assertIn(blueprint_user_group, self.env.ref(xmlid).groups_id)
+
+        for xmlid in (
+            "product_blueprint_manager.product_blueprint_action",
+            "product_blueprint_manager.product_blueprint_formula_action",
+        ):
+            with self.subTest(action=xmlid):
+                self.assertIn(manager_group, self.env.ref(xmlid).groups_id)
+
+        menu_xmlids = (
+            "product_blueprint_manager.menu_product_blueprints_root",
+            "product_blueprint_manager.menu_product_blueprints",
+            "product_blueprint_manager.menu_product_blueprint_formulas",
+        )
+        employee_visible = (
+            self.env["ir.ui.menu"].with_user(self.employee)._visible_menu_ids()
+        )
+        manager_visible = (
+            self.env["ir.ui.menu"].with_user(self.blueprint_manager)._visible_menu_ids()
+        )
+        for xmlid in menu_xmlids:
+            menu = self.env.ref(xmlid)
+            with self.subTest(menu=xmlid):
+                self.assertIn(manager_group, menu.groups_id)
+                self.assertNotIn(menu.id, employee_visible)
+                self.assertIn(menu.id, manager_visible)
 
     def test_safe_formula_evaluation(self):
         line_model = self.env["sale.order.line"]
