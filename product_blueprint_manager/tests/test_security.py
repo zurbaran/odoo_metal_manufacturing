@@ -2,6 +2,14 @@ from odoo.exceptions import AccessError
 from odoo.tests.common import TransactionCase, new_test_user
 
 
+_BLUEPRINT_MODELS = (
+    "product.blueprint",
+    "product.blueprint.formula",
+    "product.blueprint.formula.name",
+    "product.blueprint.condition",
+)
+
+
 class TestBlueprintSecurity(TransactionCase):
     @classmethod
     def setUpClass(cls):
@@ -21,25 +29,54 @@ class TestBlueprintSecurity(TransactionCase):
             login="blueprint_manager",
             groups="product_blueprint_manager.group_product_blueprint_manager",
         )
+        cls.product_template = cls.env["product.template"].create(
+            {"name": "Blueprint Security Product"}
+        )
 
     def test_employee_has_no_blueprint_model_access(self):
-        with self.assertRaises(AccessError):
-            self.env["product.blueprint"].with_user(self.employee).check_access("read")
+        for model_name in _BLUEPRINT_MODELS:
+            with self.subTest(model=model_name), self.assertRaises(AccessError):
+                self.env[model_name].with_user(self.employee).check_access("read")
 
     def test_blueprint_user_is_read_only(self):
-        model = self.env["product.blueprint"].with_user(self.blueprint_user)
-        model.check_access("read")
-        with self.assertRaises(AccessError):
-            model.check_access("write")
-        with self.assertRaises(AccessError):
-            model.check_access("create")
-        with self.assertRaises(AccessError):
-            model.check_access("unlink")
+        for model_name in _BLUEPRINT_MODELS:
+            model = self.env[model_name].with_user(self.blueprint_user)
+            with self.subTest(model=model_name, operation="read"):
+                model.check_access("read")
+            for operation in ("write", "create", "unlink"):
+                with self.subTest(model=model_name, operation=operation), self.assertRaises(
+                    AccessError
+                ):
+                    model.check_access(operation)
 
     def test_blueprint_manager_has_full_access(self):
-        model = self.env["product.blueprint"].with_user(self.blueprint_manager)
-        for operation in ("read", "write", "create", "unlink"):
-            model.check_access(operation)
+        for model_name in _BLUEPRINT_MODELS:
+            model = self.env[model_name].with_user(self.blueprint_manager)
+            for operation in ("read", "write", "create", "unlink"):
+                with self.subTest(model=model_name, operation=operation):
+                    model.check_access(operation)
+
+    def test_employee_cannot_discover_blueprint_product_fields(self):
+        employee_fields = self.env["product.template"].with_user(self.employee).fields_get()
+        self.assertNotIn("blueprint_ids", employee_fields)
+        self.assertNotIn("formula_ids", employee_fields)
+
+        blueprint_fields = (
+            self.env["product.template"].with_user(self.blueprint_user).fields_get()
+        )
+        self.assertIn("blueprint_ids", blueprint_fields)
+        self.assertIn("formula_ids", blueprint_fields)
+
+    def test_public_product_helpers_require_blueprint_group(self):
+        product = self.product_template.with_user(self.employee)
+        with self.assertRaises(AccessError):
+            product.get_custom_attribute_values()
+        with self.assertRaises(AccessError):
+            product.generate_blueprint_report()
+
+        blueprint_product = self.product_template.with_user(self.blueprint_user)
+        self.assertEqual(blueprint_product.get_custom_attribute_values(), {})
+        self.assertFalse(blueprint_product.generate_blueprint_report())
 
     def test_safe_formula_evaluation(self):
         line_model = self.env["sale.order.line"]
