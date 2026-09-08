@@ -48,9 +48,13 @@ class SaleOrderLine(models.Model):
         try:
             result = evaluate_math_expression(expression, variables)
             return str(result)
-        except Exception:
-            _logger.exception(
-                "[Blueprint] Error al evaluar de forma segura la fórmula %r",
+        except Exception as exc:
+            # Las expresiones inválidas forman parte del comportamiento esperado
+            # del sandbox (y se prueban explícitamente). No imprimimos un traceback
+            # completo como ERROR porque genera falsos positivos visuales en CI.
+            _logger.warning(
+                "[Blueprint] Fórmula rechazada por el evaluador seguro %r: %s",
                 expression,
+                exc,
             )
             return "Error"
