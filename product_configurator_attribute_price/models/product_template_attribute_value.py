@@ -1,9 +1,9 @@
-import ast
 import logging
-import math
 
 from odoo import _, fields, models
 from odoo.exceptions import ValidationError
+
+from ..utils import evaluate_math_expression
 
 # Logger del módulo. Se utiliza para dejar trazas de depuración e información
 # sobre la evaluación de fórmulas de precio.
@@ -43,37 +43,13 @@ class ProductTemplateAttributeValue(models.Model):
     )
 
     def _safe_eval(self, expression, variables):
-        """Evaluate the formula expression in a safe environment.
+        """Evalúa la fórmula con el evaluador AST explícitamente permitido.
 
-        Esta función encapsula la evaluación de la expresión de la fórmula en
-        un entorno controlado, evitando el acceso a __builtins__ y limitando
-        las funciones disponibles a:
-          - el módulo math (sin atributos "privados")
-          - las variables explícitamente proporcionadas (custom_value, price_so_far)
-
-        Args:
-            expression (str): Expresión a evaluar (la fórmula escrita por el usuario).
-            variables (dict): Diccionario con las variables disponibles dentro
-                de la expresión (p.ej. {"custom_value": 123, "price_so_far": 456}).
-
-        Returns:
-            any: Resultado de la evaluación de la expresión.
+        No ejecuta código Python. Solo admite variables numéricas, operadores
+        matemáticos/comparaciones expresamente soportados y una lista cerrada
+        de funciones matemáticas.
         """
-        # Se construye un diccionario de nombres permitidos a partir de math,
-        # excluyendo todo aquello que empiece por "__".
-        allowed_names = {
-            k: v for k, v in math.__dict__.items() if not k.startswith("__")
-        }
-        # Se añaden las variables de contexto (custom_value, price_so_far).
-        allowed_names.update(variables)
-
-        # Se parsea la expresión para garantizar que es una expresión válida de Python.
-        tree = ast.parse(expression, mode="eval")
-        # Se compila el árbol sintáctico en un objeto ejecutable.
-        compiled = compile(tree, "<string>", "eval")
-        # Se evalúa el código compilado con un entorno vacío de __builtins__
-        # y únicamente con los nombres permitidos.
-        return eval(compiled, {"__builtins__": {}}, allowed_names)
+        return evaluate_math_expression(expression, variables)
 
     def calculate_price_increment(self, custom_value, price_so_far):
         """

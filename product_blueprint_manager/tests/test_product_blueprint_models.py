@@ -1,76 +1,68 @@
-from odoo.tests.common import TransactionCase, tagged
+import base64
 
-# TransactionCase: clase base de tests que ejecutan transacciones reales
-# tagged: permite marcar el test para que se ejecute sólo en ciertos momentos
-# (-at_install para no ejecutarlo en la instalación inicial, post_install para después)
+from odoo.tests.common import TransactionCase, tagged
 
 
 @tagged("-at_install", "post_install")
 class TestProductBlueprintModels(TransactionCase):
-    # Esta clase agrupa tests de alto nivel sobre el modelo `product.blueprint`,
-    # enfocándose en:
-    # - Extracción automática de fórmulas desde el SVG al crear el blueprint.
-    # - Restricción de unicidad de nombres de fórmula por plano (blueprint).
+    def setUp(self):
+        super().setUp()
+        self.product_template = self.env["product.template"].create(
+            {"name": "Producto Blueprint Test"}
+        )
+
+    def _create_blueprint(self, name, svg):
+        return self.env["product.blueprint"].create(
+            {
+                "name": name,
+                "product_id": self.product_template.id,
+                "blueprint_condition_ids": [],
+                "file": base64.b64encode(svg),
+                "type_blueprint": "manufacturing",
+            }
+        )
 
     def test_formula_extraction_on_create(self):
-        # Este test verifica que al crear un `product.blueprint` con un SVG que
-        # contiene nodos marcados como `class='odoo-formula'`, se generen
-        # automáticamente los registros relacionados de nombres de fórmula
-        # (`product.blueprint.formula.name`) y se rellene `formula_name_ids`.
-
-        # Creamos un blueprint mínimo con:
-        # - product_tmpl_id conocido (plantilla de producto demo de Odoo).
-        # - sin condiciones de plano (blueprint_condition_ids vacío).
-        # - svg_file con un único nodo <text> que contiene una fórmula "Ancho".
-        # - tipo "manufacturing" (plano de fabricación).
-        blueprint = self.env["product.blueprint"].create(
-            {
-                "name": "Plano SVG Test",
-                "product_tmpl_id": self.env.ref(
-                    "product.product_product_4_product_template"
-                ).id,
-                "blueprint_condition_ids": [],
-                "svg_file": b"""<svg><text class='odoo-formula' aria-label=
-                'Ancho'>0</text></svg>""",
-                "type": "manufacturing",
-            }
+        svg = (
+            b'<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">'
+            b'<text id="formula-ancho" class="odoo-formula">{{Ancho}}</text>'
+            b"</svg>"
         )
-        # Comprobamos que el campo relacional `formula_name_ids` tenga contenido,
-        # lo que implica que se ha ejecutado la lógica de extracción de fórmulas
-        # desde el SVG al crear el blueprint.
-        self.assertTrue(
-            blueprint.formula_name_ids, "La fórmula no se extrajo automáticamente"
+        blueprint = self._create_blueprint("Plano SVG Test", svg)
+
+        formula_name = self.env["product.blueprint.formula.name"].search(
+            [
+                ("blueprint_id", "=", blueprint.id),
+                ("name", "=", "Ancho"),
+                ("svg_element_id", "=", "formula-ancho"),
+            ]
+        )
+        self.assertEqual(
+            len(formula_name),
+            1,
+            "La fórmula no se extrajo automáticamente al crear el blueprint",
         )
 
-    def test_unique_formula_names_per_blueprint(self):
-        # Este test comprueba la restricción de unicidad de nombres de fórmula
-        # por plano (blueprint). No debería ser posible tener dos fórmulas con
-        # el mismo "nombre de etiqueta" (`product.blueprint.formula.name`) para
-        # el mismo `product.blueprint`.
-
-        # Creamos un blueprint con un SVG simple que contiene una única fórmula
-        # identificada por aria-label='Valor1'.
-        blueprint = self.env["product.blueprint"].create(
-            {
-                "name": "Plano A",
-                "product_tmpl_id": self.env.ref(
-                    "product.product_product_4_product_template"
-                ).id,
-                "blueprint_condition_ids": [],
-                "svg_file": b"""<svg><text class='odoo-formula'
-                  aria-label='Valor1'>0</text></svg>""",
-                "type": "manufacturing",
-            }
+    def test_formula_extraction_is_idempotent(self):
+        svg = (
+            b'<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">'
+            b'<text id="formula-valor1" class="odoo-formula">{{Valor1}}</text>'
+            b"</svg>"
         )
-        # Intentamos escribir un nuevo SVG en el mismo blueprint que contenga
-        # DOS nodos de fórmula con el mismo aria-label='Valor1'. Esto debería
-        # violar la restricción de unicidad (a nivel de modelo o SQL) y lanzar
-        # una excepción.
-        with self.assertRaises(Exception):  # noqa: B017
-            blueprint.write(
-                {
-                    "svg_file": b"""<svg><text class='odoo-formula'
-                      aria-label='Valor1'>0</text>
-                      <text class='odoo-formula' aria-label='Valor1'>0</text></svg>"""
-                }
-            )
+        blueprint = self._create_blueprint("Plano A", svg)
+
+        blueprint._extract_svg_formulas()
+        blueprint._extract_svg_formulas()
+
+        formula_names = self.env["product.blueprint.formula.name"].search(
+            [
+                ("blueprint_id", "=", blueprint.id),
+                ("name", "=", "Valor1"),
+                ("svg_element_id", "=", "formula-valor1"),
+            ]
+        )
+        self.assertEqual(
+            len(formula_names),
+            1,
+            "Reprocesar el SVG no debe duplicar la misma fórmula/nodo",
+        )

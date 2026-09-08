@@ -1,5 +1,5 @@
 from odoo.exceptions import ValidationError
-from odoo.tests.common import SavepointCase
+from odoo.tests.common import TransactionCase
 
 # Módulo de pruebas unitarias para la lógica de cálculo de incrementos de precio
 # mediante fórmulas en product.template.attribute.value.
@@ -13,7 +13,7 @@ from odoo.tests.common import SavepointCase
 #   - Uso de la variable price_so_far
 
 
-class TestPriceFormula(SavepointCase):
+class TestPriceFormula(TransactionCase):
     """Tests de la funcionalidad de cálculo de incremento de precio por fórmula
     en los valores de atributos de plantilla de producto.
     """

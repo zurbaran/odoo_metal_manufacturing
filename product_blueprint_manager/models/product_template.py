@@ -1,11 +1,14 @@
 import logging
 
-from odoo import api, fields, models
+from odoo import _, api, fields, models
+from odoo.exceptions import AccessError
 
 # Se obtiene un logger específico para este módulo. Permite trazar
 # la actividad relacionada con la gestión de planos y fórmulas
 # desde el modelo product.template.
 _logger = logging.getLogger(__name__)
+
+_BLUEPRINT_USER_GROUP = "product_blueprint_manager.group_product_blueprint_user"
 
 
 class ProductTemplate(models.Model):
@@ -32,6 +35,7 @@ class ProductTemplate(models.Model):
         "product.blueprint",
         "product_id",
         string="Planos",
+        groups=_BLUEPRINT_USER_GROUP,
     )
 
     # Conjunto de fórmulas ligadas a la plantilla de producto. Estas fórmulas
@@ -39,7 +43,10 @@ class ProductTemplate(models.Model):
     # utilizando los valores de atributos (custom y estándar) de las líneas
     # de venta que referencien este producto.
     formula_ids = fields.One2many(
-        "product.blueprint.formula", "product_id", string="Fórmulas"
+        "product.blueprint.formula",
+        "product_id",
+        string="Fórmulas",
+        groups=_BLUEPRINT_USER_GROUP,
     )
 
     # Campo auxiliar que expone, de forma computada, los atributos de la
@@ -51,6 +58,11 @@ class ProductTemplate(models.Model):
         compute="_compute_attribute_ids",
         store=False,
     )
+
+    def _check_blueprint_user_access(self):
+        """Exige acceso explícito a planos para los helpers públicos."""
+        if not self.env.user.has_group(_BLUEPRINT_USER_GROUP):
+            raise AccessError(_("No tiene permisos para acceder a planos de producto."))
 
     def get_custom_attribute_values(self, sale_order_line=None):
         """
@@ -73,6 +85,7 @@ class ProductTemplate(models.Model):
             ``sale_order_line.blueprint_custom_values`` tal cual, o un
             valor vacío si no se proporcionó la línea.
         """
+        self._check_blueprint_user_access()
         _logger.debug(
             "[Blueprint] Obteniendo valores de atributos personalizados "
             f"para {self.name}, Linea de venta: "
@@ -124,6 +137,7 @@ class ProductTemplate(models.Model):
                acción estándar de Odoo para la impresión del PDF/HTML.
         """
         self.ensure_one()
+        self._check_blueprint_user_access()
 
         if not sale_order_line:
             _logger.error("Sale order line is required for generating the blueprint.")

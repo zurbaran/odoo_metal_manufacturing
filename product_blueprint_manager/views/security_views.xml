@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_product_template_blueprint_security" model="ir.ui.view">
+        <field name="name">product.template.blueprint.security</field>
+        <field name="model">product.template</field>
+        <field
+            name="inherit_id"
+            ref="product_blueprint_manager.view_product_template_form_inherit_blueprint"
+        />
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='blueprint_ids']/ancestor::page[1]" position="attributes">
+                <attribute name="groups">product_blueprint_manager.group_product_blueprint_manager</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_sale_order_blueprint_security" model="ir.ui.view">
+        <field name="name">sale.order.blueprint.security</field>
+        <field name="model">sale.order</field>
+        <field
+            name="inherit_id"
+            ref="product_blueprint_manager.view_order_form_inherit_blueprint_buttons"
+        />
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='action_print_blueprint']" position="attributes">
+                <attribute name="groups">product_blueprint_manager.group_product_blueprint_user</attribute>
+            </xpath>
+            <xpath expr="//button[@name='action_print_purchase_blueprint']" position="attributes">
+                <attribute name="groups">product_blueprint_manager.group_product_blueprint_user</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_mrp_production_blueprint_security" model="ir.ui.view">
+        <field name="name">mrp.production.blueprint.security</field>
+        <field name="model">mrp.production</field>
+        <field
+            name="inherit_id"
+            ref="product_blueprint_manager.mrp_production_form_inherit_blueprint_button"
+        />
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='action_print_blueprint_mrp']" position="attributes">
+                <attribute name="groups">product_blueprint_manager.group_product_blueprint_user</attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>
