@@ -62,6 +62,9 @@ class TestBlueprintFiltering(TransactionCase):
             self.val_carglas, self.val_pulido
         )
 
+        partner = self.env["res.partner"].create({"name": "Blueprint Filter Partner"})
+        self.order = self.env["sale.order"].create({"partner_id": partner.id})
+
         self.blueprint = self._create_blueprint(
             "Plano Transparente",
             "purchase",
@@ -107,7 +110,13 @@ class TestBlueprintFiltering(TransactionCase):
         )
 
     def _evaluated_names(self, product, type_blueprint):
-        line = self.env["sale.order.line"].new({"product_id": product.id})
+        line = self.env["sale.order.line"].create(
+            {
+                "order_id": self.order.id,
+                "product_id": product.id,
+                "product_uom_qty": 1,
+            }
+        )
         return [
             item["blueprint_name"]
             for item in line._get_evaluated_blueprint(type_blueprint=type_blueprint)
