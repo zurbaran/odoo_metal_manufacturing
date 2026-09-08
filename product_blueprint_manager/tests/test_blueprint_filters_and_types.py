@@ -51,8 +51,16 @@ class TestBlueprintFilters(TransactionCase):
             }
         )
 
-        product = tmpl.product_variant_id
-        line = self.env["sale.order.line"].new({"product_id": product.id})
+        partner = self.env["res.partner"].create({"name": "Blueprint Test Partner"})
+        order = self.env["sale.order"].create({"partner_id": partner.id})
+        line = self.env["sale.order.line"].create(
+            {
+                "order_id": order.id,
+                "product_id": tmpl.product_variant_id.id,
+                "product_uom_qty": 1,
+            }
+        )
+
         evaluated = line._get_evaluated_blueprint()
         names = [item["blueprint_name"] for item in evaluated]
 
