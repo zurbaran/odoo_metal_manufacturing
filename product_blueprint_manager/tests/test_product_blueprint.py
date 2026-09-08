@@ -1,32 +1,13 @@
-import base64  # Biblioteca estándar para operaciones con datos binarios/base64.
+import base64
 
-# TransactionCase en Odoo 18 ejecuta cada método de test dentro de un savepoint,
-# sustituyendo el uso histórico de SavepointCase.
-from odoo.tests.common import TransactionCase  # pyright: ignore[reportMissingImports]
+from odoo.tests.common import TransactionCase
 
 
 class TestProductBlueprint(TransactionCase):
-    """
-    Conjunto de tests funcionales para el modelo `product.blueprint`.
-
-    Objetivos principales:
-    - Verificar que la extracción de fórmulas desde un SVG crea correctamente
-      los registros `product.blueprint.formula.name` y respeta atributos
-      visuales detectados (color, tamaño de fuente, id del nodo SVG).
-    - Comprobar que las condiciones de plano basadas en atributos de producto
-      se aplican correctamente, de manera que solo se generen planos cuando
-      los valores de atributo coinciden con la configuración del plano.
-    """
+    """Tests funcionales del modelo ``product.blueprint``."""
 
     @classmethod
     def setUpClass(cls):
-        """
-        Configuración inicial compartida por todos los tests de la clase.
-
-        - Crea un producto `product.template` sencillo de tipo consumible.
-        - Crea un partner genérico que se usará para crear pedidos de venta
-          en los tests.
-        """
         super().setUpClass()
         cls.product = cls.env["product.template"].create(
             {
@@ -38,7 +19,7 @@ class TestProductBlueprint(TransactionCase):
 
     def test_extract_svg_formulas_creates_names(self):
         svg = (
-            "<svg xmlns='http://www.w3.org/2000/svg'>"
+            "<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'>"
             "<text id='f1' class='odoo-formula' style='fill:#ff0000;font-size:14px'>"
             "{{LENGTH}}</text>"
             "</svg>"
@@ -93,7 +74,9 @@ class TestProductBlueprint(TransactionCase):
                 "product_attribute_value_id"
             )
         )[0]
-        svg = "<svg xmlns='http://www.w3.org/2000/svg'></svg>"
+        svg = (
+            "<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10'></svg>"
+        )
         self.env["product.blueprint"].create(
             {
                 "name": "Blueprint 2",
