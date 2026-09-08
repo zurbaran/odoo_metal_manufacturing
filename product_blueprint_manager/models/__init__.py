@@ -7,4 +7,5 @@ from . import (
     sale_order,
     sale_order_line,
     mrp_production,
+    security_overrides,
 )
