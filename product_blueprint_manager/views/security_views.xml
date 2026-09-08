@@ -8,7 +8,7 @@
             ref="product_blueprint_manager.view_product_template_form_inherit_blueprint"
         />
         <field name="arch" type="xml">
-            <xpath expr="//page[@string='Planos y Fórmulas']" position="attributes">
+            <xpath expr="//field[@name='blueprint_ids']/ancestor::page[1]" position="attributes">
                 <attribute name="groups">product_blueprint_manager.group_product_blueprint_manager</attribute>
             </xpath>
         </field>
