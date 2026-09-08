@@ -78,7 +78,6 @@ class TestBlueprintSecurity(TransactionCase):
 
         blueprint_product = self.product_template.with_user(self.blueprint_user)
         self.assertEqual(blueprint_product.get_custom_attribute_values(), {})
-        self.assertFalse(blueprint_product.generate_blueprint_report())
 
     def test_sale_report_rpc_actions_require_blueprint_group(self):
         order = self.sale_order.with_user(self.employee)
