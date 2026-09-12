@@ -2,98 +2,80 @@ from odoo.tests.common import TransactionCase
 
 
 class TestAttributePriceComputation(TransactionCase):
-    """
-    Suite de tests para verificar el cálculo del precio unitario en líneas de venta
-    cuando intervienen:
-      - Atributos personalizados (is_custom=True)
-      - Fórmulas de precio (price_formula)
-      - Incrementos fijos nativos (price_extra)
-    """
-
-    def setUp(self):
-        """
-        Prepara los datos de prueba básicos:
-          - Crea un atributo 'Largo' marcado como is_custom=True y sin generación
-            de variantes (create_variant='no_variant').
-          - Crea un valor de atributo de plantilla (ptav) asociado a 'Largo',
-            con una fórmula de precio y un price_extra fijo.
-          - Crea un producto base con precio de venta y coste estándar.
-        """
-        super().setUp()
-
-        # Atributo personalizado, sin generación de variantes
-        self.attribute = self.env["product.attribute"].create(
-            {"name": "Largo", "create_variant": "no_variant", "is_custom": True}
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.attribute = cls.env["product.attribute"].create(
+            {"name": "Largo", "create_variant": "no_variant"}
         )
-
-        # Valor de atributo de plantilla con fórmula y extra:
-        #   - price_formula: custom_value * 0.5
-        #   - price_extra: 10
-        # De esta forma, el incremento se compone de una parte variable
-        # y una parte fija.
-        self.ptav = self.env["product.template.attribute.value"].create(
+        cls.attribute_value = cls.env["product.attribute.value"].create(
             {
                 "name": "Valor Largo",
-                "attribute_id": self.attribute.id,
-                "price_formula": "custom_value * 0.5",
-                "price_extra": 10,
+                "attribute_id": cls.attribute.id,
+                "is_custom": True,
             }
         )
-
-        # Producto base sobre el que se calculará el precio final.
-        # list_price será la base de cálculo a la que se sumarán
-        # los incrementos de los atributos.
-        self.product = self.env["product.product"].create(
+        cls.product_template = cls.env["product.template"].create(
             {
                 "name": "Producto Base",
                 "type": "consu",
                 "list_price": 100.0,
                 "standard_price": 80.0,
-            }
-        )
-
-    def test_price_computation_with_formula_and_price_extra(self):
-        """
-        Verifica que el cálculo del precio unitario de la línea de venta:
-          - Parte del list_price del producto (100)
-          - Aplica la fórmula del atributo: custom_value * 0.5  -> 200 * 0.5 = 100
-          - Suma el price_extra definido en el ptav: 10
-          - Resultado esperado: 100 (base) + 100 (fórmula) + 10 (extra) = 210
-
-        El test comprueba que line.price_unit coincide con el valor esperado
-        tras ejecutar el onchange de producto.
-        """
-        # Se crea una nueva línea de venta en memoria (new), sin grabarla en BD.
-        # Se pasa:
-        #   - product_id: producto base
-        #   - product_uom_qty: cantidad (1.0)
-        #   - product_custom_attribute_value_ids: un atributo personalizado 'Largo'
-        #     con custom_value = 200, enlazado a self.ptav.
-        line = self.env["sale.order.line"].new(
-            {
-                "product_id": self.product.id,
-                "product_uom_qty": 1.0,
-                "product_custom_attribute_value_ids": [
+                "attribute_line_ids": [
                     (
                         0,
                         0,
                         {
-                            "custom_product_template_attribute_value_id": self.ptav.id,
-                            "custom_value": 200,
+                            "attribute_id": cls.attribute.id,
+                            "value_ids": [(6, 0, [cls.attribute_value.id])],
                         },
                     )
                 ],
             }
         )
+        cls.product = cls.product_template.product_variant_id
+        cls.ptav = cls.product_template.attribute_line_ids.product_template_value_ids.filtered(
+            lambda value: value.product_attribute_value_id == cls.attribute_value
+        )
+        cls.ptav.write(
+            {
+                "price_formula": "custom_value * 0.5",
+                "price_extra": 10.0,
+            }
+        )
+        partner = cls.env["res.partner"].create({"name": "Price Formula Partner"})
+        cls.order = cls.env["sale.order"].create({"partner_id": partner.id})
 
-        # Dispara la lógica de Odoo y del módulo asociado al onchange de product_id.
-        # Aquí se recalcula line.price_unit aplicando la fórmula y el price_extra.
-        line._onchange_product_id()
+    def test_price_computation_with_formula_and_price_extra(self):
+        line = self.env["sale.order.line"].create(
+            {
+                "order_id": self.order.id,
+                "product_id": self.product.id,
+                "product_uom_qty": 1.0,
+            }
+        )
+        self.env["product.attribute.custom.value"].create(
+            {
+                "sale_order_line_id": line.id,
+                "custom_product_template_attribute_value_id": self.ptav.id,
+                "custom_value": "200",
+            }
+        )
+        line.invalidate_recordset(["product_custom_attribute_value_ids"])
+        line.with_context(force_price_recomputation=True)._compute_price_unit()
 
-        # Cálculo manual del precio esperado para compararlo:
-        #   100 (list_price) + (200 * 0.5) + 10  =  100 + 100 + 10 = 210
-        expected_price = 100 + (200 * 0.5) + 10
+        expected_price = line.currency_id.round(100 + (200 * 0.5) + 10)
+        self.assertEqual(line.price_unit, expected_price)
+        self.assertEqual(line.technical_price_unit, expected_price)
 
-        # Se comprueba que el precio unitario de la línea coincide con el esperado,
-        # usando el redondeo de la moneda asociada a la línea.
-        self.assertEqual(line.price_unit, line.currency_id.round(expected_price))
+    def test_manual_price_is_preserved(self):
+        line = self.env["sale.order.line"].create(
+            {
+                "order_id": self.order.id,
+                "product_id": self.product.id,
+                "product_uom_qty": 1.0,
+            }
+        )
+        line.price_unit = 777.0
+        line._compute_price_unit()
+        self.assertEqual(line.price_unit, 777.0)
