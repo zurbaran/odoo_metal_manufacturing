@@ -101,7 +101,9 @@ jobs:
           createdb -h localhost -p 5432 -U odoo odoo19_test
 
       - name: Run Odoo module tests
+        shell: bash
         run: |
+          set +e
           python odoo/odoo-bin \
             --database=odoo19_test \
             --db_host=localhost \
@@ -112,4 +114,26 @@ jobs:
             --init=product_blueprint_manager,product_configurator_attribute_price \
             --test-tags=/product_blueprint_manager,/product_configurator_attribute_price \
             --stop-after-init \
-            --log-level=test
+            --log-level=test \
+            > /tmp/odoo19-tests.log 2>&1
+          status=$?
+          if [ "$status" -ne 0 ]; then
+            echo "===== Odoo 19 failure summary ====="
+            grep -nE "ERROR|FAIL|Traceback|AssertionError|AccessError|ParseError|ValueError|TypeError|AttributeError" \
+              /tmp/odoo19-tests.log | tail -n 200 || true
+            echo "===== Last 200 log lines ====="
+            tail -n 200 /tmp/odoo19-tests.log
+          else
+            echo "===== Odoo 19 test summary ====="
+            grep -E "tests|failed|error\(s\)" /tmp/odoo19-tests.log | tail -n 80 || true
+          fi
+          exit "$status"
+
+      - name: Upload Odoo test log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: odoo19-test-log
+          path: /tmp/odoo19-tests.log
+          if-no-files-found: ignore
+          retention-days: 7
