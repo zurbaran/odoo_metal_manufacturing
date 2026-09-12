@@ -7,7 +7,7 @@ from . import (
     sale_order,
     sale_order_line,
     mrp_production,
-    # Must remain last: it hardens public RPC actions and replaces the legacy
-    # formula evaluator with the allowlisted AST implementation.
+    # Must remain last: it hardens public RPC actions and provides the
+    # allowlisted AST formula evaluator used by blueprint formulas.
     security_overrides,
 )
