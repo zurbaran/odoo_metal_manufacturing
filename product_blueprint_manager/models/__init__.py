@@ -7,4 +7,7 @@ from . import (
     sale_order,
     sale_order_line,
     mrp_production,
+    # Must remain last: it hardens public RPC actions and replaces the legacy
+    # formula evaluator with the allowlisted AST implementation.
+    security_overrides,
 )
