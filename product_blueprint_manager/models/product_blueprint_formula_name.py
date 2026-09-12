@@ -70,18 +70,13 @@ class ProductBlueprintFormulaName(models.Model):
     )
 
     # -------------------------------------------------------------------------
-    # Restricciones de integridad
+    # Restricciones de integridad (API Odoo 19)
     # -------------------------------------------------------------------------
 
-    _sql_constraints = [
-        (
-            "unique_formula_per_node",
-            "unique(name, blueprint_id, svg_element_id)",
-            # Garantiza que no haya duplicados de la misma fórmula en el mismo
-            # nodo SVG y plano. Evita inconsistencias al configurar fórmulas.
-            "Cada fórmula debe ser única por ID SVG dentro del mismo plano.",
-        )
-    ]
+    _unique_formula_per_node = models.Constraint(
+        "UNIQUE (name, blueprint_id, svg_element_id)",
+        "Cada fórmula debe ser única por ID SVG dentro del mismo plano.",
+    )
 
     # -------------------------------------------------------------------------
     # Overrides de create/write/unlink para logging detallado
