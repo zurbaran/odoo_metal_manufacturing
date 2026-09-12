@@ -6,4 +6,5 @@ from . import (
     test_blueprint_report_integration,
     test_product_blueprint_models,
     test_product_blueprint,
+    test_security,
 )
