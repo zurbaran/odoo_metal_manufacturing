@@ -1,52 +1,42 @@
+import base64
+
 from odoo.tests.common import TransactionCase, tagged
 
 
 @tagged("-at_install", "post_install")
 class TestBlueprintGeneration(TransactionCase):
-    """
-    Test funcional para verificar que el flujo de generación de planos
-    (_get_evaluated_blueprint) crea adjuntos correctamente para una
-    línea de pedido de venta.
-
-    Notas:
-    - Usa datos de demo: producto 'product.product_product_4' y
-      pedido 'sale.sale_order_1'.
-    - No comprueba el contenido del adjunto, solo que exista al menos
-      un blueprint con 'attachment_id'.
-    """
-
     def test_attachment_generated(self):
-        """
-        Crea una sale.order.line de ejemplo y comprueba que:
-
-        1) _get_evaluated_blueprint() devuelve una lista.
-        2) Cada elemento de esa lista incluye una clave 'attachment_id',
-           que corresponde al adjunto SVG/PNG generado por el módulo
-           de planos.
-
-        Este test sirve como:
-        - Smoke test de integración entre sale.order.line y el módulo
-          de planos.
-        - Verificación de que no se rompe la lógica de generación de
-          adjuntos al modificar el módulo.
-        """
-        # Crear una línea de pedido de venta usando registros de demo
-        sale_line = self.env["sale.order.line"].create(
+        template = self.env["product.template"].create(
+            {"name": "Blueprint Generation Product"}
+        )
+        svg = b'<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50"></svg>'
+        blueprint = self.env["product.blueprint"].create(
             {
-                # Producto de demo (definido en el módulo 'product')
-                "product_id": self.env.ref("product.product_product_4").id,
-                # Pedido de venta de demo (definido en el módulo 'sale')
-                "order_id": self.env.ref("sale.sale_order_1").id,
+                "name": "Generated Blueprint",
+                "product_id": template.id,
+                "type_blueprint": "manufacturing",
+                "file": base64.b64encode(svg),
+            }
+        )
+        partner = self.env["res.partner"].create({"name": "Blueprint Generation Partner"})
+        order = self.env["sale.order"].create({"partner_id": partner.id})
+        line = self.env["sale.order.line"].create(
+            {
+                "order_id": order.id,
+                "product_id": template.product_variant_id.id,
                 "product_uom_qty": 1,
             }
         )
 
-        # Llamar al método principal del módulo que genera los planos evaluados
-        blueprints = sale_line._get_evaluated_blueprint()
+        generated = line._get_evaluated_blueprint()
 
-        # Verificar que se devuelve una lista (contrato básico del método)
-        self.assertIsInstance(blueprints, list)
+        self.assertEqual(len(generated), 1)
+        self.assertEqual(generated[0]["blueprint_name"], blueprint.name)
+        self.assertTrue(generated[0]["png_base64"])
 
-        # Verificar que todos los elementos tienen un 'attachment_id'
-        # (es decir, que se crearon adjuntos para los planos evaluados)
-        self.assertTrue(all("attachment_id" in b for b in blueprints))
+        attachment = self.env["ir.attachment"].browse(generated[0]["attachment_id"])
+        self.assertTrue(attachment.exists())
+        self.assertEqual(attachment.res_model, "sale.order.line")
+        self.assertEqual(attachment.res_id, line.id)
+        self.assertEqual(attachment.mimetype, "image/svg+xml")
+        self.assertTrue(attachment.datas)
