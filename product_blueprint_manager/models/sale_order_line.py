@@ -1,7 +1,5 @@
-import ast
 import base64
 import logging
-import math
 
 import cairosvg  # pyright: ignore[reportMissingImports]
 from lxml import etree
@@ -487,44 +485,6 @@ class SaleOrderLine(models.Model):
         except Exception as e:
             _logger.exception("[Blueprint] Error en la evaluación del plano")
             raise ValidationError(f"Error procesando el SVG: {e}") from e
-
-    def safe_evaluate_formula(self, expression, variables):
-        """
-        Evalúa de manera segura la fórmula usando solo las variables permitidas.
-
-        Args:
-            expression (str): La expresión matemática a evaluar (ej. "mmA * 2").
-            variables (dict): Diccionario con los valores de las variables
-            (ej. {"mmA": 1500}).
-
-        Returns:
-            str: Resultado de la evaluación o 'Error' si ocurre un problema.
-        """
-        _logger.debug(
-            f"[Blueprint] Evaluando expresión: '{expression}' con variables:\
-                  {variables}"
-        )
-
-        try:
-            # Crear entorno seguro con funciones matemáticas permitidas
-            allowed_names = {
-                k: v for k, v in math.__dict__.items() if not k.startswith("__")
-            }
-            allowed_names.update(variables)
-
-            # Analizar la expresión de forma segura
-            tree = ast.parse(expression, mode="eval")
-            compiled = compile(tree, "<string>", "eval")
-
-            # Se evalúa en un entorno sin __builtins__ para evitar accesos peligrosos
-            result = eval(compiled, {"__builtins__": {}}, allowed_names)
-
-            _logger.debug(f"[Blueprint] Resultado de la evaluación: {result}")
-            return str(result)
-
-        except Exception:
-            _logger.exception(f"[Blueprint] Error al evaluar la fórmula '{expression}'")
-            return "Error"
 
     def _get_evaluated_variables(self, sale_order_line):
         """
