@@ -30,114 +30,106 @@ class SaleOrderLine(models.Model):
         "product_template_attribute_value_ids",
     )
     def _compute_price_unit(self):
-        """Extend the native Odoo 19 price compute with formula increments.
+        """Recompute on attribute changes while preserving Odoo 19 semantics.
 
-        Odoo 19 already includes native variant and no-variant ``price_extra``
-        values in its base price. We therefore add only formula increments and
-        custom-value extras that are not already part of the native combination.
-        ``technical_price_unit`` is kept aligned with the computed result so
-        Odoo can still distinguish computed prices from manual overrides.
+        The native method decides whether a price is still computed or has been
+        manually overridden. Formula application lives in ``_reset_price_unit``
+        so manual prices remain untouched.
         """
         super()._compute_price_unit()
 
-        force_recompute = self.env.context.get("force_price_recomputation")
-        for line in self:
-            if (
-                not line.order_id
-                or not line.product_id
-                or not line.product_uom_id
-                or line.is_downpayment
-                or line._is_global_discount()
-                or line.qty_invoiced > 0
-                or (line.product_id.expense_policy == "cost" and line.is_expense)
-            ):
+    def _reset_price_unit(self):
+        """Extend Odoo 19's native price reset with attribute formulas.
+
+        Odoo first computes its regular price, including native variant and
+        no-variant ``price_extra`` values. We then add formula increments and
+        custom-value extras not already contained in that native combination,
+        finally keeping ``price_unit`` and ``technical_price_unit`` aligned.
+        """
+        self.ensure_one()
+        super()._reset_price_unit()
+
+        line = self
+        if not line.product_id or not line.product_uom_id:
+            return
+
+        currency = (
+            line.currency_id
+            or line.company_id.currency_id
+            or line.env.company.currency_id
+        )
+        price_so_far = line.price_unit
+        custom_ptavs = line.product_custom_attribute_value_ids.mapped(
+            "custom_product_template_attribute_value_id"
+        )
+        native_ptavs = (
+            line.product_template_attribute_value_ids
+            | line.product_no_variant_attribute_value_ids
+        )
+
+        for custom_value in line.product_custom_attribute_value_ids:
+            ptav = custom_value.custom_product_template_attribute_value_id
+            if not ptav:
                 continue
+            formula = ptav.price_formula
+            if formula:
+                try:
+                    increment = ptav.calculate_price_increment(
+                        float(custom_value.custom_value or 0.0),
+                        price_so_far,
+                    )
+                except Exception as exc:
+                    _logger.warning(
+                        "[Line %s] Formula %r rejected for %s: %s",
+                        line.id,
+                        formula,
+                        ptav.display_name,
+                        exc,
+                    )
+                    increment = 0.0
+                price_so_far += increment
 
-            currency = line.currency_id or line.company_id.currency_id or line.env.company.currency_id
-            if (
-                not force_recompute
-                and currency.compare_amounts(line.technical_price_unit, line.price_unit)
-            ):
-                # Preserve a price that the user explicitly edited.
-                continue
+            # Odoo's base combination already contains variant/no-variant
+            # extras. A purely custom PTAV may not be present there.
+            if ptav not in native_ptavs:
+                price_so_far += ptav.price_extra or 0.0
 
-            price_so_far = line.price_unit
-            custom_ptavs = line.product_custom_attribute_value_ids.mapped(
-                "custom_product_template_attribute_value_id"
-            )
-            native_ptavs = (
-                line.product_template_attribute_value_ids
-                | line.product_no_variant_attribute_value_ids
-            )
+        for ptav in line.product_no_variant_attribute_value_ids - custom_ptavs:
+            formula = ptav.price_formula
+            if formula and "price_so_far" in formula:
+                try:
+                    price_so_far += ptav.calculate_price_increment(0.0, price_so_far)
+                except Exception as exc:
+                    _logger.warning(
+                        "[Line %s] Formula %r rejected for %s: %s",
+                        line.id,
+                        formula,
+                        ptav.display_name,
+                        exc,
+                    )
 
-            # Custom values can use both custom_value and price_so_far.
-            for custom_value in line.product_custom_attribute_value_ids:
-                ptav = custom_value.custom_product_template_attribute_value_id
-                if not ptav:
-                    continue
-                formula = ptav.price_formula
-                if formula:
-                    try:
-                        increment = ptav.calculate_price_increment(
-                            float(custom_value.custom_value or 0.0),
-                            price_so_far,
-                        )
-                    except Exception as exc:
-                        _logger.warning(
-                            "[Line %s] Formula %r rejected for %s: %s",
-                            line.id,
-                            formula,
-                            ptav.display_name,
-                            exc,
-                        )
-                        increment = 0.0
-                    price_so_far += increment
+        for ptav in line.product_template_attribute_value_ids - custom_ptavs:
+            formula = ptav.price_formula
+            if formula and "price_so_far" in formula:
+                try:
+                    price_so_far += ptav.calculate_price_increment(0.0, price_so_far)
+                except Exception as exc:
+                    _logger.warning(
+                        "[Line %s] Formula %r rejected for %s: %s",
+                        line.id,
+                        formula,
+                        ptav.display_name,
+                        exc,
+                    )
 
-                # The native price context does not necessarily contain custom
-                # PTAVs. Add their fixed extra only when it was not already
-                # included as a variant/no-variant value by Odoo.
-                if ptav not in native_ptavs:
-                    price_so_far += ptav.price_extra or 0.0
-
-            # Apply price_so_far formulas for non-custom no-variant values.
-            for ptav in line.product_no_variant_attribute_value_ids - custom_ptavs:
-                formula = ptav.price_formula
-                if formula and "price_so_far" in formula:
-                    try:
-                        price_so_far += ptav.calculate_price_increment(0.0, price_so_far)
-                    except Exception as exc:
-                        _logger.warning(
-                            "[Line %s] Formula %r rejected for %s: %s",
-                            line.id,
-                            formula,
-                            ptav.display_name,
-                            exc,
-                        )
-
-            # Apply price_so_far formulas for variant values. Their native
-            # price_extra has already been included by Odoo.
-            for ptav in line.product_template_attribute_value_ids - custom_ptavs:
-                formula = ptav.price_formula
-                if formula and "price_so_far" in formula:
-                    try:
-                        price_so_far += ptav.calculate_price_increment(0.0, price_so_far)
-                    except Exception as exc:
-                        _logger.warning(
-                            "[Line %s] Formula %r rejected for %s: %s",
-                            line.id,
-                            formula,
-                            ptav.display_name,
-                            exc,
-                        )
-
-            final_price = currency.round(price_so_far)
-            line.update(
-                {
-                    "price_unit": final_price,
-                    "technical_price_unit": final_price,
-                }
-            )
-            _logger.info("[Line %s] Precio final calculado: %s", line.id, final_price)
+        final_price = currency.round(price_so_far)
+        line.update(
+            {
+                "price_unit": final_price,
+                "technical_price_unit": final_price,
+            }
+        )
+        _logger.info("[Line %s] Precio final calculado: %s", line.id, final_price)
 
     @api.depends(
         "product_id",
