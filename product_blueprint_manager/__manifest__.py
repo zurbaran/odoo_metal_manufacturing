@@ -1,6 +1,6 @@
 {
     "name": "Product Blueprint Manager",
-    "version": "19.0.12.2.6",
+    "version": "19.0.12.3.1",
     "category": "Manufacturing",
     "summary": (
         "Gestione planos de productos y genere documentos de forma dinámica. "
@@ -16,15 +16,19 @@
         "product",
         "sale",
         "sale_management",
+        "sale_mrp",
     ],
     "data": [
+        "security/product_blueprint_security.xml",
         "security/ir.model.access.csv",
         "reports/report_paperformat.xml",
         "data/blueprint_report_data.xml",
+        "data/security_actions.xml",
         "views/product_blueprint_condition_views.xml",
         "views/sale_order_views.xml",
         "views/mrp_production.xml",
         "views/product_views.xml",
+        "views/security_views.xml",
         "views/product_blueprint_views.xml",
         "views/product_blueprint_formula_views.xml",
         "views/menu.xml",
