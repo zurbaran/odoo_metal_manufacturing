@@ -1,7 +1,7 @@
 {
     "name": "UI and Template Enhancements",
     "summary": "Cleans up default branding, enhances reports and email templates.",
-    "version": "19.0.1.0.4",
+    "version": "19.0.1.0.5",
     "category": "Tools",
     "author": "Antonio Caballero",
     "license": "AGPL-3",
@@ -20,11 +20,9 @@
         "sale_order_secondary_unit",
     ],
     "data": [
-        "views/alert_login_new_device.xml",
         "views/brand_promotion_message.xml",
         "views/digest_disable_mobile.xml",
         "views/digest_mail_main.xml",
-        "views/digest_section_mobile.xml",
         "views/hr_expense_template_register_no_user.xml",
         "views/invoice_report_custom.xml",
         "views/login_layout.xml",
