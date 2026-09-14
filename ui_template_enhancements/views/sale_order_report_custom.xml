@@ -1,80 +1,82 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-  <!--
-      ============================================================================
-      Personalización del presupuesto / pedido de venta
-      ============================================================================
-      - Amplía los datos de contacto.
-      - Mantiene las direcciones de facturación y envío.
-      - Conserva el NIF de la dirección de facturación cuando el bloque principal
-        duplicado se oculte en el diseño global.
-      - Oculta impuestos por línea.
-      - Oculta unidades secundarias en ventas.
-      - No crea otra tabla de productos opcionales: se usa la nativa.
-      ============================================================================
-  -->
-  <template
-    id="ui_template_enhancements_sale_report_mod"
-    inherit_id="sale.report_saleorder_document"
-    name="Custom Sale Order Report Enhancements"
-    priority="1001"
-  >
-    <!-- Dirección principal enriquecida. -->
-    <xpath expr="//t[@t-set='address']/div" position="attributes">
-      <attribute name="t-options">
-        {'widget': 'contact', 'fields': ['address', 'name', 'phone', 'mobile', 'email'], 'no_marker': True}
-      </attribute>
-    </xpath>
-
-    <!--
-        Dirección de facturación enriquecida.
-        Se añade también el NIF para no perderlo cuando partner_id coincide con
-        una dirección que ya está representada en information_block.
-    -->
-    <xpath
-      expr="//t[@t-set='information_block']/div[@t-field='doc.partner_invoice_id']"
-      position="replace"
+    <template
+        id="ui_template_enhancements_sale_report_mod"
+        inherit_id="sale.report_saleorder_document"
+        name="Custom Sale Order Report Enhancements"
+        priority="1001"
     >
-      <div
-        t-field="doc.partner_invoice_id"
-        t-options="{'widget': 'contact', 'fields': ['address', 'name', 'phone', 'mobile', 'email'], 'no_marker': True, 'phone_icons': True}"
-      />
-      <p t-if="doc.partner_invoice_id.vat" class="mb-0">
-        <t
-          t-if="doc.company_id.account_fiscal_country_id.vat_label"
-          t-out="doc.company_id.account_fiscal_country_id.vat_label"
-        />
-        <t t-else="">Tax ID</t>:
-        <span t-field="doc.partner_invoice_id.vat"/>
-      </p>
-    </xpath>
+        <!-- Enrich the main customer address. -->
+        <xpath
+            expr="//t[@t-set='address']/div[@t-field='doc.partner_id']"
+            position="attributes"
+        >
+            <attribute name="t-options">
+                {'widget': 'contact', 'fields': ['address', 'name', 'phone', 'mobile', 'email'], 'no_marker': True}
+            </attribute>
+        </xpath>
 
-    <!-- Dirección de envío enriquecida cuando es distinta. -->
-    <xpath
-      expr="//t[@t-set='information_block']/t[@t-if='doc.partner_shipping_id != doc.partner_invoice_id']"
-      position="replace"
-    >
-      <t t-if="doc.partner_shipping_id != doc.partner_invoice_id">
-        <strong class="d-block mt-3">Shipping Address</strong>
-        <div
-          t-field="doc.partner_shipping_id"
-          t-options="{'widget': 'contact', 'fields': ['address', 'name', 'phone', 'mobile', 'email'], 'no_marker': True, 'phone_icons': True}"
-        />
-      </t>
-    </xpath>
+        <!-- Odoo 19 has separate structures for combined and split addresses. -->
+        <xpath
+            expr="//t[@t-set='information_block']/t[@t-if='doc.partner_shipping_id == doc.partner_invoice_id']/div[@t-field='doc.partner_invoice_id']"
+            position="attributes"
+        >
+            <attribute name="t-options">
+                {'widget': 'contact', 'fields': ['address', 'name', 'phone', 'mobile', 'email'], 'no_marker': True, 'phone_icons': True}
+            </attribute>
+        </xpath>
+        <xpath
+            expr="//t[@t-set='information_block']/t[@t-if='doc.partner_shipping_id == doc.partner_invoice_id']/div[@t-field='doc.partner_invoice_id']"
+            position="after"
+        >
+            <p t-if="doc.partner_invoice_id.vat" class="mb-0">
+                <t
+                    t-if="doc.company_id.account_fiscal_country_id.vat_label"
+                    t-out="doc.company_id.account_fiscal_country_id.vat_label"
+                />
+                <t t-else="">Tax ID</t>:
+                <span t-field="doc.partner_invoice_id.vat"/>
+            </p>
+        </xpath>
 
-    <!-- Ocultar impuestos por línea; los totales fiscales permanecen. -->
-    <xpath expr="//th[@name='th_taxes']" position="replace"/>
-    <xpath expr="//td[@name='td_taxes']" position="replace"/>
+        <xpath
+            expr="//t[@t-set='information_block']/div[@class='row']//div[@t-field='doc.partner_invoice_id']"
+            position="attributes"
+        >
+            <attribute name="t-options">
+                {'widget': 'contact', 'fields': ['address', 'name', 'phone', 'mobile', 'email'], 'no_marker': True, 'phone_icons': True}
+            </attribute>
+        </xpath>
+        <xpath
+            expr="//t[@t-set='information_block']/div[@class='row']//div[@t-field='doc.partner_invoice_id']"
+            position="after"
+        >
+            <p t-if="doc.partner_invoice_id.vat" class="mb-0">
+                <t
+                    t-if="doc.company_id.account_fiscal_country_id.vat_label"
+                    t-out="doc.company_id.account_fiscal_country_id.vat_label"
+                />
+                <t t-else="">Tax ID</t>:
+                <span t-field="doc.partner_invoice_id.vat"/>
+            </p>
+        </xpath>
 
-    <!--
-        No se redefine table_optional_products.
-        sale_management conserva su tabla nativa, incluida la columna de
-        descuento condicional.
-    -->
+        <xpath
+            expr="//t[@t-set='information_block']/div[@class='row']//div[@t-field='doc.partner_shipping_id']"
+            position="attributes"
+        >
+            <attribute name="t-options">
+                {'widget': 'contact', 'fields': ['address', 'name', 'phone', 'mobile', 'email'], 'no_marker': True, 'phone_icons': True}
+            </attribute>
+        </xpath>
 
-    <!-- Ocultar unidades secundarias únicamente en ventas. -->
-    <xpath expr="//th[@name='th_secondary_uom_id']" position="replace"/>
-    <xpath expr="//td[@name='td_secondary_uom_id']" position="replace"/>
-  </template>
+        <!-- Hide line tax columns while keeping fiscal totals. -->
+        <xpath expr="//th[@name='th_taxes']" position="replace"/>
+        <xpath expr="//td[@name='td_product_taxes']" position="replace"/>
+        <xpath expr="//td[@name='td_section_group_taxes']" position="replace"/>
+
+        <!-- Hide the secondary unit column added by sale_order_secondary_unit. -->
+        <xpath expr="//th[@name='th_secondary_uom_id']" position="replace"/>
+        <xpath expr="//td[@name='td_secondary_uom_id']" position="replace"/>
+    </template>
 </odoo>
