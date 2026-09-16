@@ -69,6 +69,9 @@
         - Esta acción se utiliza también en el menú "Formulas".
     -->
     <record id="product_blueprint_formula_action" model="ir.actions.act_window">
+        <field name="groups_id"
+            eval="[(6, 0, [ref('product_blueprint_manager.group_product_blueprint_manager')])]"
+        />
         <field name="name">Formulas</field>
         <field name="res_model">product.blueprint.formula</field>
         <field name="view_mode">list,form</field>
