@@ -1,6 +1,6 @@
 import base64
 
-from odoo.tests.common import TransactionCase
+from odoo.tests.common import TransactionCase  # pyright: ignore[reportMissingImports]
 
 
 class TestProductBlueprint(TransactionCase):
@@ -74,9 +74,7 @@ class TestProductBlueprint(TransactionCase):
                 "product_attribute_value_id"
             )
         )[0]
-        svg = (
-            "<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10'></svg>"
-        )
+        svg = "<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10'></svg>"
         self.env["product.blueprint"].create(
             {
                 "name": "Blueprint 2",

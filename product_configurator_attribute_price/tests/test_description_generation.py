@@ -1,4 +1,4 @@
-from odoo.tests.common import TransactionCase
+from odoo.tests.common import TransactionCase  # type: ignore[import-not-found]
 
 
 class TestDescriptionGeneration(TransactionCase):
@@ -33,7 +33,7 @@ class TestDescriptionGeneration(TransactionCase):
             }
         )
         self.product = self.product_template.product_variant_id
-        self.ptav = self.product_template.attribute_line_ids.product_template_value_ids.filtered(
+        self.ptav = self.product_template.attribute_line_ids.product_template_value_ids.filtered(  # noqa: E501
             lambda value: value.product_attribute_value_id == self.attribute_value
         )
         self.assertEqual(len(self.ptav), 1)

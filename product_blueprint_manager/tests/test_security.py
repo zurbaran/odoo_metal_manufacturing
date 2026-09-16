@@ -1,6 +1,8 @@
-from odoo.exceptions import AccessError
-from odoo.tests.common import TransactionCase, new_test_user
-
+from odoo.exceptions import AccessError  # type: ignore[reportMissingImports]
+from odoo.tests.common import (  # type: ignore[reportMissingImports]
+    TransactionCase,
+    new_test_user,
+)
 
 _BLUEPRINT_MODELS = (
     "product.blueprint",
@@ -46,9 +48,9 @@ class TestBlueprintSecurity(TransactionCase):
             with self.subTest(model=model_name, operation="read"):
                 model.check_access("read")
             for operation in ("write", "create", "unlink"):
-                with self.subTest(model=model_name, operation=operation), self.assertRaises(
-                    AccessError
-                ):
+                with self.subTest(
+                    model=model_name, operation=operation
+                ), self.assertRaises(AccessError):
                     model.check_access(operation)
 
     def test_blueprint_manager_has_full_access(self):
@@ -59,7 +61,9 @@ class TestBlueprintSecurity(TransactionCase):
                     model.check_access(operation)
 
     def test_employee_cannot_discover_blueprint_product_fields(self):
-        employee_fields = self.env["product.template"].with_user(self.employee).fields_get()
+        employee_fields = (
+            self.env["product.template"].with_user(self.employee).fields_get()
+        )
         self.assertNotIn("blueprint_ids", employee_fields)
         self.assertNotIn("formula_ids", employee_fields)
 

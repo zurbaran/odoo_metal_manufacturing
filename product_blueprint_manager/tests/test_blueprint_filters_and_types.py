@@ -1,6 +1,9 @@
 import base64
 
-from odoo.tests.common import TransactionCase, tagged
+from odoo.tests.common import (  # type: ignore[reportMissingImports]
+    TransactionCase,
+    tagged,
+)
 
 
 @tagged("-at_install", "post_install")
@@ -29,8 +32,7 @@ class TestBlueprintFilters(TransactionCase):
         )
 
         svg = (
-            b'<svg xmlns="http://www.w3.org/2000/svg" '
-            b'width="10" height="10"></svg>'
+            b'<svg xmlns="http://www.w3.org/2000/svg" ' b'width="10" height="10"></svg>'
         )
         blueprint = self.env["product.blueprint"].create(
             {

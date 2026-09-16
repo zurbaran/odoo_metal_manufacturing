@@ -1,7 +1,5 @@
-import ast
 import base64
 import logging
-import math
 
 import cairosvg  # pyright: ignore[reportMissingImports]
 from lxml import etree
@@ -10,14 +8,16 @@ from markupsafe import Markup
 from odoo import _, api, fields, models  # pyright: ignore[reportMissingImports]
 from odoo.exceptions import ValidationError  # pyright: ignore[reportMissingImports]
 
+from ..utils import evaluate_math_expression
+
 # ---------------------------------------------------------------------------
 # Extensión de `sale.order.line` para la gestión de planos SVG con fórmulas.
 #
 # Funciones principales de este módulo:
 # - Capturar atributos (estándar, no_variant y custom) de la línea de venta
 #   y proyectarlos como variables numéricas para las fórmulas de plano.
-# - Evaluar expresiones matemáticas de forma controlada y segura, usando sólo
-#   variables y funciones permitidas (módulo `math`).
+# - Evaluar expresiones matemáticas de forma controlada y segura mediante
+#   el evaluador restringido del módulo.
 # - Procesar el SVG del plano, localizar los nodos con class "odoo-formula"
 #   y sustituirlos por nodos <text> "limpios" con los valores evaluados.
 # - Generar adjuntos SVG evaluados y PNG (vía CairoSVG) para su inclusión en
@@ -489,41 +489,21 @@ class SaleOrderLine(models.Model):
             raise ValidationError(f"Error procesando el SVG: {e}") from e
 
     def safe_evaluate_formula(self, expression, variables):
+        """Evaluate blueprint formulas without Python ``eval``.
+
+        Only numeric variables, explicit arithmetic/comparison operators and a
+        small set of mathematical functions are accepted. Attribute traversal,
+        imports, comprehensions, subscripting and arbitrary calls are rejected.
         """
-        Evalúa de manera segura la fórmula usando solo las variables permitidas.
-
-        Args:
-            expression (str): La expresión matemática a evaluar (ej. "mmA * 2").
-            variables (dict): Diccionario con los valores de las variables
-            (ej. {"mmA": 1500}).
-
-        Returns:
-            str: Resultado de la evaluación o 'Error' si ocurre un problema.
-        """
-        _logger.debug(
-            f"[Blueprint] Evaluando expresión: '{expression}' con variables:\
-                  {variables}"
-        )
-
         try:
-            # Crear entorno seguro con funciones matemáticas permitidas
-            allowed_names = {
-                k: v for k, v in math.__dict__.items() if not k.startswith("__")
-            }
-            allowed_names.update(variables)
-
-            # Analizar la expresión de forma segura
-            tree = ast.parse(expression, mode="eval")
-            compiled = compile(tree, "<string>", "eval")
-
-            # Se evalúa en un entorno sin __builtins__ para evitar accesos peligrosos
-            result = eval(compiled, {"__builtins__": {}}, allowed_names)
-
-            _logger.debug(f"[Blueprint] Resultado de la evaluación: {result}")
+            result = evaluate_math_expression(expression, variables)
             return str(result)
-
-        except Exception:
-            _logger.exception(f"[Blueprint] Error al evaluar la fórmula '{expression}'")
+        except Exception as exc:
+            _logger.warning(
+                "[Blueprint] Fórmula rechazada por el evaluador seguro %r: %s",
+                expression,
+                exc,
+            )
             return "Error"
 
     def _get_evaluated_variables(self, sale_order_line):

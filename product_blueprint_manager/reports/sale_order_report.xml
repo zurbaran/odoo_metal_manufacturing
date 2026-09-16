@@ -5,31 +5,98 @@
         <t t-set="o" t-value="doc"/>
         <t t-set="company_id" t-value="doc.company_id"/>
 
-        <!-- Partner destinatario -->
-        <t t-set="p" t-value="doc.partner_invoice_id or doc.partner_id"/>
+        <!--
+            Direcciones del pedido.
+            Se reproduce la lógica nativa de sale.report_saleorder_document:
+            - partner_id: cliente/contacto seleccionado en la venta.
+            - partner_invoice_id: dirección de facturación.
+            - partner_shipping_id: dirección de entrega.
+        -->
 
-        <!-- Address “nativo” para web.external_layout -->
+        <t t-set="p" t-value="doc.partner_id"/>
+
+        <!-- Dirección principal: cliente/contacto seleccionado en la venta -->
         <t t-set="address">
-            <t t-if="doc.partner_invoice_id">
-                <div t-field="doc.partner_invoice_id"
-                     t-options="{
-                        'widget':'contact',
-                        'fields':['name','address','phone','mobile','email'],
-                        'no_marker': True,
-                        'phone_icons': True
-                     }"/>
-            </t>
-            <t t-else="">
-                <div t-field="doc.partner_id"
-                     t-options="{
-                        'widget':'contact',
-                        'fields':['name','address','phone','mobile','email'],
-                        'no_marker': True,
-                        'phone_icons': True
-                     }"/>
-            </t>
+            <div
+                t-field="doc.partner_id"
+                t-options="{
+                    'widget': 'contact',
+                    'fields': ['name',  'address', 'phone', 'mobile', 'email'],
+                    'no_marker': True
+                }"
+            />
+
+            <p t-if="doc.partner_id.vat" class="mb-0">
+                <t
+                    t-if="doc.company_id.account_fiscal_country_id.vat_label"
+                    t-out="doc.company_id.account_fiscal_country_id.vat_label"
+                />
+                <t t-else="">Tax ID</t>:
+                <span t-field="doc.partner_id.vat"/>
+            </p>
         </t>
 
+        <!--
+            Facturación / entrega.
+            Mismo criterio que utiliza Odoo en el informe nativo de ventas.
+        -->
+        <t
+            t-if="
+                (
+                    doc.partner_shipping_id == doc.partner_invoice_id
+                    and doc.partner_invoice_id != doc.partner_id
+                )
+                or doc.partner_shipping_id != doc.partner_invoice_id
+            "
+        >
+            <t t-set="information_block">
+
+                <strong>
+                    <t t-if="doc.partner_shipping_id == doc.partner_invoice_id">
+                        Invoicing and Shipping Address
+                    </t>
+                    <t t-else="">
+                        Invoicing Address
+                    </t>
+                </strong>
+
+                <div
+                    t-field="doc.partner_invoice_id"
+                    t-options="{
+                        'widget': 'contact',
+                        'fields': ['name',  'address', 'phone', 'mobile', 'email'],
+                        'no_marker': True,
+                        'phone_icons': True
+                    }"
+                />
+
+                <p t-if="doc.partner_invoice_id.vat" class="mb-0">
+                    <t
+                        t-if="doc.company_id.account_fiscal_country_id.vat_label"
+                        t-out="doc.company_id.account_fiscal_country_id.vat_label"
+                    />
+                    <t t-else="">Tax ID</t>:
+                    <span t-field="doc.partner_invoice_id.vat"/>
+                </p>
+
+                <t t-if="doc.partner_shipping_id != doc.partner_invoice_id">
+                    <strong class="d-block mt-3">
+                        Shipping Address
+                    </strong>
+
+                    <div
+                        t-field="doc.partner_shipping_id"
+                        t-options="{
+                            'widget': 'contact',
+                            'fields': ['name',  'address', 'phone', 'mobile', 'email'],
+                            'no_marker': True,
+                            'phone_icons': True
+                        }"
+                    />
+                </t>
+
+            </t>
+        </t>
         <t t-call="web.external_layout">
             <style>
                 .o_report_layout_standard .address.row { margin-bottom: 6px !important; }

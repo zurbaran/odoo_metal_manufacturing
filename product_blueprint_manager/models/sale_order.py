@@ -4,10 +4,12 @@
 
 import logging
 
-from odoo import models
+from odoo import _, models  # type: ignore[import-not-found]
+from odoo.exceptions import AccessError  # type: ignore[import-not-found]
 
 # Logger para trazar la ejecución de las acciones relacionadas con blueprints
 _logger = logging.getLogger(__name__)
+_BLUEPRINT_USER_GROUP = "product_blueprint_manager.group_product_blueprint_user"
 
 
 class SaleOrder(models.Model):
@@ -38,6 +40,7 @@ class SaleOrder(models.Model):
           4. Se llama a `report_action(self)` para generar el PDF asociado,
              usando el propio pedido (`self`) como documento.
         """
+        self._check_blueprint_user_access()
         self.ensure_one()
         _logger.debug(
             "[Blueprint] Acción ejecutada: impresión de blueprints de "
@@ -65,6 +68,7 @@ class SaleOrder(models.Model):
           3. Se recupera la acción de informe específica para planos de compra.
           4. Se llama a `report_action(self)` para generar el documento.
         """
+        self._check_blueprint_user_access()
         self.ensure_one()
         _logger.debug(
             "[Blueprint] Acción ejecutada: impresión de blueprints de "
@@ -129,3 +133,7 @@ class SaleOrder(models.Model):
         # Si no se cumplen las condiciones (otro modelo, otro informe, etc.)
         # se llama al comportamiento estándar del modelo padre.
         return super()._get_report_base_filename()
+
+    def _check_blueprint_user_access(self):
+        if not self.env.user.has_group(_BLUEPRINT_USER_GROUP):
+            raise AccessError(_("No tiene permisos para generar planos de producto."))

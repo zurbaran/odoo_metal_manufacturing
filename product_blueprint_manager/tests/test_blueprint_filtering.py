@@ -2,7 +2,7 @@
 
 import base64
 
-from odoo.tests.common import TransactionCase
+from odoo.tests.common import TransactionCase  # pyright: ignore[reportMissingImports]
 
 
 class TestBlueprintFiltering(TransactionCase):
@@ -47,16 +47,16 @@ class TestBlueprintFiltering(TransactionCase):
                         0,
                         {
                             "attribute_id": self.attr_acabado.id,
-                            "value_ids": [(6, 0, [self.val_pulido.id, self.val_mate.id])],
+                            "value_ids": [
+                                (6, 0, [self.val_pulido.id, self.val_mate.id])
+                            ],
                         },
                     ),
                 ],
             }
         )
 
-        self.product_transp_pulido = self._variant_for(
-            self.val_transp, self.val_pulido
-        )
+        self.product_transp_pulido = self._variant_for(self.val_transp, self.val_pulido)
         self.product_transp_mate = self._variant_for(self.val_transp, self.val_mate)
         self.product_carglas_pulido = self._variant_for(
             self.val_carglas, self.val_pulido
@@ -86,8 +86,7 @@ class TestBlueprintFiltering(TransactionCase):
 
     def _create_blueprint(self, name, type_blueprint, conditions):
         svg = (
-            b'<svg xmlns="http://www.w3.org/2000/svg" '
-            b'width="10" height="10"></svg>'
+            b'<svg xmlns="http://www.w3.org/2000/svg" ' b'width="10" height="10"></svg>'
         )
         return self.env["product.blueprint"].create(
             {
