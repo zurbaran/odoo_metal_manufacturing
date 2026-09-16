@@ -102,7 +102,7 @@ class TestSaleOrderReportAddresses(TransactionCase):
 
         report_text = self._render_address_text()
 
-        self.assertIn("Alternate Street 404", report_text)
+        self.assertIn("Blueprint Alternate Contact", report_text)
         self.assertIn("Invoicing Address", report_text)
         self.assertIn("Invoice Street 202", report_text)
         self.assertIn("Shipping Address", report_text)
