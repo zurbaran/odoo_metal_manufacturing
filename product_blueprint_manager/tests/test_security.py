@@ -1,7 +1,6 @@
 from odoo.exceptions import AccessError
 from odoo.tests.common import TransactionCase, new_test_user
 
-
 _BLUEPRINT_MODELS = (
     "product.blueprint",
     "product.blueprint.formula",
@@ -36,9 +35,15 @@ class TestBlueprintSecurity(TransactionCase):
         cls.sale_order = cls.env["sale.order"].create({"partner_id": partner.id})
 
     def test_odoo19_privilege_structure(self):
-        privilege = self.env.ref("product_blueprint_manager.privilege_product_blueprint")
-        user_group = self.env.ref("product_blueprint_manager.group_product_blueprint_user")
-        manager_group = self.env.ref("product_blueprint_manager.group_product_blueprint_manager")
+        privilege = self.env.ref(
+            "product_blueprint_manager.privilege_product_blueprint"
+        )
+        user_group = self.env.ref(
+            "product_blueprint_manager.group_product_blueprint_user"
+        )
+        manager_group = self.env.ref(
+            "product_blueprint_manager.group_product_blueprint_manager"
+        )
         self.assertEqual(user_group.privilege_id, privilege)
         self.assertEqual(manager_group.privilege_id, privilege)
         self.assertIn(user_group, manager_group.implied_ids)
@@ -53,9 +58,9 @@ class TestBlueprintSecurity(TransactionCase):
             model = self.env[model_name].with_user(self.blueprint_user)
             model.check_access("read")
             for operation in ("write", "create", "unlink"):
-                with self.subTest(model=model_name, operation=operation), self.assertRaises(
-                    AccessError
-                ):
+                with self.subTest(
+                    model=model_name, operation=operation
+                ), self.assertRaises(AccessError):
                     model.check_access(operation)
 
     def test_blueprint_manager_has_full_access(self):
@@ -66,13 +71,15 @@ class TestBlueprintSecurity(TransactionCase):
                     model.check_access(operation)
 
     def test_employee_cannot_discover_blueprint_product_fields(self):
-        employee_fields = self.env["product.template"].with_user(self.employee).fields_get()
+        employee_fields = (
+            self.env["product.template"].with_user(self.employee).fields_get()
+        )
         self.assertNotIn("blueprint_ids", employee_fields)
         self.assertNotIn("formula_ids", employee_fields)
 
-        blueprint_fields = self.env["product.template"].with_user(
-            self.blueprint_user
-        ).fields_get()
+        blueprint_fields = (
+            self.env["product.template"].with_user(self.blueprint_user).fields_get()
+        )
         self.assertIn("blueprint_ids", blueprint_fields)
         self.assertIn("formula_ids", blueprint_fields)
 
@@ -95,8 +102,15 @@ class TestBlueprintSecurity(TransactionCase):
             with self.subTest(method=method_name), self.assertRaises(AccessError):
                 getattr(order, method_name)()
 
+    def test_mrp_report_rpc_action_requires_blueprint_group(self):
+        production_model = self.env["mrp.production"].with_user(self.employee)
+        with self.assertRaises(AccessError):
+            production_model.action_print_blueprint_mrp()
+
     def test_security_metadata_restricts_menus_and_actions(self):
-        user_group = self.env.ref("product_blueprint_manager.group_product_blueprint_user")
+        user_group = self.env.ref(
+            "product_blueprint_manager.group_product_blueprint_user"
+        )
         manager_group = self.env.ref(
             "product_blueprint_manager.group_product_blueprint_manager"
         )
@@ -118,12 +132,12 @@ class TestBlueprintSecurity(TransactionCase):
             "product_blueprint_manager.menu_product_blueprints",
             "product_blueprint_manager.menu_product_blueprint_formulas",
         )
-        employee_visible = self.env["ir.ui.menu"].with_user(
-            self.employee
-        )._visible_menu_ids()
-        manager_visible = self.env["ir.ui.menu"].with_user(
-            self.blueprint_manager
-        )._visible_menu_ids()
+        employee_visible = (
+            self.env["ir.ui.menu"].with_user(self.employee)._visible_menu_ids()
+        )
+        manager_visible = (
+            self.env["ir.ui.menu"].with_user(self.blueprint_manager)._visible_menu_ids()
+        )
         for xmlid in menu_xmlids:
             menu = self.env.ref(xmlid)
             self.assertIn(manager_group, menu.group_ids)

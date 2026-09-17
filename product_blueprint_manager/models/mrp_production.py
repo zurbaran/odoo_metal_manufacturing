@@ -1,11 +1,10 @@
 import logging  # Módulo estándar de Python para registro de logs
 
 from odoo import _, models  # '_' para traducciones, 'models' para definir modelos Odoo
-from odoo.exceptions import (
-    UserError,  # Excepción controlada para mostrar errores al usuario
-)
+from odoo.exceptions import AccessError, UserError
 
 _logger = logging.getLogger(__name__)  # Logger específico de este módulo
+_BLUEPRINT_USER_GROUP = "product_blueprint_manager.group_product_blueprint_user"
 
 
 class MrpProduction(models.Model):
@@ -22,6 +21,8 @@ class MrpProduction(models.Model):
           para generar exactamente el mismo plano que desde el presupuesto.
         """
         # Asegura que el método se llama sobre un único registro (una sola MO)
+        if not self.env.user.has_group(_BLUEPRINT_USER_GROUP):
+            raise AccessError(_("No tiene permisos para generar planos de producto."))
         self.ensure_one()
 
         # 1) Intentar encontrar pedidos de venta a través de los movimientos destino
