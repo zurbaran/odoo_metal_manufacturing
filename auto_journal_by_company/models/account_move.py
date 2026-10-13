@@ -154,7 +154,7 @@ class AccountMove(models.Model):
         manual_moves = self.browse()
 
         # Clasificamos movimientos según si venían con journal_id explícito
-        for move, vals in zip(moves, vals_list):
+        for move, vals in zip(moves, vals_list, strict=False):
             if vals.get("journal_id"):
                 manual_moves |= move
             else:

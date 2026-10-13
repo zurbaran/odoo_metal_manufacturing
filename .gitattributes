@@ -1,0 +1,3 @@
+# Generated OCA RST contains a comment marker with a trailing space and
+# seven-character heading underlines; neither is a merge conflict.
+account_reconcile_n43_beneficiary/README.rst whitespace=-trailing-space conflict-marker-size=32

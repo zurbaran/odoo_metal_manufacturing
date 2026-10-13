@@ -48,9 +48,10 @@ class TestBlueprintSecurity(TransactionCase):
             with self.subTest(model=model_name, operation="read"):
                 model.check_access("read")
             for operation in ("write", "create", "unlink"):
-                with self.subTest(
-                    model=model_name, operation=operation
-                ), self.assertRaises(AccessError):
+                with (
+                    self.subTest(model=model_name, operation=operation),
+                    self.assertRaises(AccessError),
+                ):
                     model.check_access(operation)
 
     def test_blueprint_manager_has_full_access(self):

@@ -113,7 +113,7 @@ class _MathExpressionEvaluator:
 
         if isinstance(node, ast.Compare):
             left = self.evaluate(node.left)
-            for op, comparator in zip(node.ops, node.comparators):
+            for op, comparator in zip(node.ops, node.comparators, strict=False):
                 if type(op) not in _COMPARE_OPERATORS:
                     raise ValueError("Comparador no permitido")
                 right = self.evaluate(comparator)
