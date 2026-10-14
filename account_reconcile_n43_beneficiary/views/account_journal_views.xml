@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="account_journal_form" model="ir.ui.view">
+        <field name="name">account.journal.form.n43.beneficiary</field>
+        <field name="model">account.journal</field>
+        <field name="inherit_id" ref="account.view_account_journal_form" />
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='advanced_settings']/group" position="inside">
+                <group string="N43 Beneficiary" invisible="type != 'bank'">
+                    <field name="n43_beneficiary_enabled" />
+                    <field name="n43_ignored_partner_ids" widget="many2many_tags" invisible="not n43_beneficiary_enabled" />
+                    <field name="n43_outgoing_patterns" invisible="not n43_beneficiary_enabled" />
+                    <field name="n43_beneficiary_record" invisible="not n43_beneficiary_enabled" />
+                    <field name="n43_allow_legacy_lines" invisible="not n43_beneficiary_enabled" />
+                    <field name="n43_legacy_beneficiary_regex" invisible="not n43_beneficiary_enabled or not n43_allow_legacy_lines" />
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>
