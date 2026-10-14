@@ -16,3 +16,29 @@ class AccountStatementImport(models.TransientModel):
                     "conceptos"
                 ]
         return result
+
+    def _complete_stmts_vals(self, stmts_vals, journal, account_number):
+        """Resolve before creation: N43 importer sets skip_retrieve_partner.
+
+        OCA 19 deliberately skips partner retrieval on statement-line create,
+        so this complement must be applied at the import wizard stage.
+        """
+        result = super()._complete_stmts_vals(stmts_vals, journal, account_number)
+        if not journal.n43_beneficiary_enabled:
+            return result
+        StatementLine = self.env["account.bank.statement.line"]
+        for statement in result:
+            for transaction in statement["transactions"]:
+                if not transaction.get("n43_imported"):
+                    continue
+                candidate = StatementLine.new(
+                    {
+                        **transaction,
+                        "journal_id": journal.id,
+                        "company_id": journal.company_id.id,
+                    }
+                )
+                if candidate._n43_is_outgoing_transfer():
+                    partner = candidate._n43_resolved_partner()
+                    transaction["partner_id"] = partner.id or False
+        return result
