@@ -73,37 +73,54 @@ class AccountBankStatementLine(models.Model):
         return (match.group("beneficiary") or "").strip() if match else ""
 
     def _n43_partner_from_beneficiary_mappings(self, beneficiary):
-        """Reuse OCA mappings on beneficiary text and applicability on the real line."""
+        """Find a unique partner using Odoo 19's mapping models.
+
+        Odoo 19 replaces partner_mapping_line_ids with mapped_partner_id,
+        computed on models that have exactly one partner-only rule line.
+        """
         self.ensure_one()
         partners = self.env["res.partner"]
-        # In-memory record only: no bank data, move or partner is written.
-        beneficiary_line = self.new(
-            {"payment_ref": beneficiary, "narration": beneficiary}
-        )
+        holders = self._n43_account_holders()
         models = self.env["account.reconcile.model"].search(
             [
-                ("rule_type", "!=", "writeoff_button"),
+                ("active", "=", True),
                 ("company_id", "=", self.company_id.id),
+                ("mapped_partner_id", "!=", False),
+                ("match_label", "in", ["contains", "match_regex"]),
             ]
         )
-        holders = self._n43_account_holders()
         for model in models:
-            partner = model._get_partner_from_mapping(beneficiary_line)
+            partner = model.mapped_partner_id
             if (
-                partner
-                and partner.commercial_partner_id not in holders
-                and (not partner.company_id or partner.company_id == self.company_id)
-                and model._is_applicable_for(self, partner)
+                partner.commercial_partner_id in holders
+                or (partner.company_id and partner.company_id != self.company_id)
+                or (model.match_journal_ids and self.journal_id not in model.match_journal_ids)
+                or (model.match_partner_ids and partner not in model.match_partner_ids)
             ):
+                continue
+            if model.match_amount == "lower" and self.amount > model.match_amount_max:
+                continue
+            if model.match_amount == "greater" and self.amount < model.match_amount_min:
+                continue
+            if model.match_amount == "between" and not (
+                model.match_amount_max <= self.amount <= model.match_amount_min
+            ):
+                continue
+            pattern = model.match_label_param or ""
+            if not pattern:
+                continue
+            if model.match_label == "contains":
+                matches = pattern.casefold() in beneficiary.casefold()
+            else:
+                matches = bool(re.search(pattern, beneficiary, re.IGNORECASE))
+            if matches:
                 partners |= partner
-        # Conflicting mappings must be reviewed rather than resolved by sequence.
         return partners if len(partners) == 1 else self.env["res.partner"]
 
-    def _retrieve_partner(self):
+    def _n43_resolved_partner(self):
+        """Never replace an identified non-holder with a beneficiary guess."""
         self.ensure_one()
-        if self.env.context.get("skip_retrieve_partner"):
-            return self.partner_id
-        partner = super()._retrieve_partner()
+        partner = self.partner_id
         if not self._n43_is_outgoing_transfer():
             return partner
         if partner and partner.commercial_partner_id not in self._n43_account_holders():
@@ -116,3 +133,16 @@ class AccountBankStatementLine(models.Model):
         ):
             return self.env["res.partner"]
         return self._n43_partner_from_beneficiary_mappings(beneficiary)
+
+    def _retrieve_partner(self):
+        """Odoo 19 writes partner_id directly and supports record batches."""
+        result = super()._retrieve_partner()
+        if self.env.context.get("skip_retrieve_partner"):
+            return result
+        for line in self:
+            if not line._n43_is_outgoing_transfer():
+                continue
+            resolved = line._n43_resolved_partner()
+            if resolved != line.partner_id:
+                line.partner_id = resolved
+        return result
