@@ -52,6 +52,41 @@ jobs:
           path: odoo
           fetch-depth: 1
 
+      - name: Checkout OCA/sale-workflow
+        uses: actions/checkout@v7
+        with:
+          repository: OCA/sale-workflow
+          ref: "19.0"
+          path: oca-sale-workflow
+          fetch-depth: 1
+      - name: Checkout OCA/product-attribute
+        uses: actions/checkout@v7
+        with:
+          repository: OCA/product-attribute
+          ref: "19.0"
+          path: oca-product-attribute
+          fetch-depth: 1
+      - name: Checkout OCA/l10n-spain
+        uses: actions/checkout@v7
+        with:
+          repository: OCA/l10n-spain
+          ref: "19.0"
+          path: oca-l10n-spain
+          fetch-depth: 1
+      - name: Checkout OCA/account-financial-reporting
+        uses: actions/checkout@v7
+        with:
+          repository: OCA/account-financial-reporting
+          ref: "19.0"
+          path: oca-account-financial-reporting
+          fetch-depth: 1
+      - name: Checkout OCA/server-ux
+        uses: actions/checkout@v7
+        with:
+          repository: OCA/server-ux
+          ref: "19.0"
+          path: oca-server-ux
+          fetch-depth: 1
       - name: Set up Python
         uses: actions/setup-python@v7
         with:
@@ -80,7 +115,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip wheel setuptools
           python -m pip install -r odoo/requirements.txt
-          python -m pip install cairosvg
+          python -m pip install cairosvg unidecode
 
       - name: Wait for PostgreSQL
         env:
@@ -110,7 +145,7 @@ jobs:
             --db_port=5432 \
             --db_user=odoo \
             --db_password=odoo \
-            --addons-path=odoo/addons,custom-addons \
+            --addons-path=odoo/addons,custom-addons,oca-sale-workflow,oca-product-attribute,oca-l10n-spain,oca-account-financial-reporting,oca-server-ux \
             --init=auto_journal_by_company,mrp_production_child_sale_info,product_blueprint_manager,product_configurator_attribute_price,ui_template_enhancements,web_binary_boe_download_fix \
             --test-tags=/auto_journal_by_company,/product_blueprint_manager,/product_configurator_attribute_price \
             --stop-after-init \
