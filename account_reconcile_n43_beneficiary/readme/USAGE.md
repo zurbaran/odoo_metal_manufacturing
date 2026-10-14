@@ -1,16 +1,11 @@
-Open an un-reconciled imported outgoing transfer in the OCA
-reconciliation UI. For the enabled journal, an account-holder result is
-replaced with the unique beneficiary mapping that satisfies the original
-model's applicability filters. Then OCA searches candidate journal items
-using that partner and its own rules.
+Import an N43 file. For enabled bank journals, the beneficiary complementary
+record is preserved independently and matched to a unique Odoo 19 mapping
+model. A valid non-holder partner is never replaced.
 
-Incoming transfers, CORE direct debits, unrecognized transfer labels,
-disabled journals, already reconciled lines and explicitly selected
-third parties keep the upstream behavior. The import-time
-`skip_retrieve_partner` context is respected. Lookup does not change the
-persisted partner or original bank text.
+Resolution happens before statement-line creation because the OCA importer
+sets skip_retrieve_partner in its creation context. Re-running partner
+retrieval on existing lines is also supported, with the journal's optional
+legacy extraction configuration for unmarked historical data.
 
-With `n43_partner_search = all`, an imported account-holder partner is
-corrected when resolving at reconciliation time. Other imported partners
-remain trusted, so `all` is not recommended when bank heuristics can
-select unrelated parties.
+Unrecognized or conflicting beneficiaries are left unassigned for manual
+review. No invoice, payment or bank reconciliation is created by this addon.
