@@ -111,8 +111,8 @@ jobs:
             --db_user=odoo \
             --db_password=odoo \
             --addons-path=odoo/addons,custom-addons \
-            --init=product_blueprint_manager,product_configurator_attribute_price \
-            --test-tags=/product_blueprint_manager,/product_configurator_attribute_price \
+            --init=auto_journal_by_company,mrp_production_child_sale_info,product_blueprint_manager,product_configurator_attribute_price,ui_template_enhancements,web_binary_boe_download_fix \
+            --test-tags=/auto_journal_by_company,/product_blueprint_manager,/product_configurator_attribute_price \
             --stop-after-init \
             --log-level=test \
             > /tmp/odoo19-tests.log 2>&1
