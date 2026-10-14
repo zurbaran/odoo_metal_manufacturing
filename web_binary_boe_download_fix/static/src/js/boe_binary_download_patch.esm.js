@@ -28,7 +28,7 @@ patch(BinaryField.prototype, {
         ? encodeURIComponent(payload.filename)
         : "";
 
-      // URL REST estándar de Odoo 18 para binarios:
+      // URL pública de descarga de binarios de Odoo 19:
       // /web/content/<model>/<id>/<field>/<filename>?download=true
       let url = `/web/content/${model}/${id}/${field}`;
       if (filename) {
@@ -36,7 +36,7 @@ patch(BinaryField.prototype, {
       }
       url += `?download=true`;
 
-      return downloadFile._download(url);
+      return downloadFile(url);
     }
 
     // Otros binarios: comportamiento original
