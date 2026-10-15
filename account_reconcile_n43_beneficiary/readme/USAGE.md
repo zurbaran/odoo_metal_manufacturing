@@ -14,3 +14,6 @@ With `n43_partner_search = all`, an imported account-holder partner is
 corrected when resolving at reconciliation time. Other imported partners
 remain trusted, so `all` is not recommended when bank heuristics can
 select unrelated parties.
+
+
+See the [migration guide](https://github.com/zurbaran/odoo_metal_manufacturing/blob/18.0/account_reconcile_n43_beneficiary/MIGRATION_ES.md) and [validation report](https://github.com/zurbaran/odoo_metal_manufacturing/blob/18.0/account_reconcile_n43_beneficiary/VALIDATION.md) before rollout.
