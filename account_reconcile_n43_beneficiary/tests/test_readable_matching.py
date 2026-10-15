@@ -236,6 +236,183 @@ class TestReadableMatching19(AccountTestInvoicingCommon):
         self.assertNotIn(model.id, result.get(bad.id, []))
         self.assertNotIn(model.id, result.get(partial.id, []))
 
+    def _proposal_mapping(self, partner, text, **extra):
+        model = self.model.copy(
+            {
+                "name": "Proposal: " + partner.name,
+                "n43_text": text,
+                "line_ids": [
+                    Command.clear(),
+                    Command.create({"partner_id": partner.id}),
+                ],
+                **extra,
+            }
+        )
+        self.assertFalse(model.can_be_proposed)
+        # Editing a child counterpart can make a former partner-only rule
+        # proposable without clearing its readable identification criterion.
+        model.line_ids.account_id = self.company_data["default_account_expense"]
+        self.assertFalse(model.mapped_partner_id)
+        self.assertTrue(model.can_be_proposed)
+        return model
+
+    def test_partner_only_mapping_models_are_not_proposed(self):
+        line = self._line()
+        self.assertFalse(self.model.can_be_proposed)
+        self.assertNotIn(
+            self.model.id,
+            self.model._get_rules(line, trigger="manual").get(line.id, []),
+        )
+
+    def test_mapping_only_proposals_do_not_cross_suppliers(self):
+        model_a = self._proposal_mapping(self.partner_a, "COREMUTUA")
+        model_b = self._proposal_mapping(self.partner_b, "COREDIGI")
+        unmanaged = self.env["account.reconcile.model"].create(
+            {
+                "name": "Native proposal",
+                "company_id": self.company.id,
+                "trigger": "manual",
+                "match_label": "contains",
+                "match_label_param": "receipt",
+                "line_ids": [
+                    Command.create(
+                        {"account_id": self.company_data["default_account_expense"].id}
+                    )
+                ],
+            }
+        )
+        line_a = self._line("coremutua receipt")
+        line_b = self._line("COREDIGI receipt")
+        unknown = self._line("Unknown receipt")
+        unanchored = self._line("prefix COREMUTUA receipt")
+        result = self.model._get_rules(
+            line_a | line_b | unknown | unanchored, trigger="manual"
+        )
+        for line, expected, other in [
+            (line_a, model_a, model_b),
+            (line_b, model_b, model_a),
+        ]:
+            self.assertIn(expected.id, result.get(line.id, []))
+            self.assertNotIn(other.id, result.get(line.id, []))
+        for line in (unknown, unanchored):
+            self.assertNotIn(model_a.id, result.get(line.id, []))
+            self.assertNotIn(model_b.id, result.get(line.id, []))
+        for line in (line_a, line_b, unknown, unanchored):
+            self.assertIn(unmanaged.id, result.get(line.id, []))
+
+    def test_mapping_proposals_also_check_existing_managed_conditions(self):
+        for extra in (
+            {"n43_label_match_type": "starts_with", "n43_label_text": "CORE"},
+            {"n43_source_conditions": {"match_nature": "amount_paid"}},
+        ):
+            with self.subTest(extra=extra):
+                model_a = self._proposal_mapping(self.partner_a, "COREMUTUA", **extra)
+                model_b = self._proposal_mapping(self.partner_b, "COREDIGI", **extra)
+                line = self._line()
+                result = self.model._get_rules(line, trigger="manual")
+                self.assertIn(model_a.id, result.get(line.id, []))
+                self.assertNotIn(model_b.id, result.get(line.id, []))
+
+    def test_mapping_proposals_use_extracted_transfer_beneficiary(self):
+        model_a = self._proposal_mapping(
+            self.partner_a, "Supplier A", n43_match_type="exact"
+        )
+        model_b = self._proposal_mapping(
+            self.partner_b, "Supplier B", n43_match_type="exact"
+        )
+        line_a = self._line(
+            "Supplier B CASHFra.TEST Supplier A",
+            n43_imported=True,
+            n43_complementary_concepts={"05": ["Supplier A", ""]},
+        )
+        line_b = self._line(
+            "Supplier A CASHFra.TEST Supplier B",
+            n43_imported=True,
+            n43_complementary_concepts={"05": ["Supplier B", ""]},
+        )
+        missing = self._line("Supplier A CASHFra.TEST", n43_imported=True)
+        self.bank.n43_allow_legacy_lines = True
+        legacy = self._line("Holder CASHFra.TEST Supplier A")
+        result = self.model._get_rules(
+            line_a | line_b | missing | legacy, trigger="manual"
+        )
+        for line, expected, other in [
+            (line_a, model_a, model_b),
+            (line_b, model_b, model_a),
+        ]:
+            self.assertIn(expected.id, result.get(line.id, []))
+            self.assertNotIn(other.id, result.get(line.id, []))
+        self.assertNotIn(model_a.id, result.get(missing.id, []))
+        self.assertNotIn(model_b.id, result.get(missing.id, []))
+        self.assertIn(model_a.id, result.get(legacy.id, []))
+        self.assertNotIn(model_b.id, result.get(legacy.id, []))
+
+    def test_mapping_proposals_use_full_core_label(self):
+        model_a = self._proposal_mapping(self.partner_a, "COREMUTUA")
+        model_b = self._proposal_mapping(self.partner_b, "COREDIGI")
+        line_a = self._line(
+            "COREMUTUA receipt CASHFra.TEST",
+            n43_imported=True,
+            n43_complementary_concepts={"05": ["COREDIGI", ""]},
+        )
+        line_b = self._line(
+            "coredigi receipt CASHFra.TEST",
+            n43_imported=True,
+            n43_complementary_concepts={"05": ["COREMUTUA", ""]},
+        )
+        self.assertFalse(line_a._n43_is_outgoing_transfer())
+        self.assertFalse(line_b._n43_is_outgoing_transfer())
+        result = self.model._get_rules(line_a | line_b, trigger="manual")
+        self.assertIn(model_a.id, result.get(line_a.id, []))
+        self.assertNotIn(model_b.id, result.get(line_a.id, []))
+        self.assertIn(model_b.id, result.get(line_b.id, []))
+        self.assertNotIn(model_a.id, result.get(line_b.id, []))
+
+    def test_mapping_proposal_restrictions_are_preserved(self):
+        model = self._proposal_mapping(
+            self.partner_a,
+            "COREMUTUA",
+            match_partner_ids=[Command.set([self.partner_a.id])],
+            match_amount="between",
+            match_amount_max=-30,
+            match_amount_min=-10,
+        )
+        other_bank = self.env["account.journal"].create(
+            {
+                "name": "Other proposal bank",
+                "code": "RP2",
+                "type": "bank",
+                "company_id": self.company.id,
+            }
+        )
+        good = self._line(partner_id=self.partner_a.id)
+        wrong_partner = self._line(partner_id=self.partner_b.id)
+        wrong_amount = self._line(amount=-31, partner_id=self.partner_a.id)
+        wrong_journal = self._line(
+            journal_id=other_bank.id, partner_id=self.partner_a.id
+        )
+        result = self.model._get_rules(
+            good | wrong_partner | wrong_amount | wrong_journal, trigger="manual"
+        )
+        self.assertIn(model.id, result.get(good.id, []))
+        for line in (wrong_partner, wrong_amount, wrong_journal):
+            self.assertNotIn(model.id, result.get(line.id, []))
+        self.assertEqual(model.trigger, "manual")
+
+    def test_mapping_proposals_respect_company(self):
+        model = self._proposal_mapping(
+            self.partner_a, "COREMUTUA", match_journal_ids=[Command.clear()]
+        )
+        other = self.setup_other_company(name="Other proposal company")
+        good = self._line()
+        foreign = self._line(
+            journal_id=other["default_journal_bank"].id,
+            company_id=other["company"].id,
+        )
+        result = self.model._get_rules(good | foreign, trigger="manual")
+        self.assertIn(model.id, result.get(good.id, []))
+        self.assertNotIn(model.id, result.get(foreign.id, []))
+
     def test_advanced_python_never_reaches_postgresql(self):
         self.model.write({"n43_match_type": "regex", "n43_text": r"(?i:coremutua)\b"})
         self.assertEqual(self.model.match_label_param, ".*")

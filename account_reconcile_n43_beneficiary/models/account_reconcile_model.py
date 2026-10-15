@@ -280,12 +280,28 @@ class AccountReconcileModel(models.Model):
             return bool(re.match(pattern, value))
         return True
 
+    def _n43_proposal_matches(self, line):
+        """Apply the real Python criterion behind the neutral native regex."""
+        self.ensure_one()
+        if not self._n43_conditions_apply(line, line.partner_id):
+            return False
+        if not self.n43_match_type:
+            return True
+        if line._n43_is_outgoing_transfer():
+            beneficiary = line._n43_beneficiary_text()
+            return bool(beneficiary) and self._n43_mapping_matches(
+                beneficiary, beneficiary
+            )
+        return self._n43_mapping_matches(line.payment_ref, line.narration)
+
     def _get_rules_query(self, bank_statement_lines, trigger="auto_reconcile"):
         query = super()._get_rules_query(bank_statement_lines, trigger=trigger)
         managed = self.search(
             [
                 "|",
+                "|",
                 ("n43_label_match_type", "!=", False),
+                ("n43_match_type", "!=", False),
                 ("n43_source_conditions", "!=", False),
             ]
         )
@@ -294,7 +310,7 @@ class AccountReconcileModel(models.Model):
                 (model.id, line.id)
                 for model in managed
                 for line in bank_statement_lines
-                if model._n43_conditions_apply(line, line.partner_id)
+                if model._n43_proposal_matches(line)
             )
             unmanaged = SQL(
                 "%s NOT IN %s", SQL.identifier(self._table, "id"), tuple(managed.ids)
