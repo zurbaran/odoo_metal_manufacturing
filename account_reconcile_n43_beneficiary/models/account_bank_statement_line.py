@@ -73,11 +73,7 @@ class AccountBankStatementLine(models.Model):
         return (match.group("beneficiary") or "").strip() if match else ""
 
     def _n43_partner_from_beneficiary_mappings(self, beneficiary):
-        """Find a unique partner using Odoo 19's mapping models.
-
-        Odoo 19 replaces partner_mapping_line_ids with mapped_partner_id,
-        computed on models that have exactly one partner-only rule line.
-        """
+        """Use native partner-only lines, preserving original condition scopes."""
         self.ensure_one()
         partners = self.env["res.partner"]
         holders = self._n43_account_holders()
@@ -86,7 +82,6 @@ class AccountBankStatementLine(models.Model):
                 ("active", "=", True),
                 ("company_id", "=", self.company_id.id),
                 ("mapped_partner_id", "!=", False),
-                ("match_label", "in", ["contains", "match_regex"]),
             ]
         )
         for model in models:
@@ -94,26 +89,10 @@ class AccountBankStatementLine(models.Model):
             if (
                 partner.commercial_partner_id in holders
                 or (partner.company_id and partner.company_id != self.company_id)
-                or (model.match_journal_ids and self.journal_id not in model.match_journal_ids)
-                or (model.match_partner_ids and partner not in model.match_partner_ids)
+                or not model._n43_conditions_apply(self, partner)
             ):
                 continue
-            if model.match_amount == "lower" and self.amount > model.match_amount_max:
-                continue
-            if model.match_amount == "greater" and self.amount < model.match_amount_min:
-                continue
-            if model.match_amount == "between" and not (
-                model.match_amount_max <= self.amount <= model.match_amount_min
-            ):
-                continue
-            pattern = model.match_label_param or ""
-            if not pattern:
-                continue
-            if model.match_label == "contains":
-                matches = pattern.casefold() in beneficiary.casefold()
-            else:
-                matches = bool(re.search(pattern, beneficiary, re.IGNORECASE))
-            if matches:
+            if model._n43_mapping_matches(beneficiary, beneficiary):
                 partners |= partner
         return partners if len(partners) == 1 else self.env["res.partner"]
 
@@ -136,13 +115,49 @@ class AccountBankStatementLine(models.Model):
 
     def _retrieve_partner(self):
         """Odoo 19 writes partner_id directly and supports record batches."""
+        original = {line.id: line.partner_id for line in self}
         result = super()._retrieve_partner()
         if self.env.context.get("skip_retrieve_partner"):
             return result
         for line in self:
-            if not line._n43_is_outgoing_transfer():
+            explicit = original[line.id]
+            if (
+                explicit
+                and explicit.commercial_partner_id not in line._n43_account_holders()
+            ):
                 continue
-            resolved = line._n43_resolved_partner()
-            if resolved != line.partner_id:
-                line.partner_id = resolved
+            if line._n43_is_outgoing_transfer():
+                resolved = line._n43_resolved_partner()
+                if resolved != line.partner_id:
+                    line.partner_id = resolved
+            elif not line.is_reconciled and not explicit:
+                partners, managed = line._n43_readable_label_partners()
+                if managed or len(partners) > 1:
+                    if (
+                        line.partner_id
+                        and line.partner_id.commercial_partner_id
+                        not in line._n43_account_holders()
+                    ):
+                        partners |= line.partner_id
+                    line.partner_id = partners if len(partners) == 1 else False
         return result
+
+    def _n43_readable_label_partners(self):
+        partners = self.env["res.partner"]
+        managed = False
+        models = self.env["account.reconcile.model"].search(
+            [
+                ("company_id", "=", self.company_id.id),
+                ("mapped_partner_id", "!=", False),
+            ]
+        )
+        for model in models:
+            partner = model.mapped_partner_id
+            if (
+                (not partner.company_id or partner.company_id == self.company_id)
+                and model._n43_conditions_apply(self, partner)
+                and model._n43_mapping_matches(self.payment_ref, self.narration)
+            ):
+                partners |= partner
+                managed |= bool(model.n43_match_type)
+        return partners, managed

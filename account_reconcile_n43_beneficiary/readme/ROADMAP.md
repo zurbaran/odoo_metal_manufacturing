@@ -1,7 +1,6 @@
-This addon resolves only partner identity, not matching against an
-outstanding invoice or payment. Reconciliation models and matching criteria
-must be configured separately using Odoo 19 / OCA.
+Validate complementary record 2305 with an original CajaMar N43 and complete a
+real pending-payment reconciliation on a database copy before production rollout.
+The regression suite uses controlled bank fixtures and posted payment items.
 
-Odoo 19 partner mapping models are based on mapped_partner_id and match_label,
-not the Odoo 18 mapping-line structure. Conflicting models leave the partner
-blank. Validate bank-specific N43 complementary records before enabling.
+Date equality, payment candidate scoring and automatic reconciliation policy
+are outside partner identification. This addon does not implement them.

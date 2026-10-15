@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="account_reconcile_model_form_readable" model="ir.ui.view">
+        <field name="name">account.reconcile.model.form.n43.readable</field>
+        <field name="model">account.reconcile.model</field>
+        <field name="inherit_id" ref="account.view_account_reconcile_model_form" />
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+                <group string="Readable Matching">
+                    <group string="Bank Label Condition">
+                        <field name="n43_label_match_type" placeholder="Use existing native condition" />
+                        <field name="n43_label_text" invisible="not n43_label_match_type" required="n43_label_match_type" />
+                        <field name="n43_label_case_sensitive" invisible="not n43_label_match_type or n43_label_match_type == 'regex'" />
+                    </group>
+                    <group string="Partner Identification">
+                        <field name="n43_match_type" />
+                        <field name="n43_text" invisible="not n43_match_type" required="n43_match_type" />
+                        <field name="n43_case_sensitive" invisible="not n43_match_type or n43_match_type == 'regex'" />
+                        <button name="action_n43_simplify" type="object" string="Simplify Recognized Prefix Rule" />
+                    </group>
+                </group>
+            </xpath>
+            <xpath expr="//field[@name='match_label']" position="attributes">
+                <attribute name="invisible">n43_label_match_type or n43_match_type</attribute>
+            </xpath>
+            <xpath expr="//field[@name='match_label_param']" position="attributes">
+                <attribute name="invisible">not match_label or n43_label_match_type or n43_match_type</attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>

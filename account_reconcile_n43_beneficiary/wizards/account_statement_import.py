@@ -24,8 +24,6 @@ class AccountStatementImport(models.TransientModel):
         so this complement must be applied at the import wizard stage.
         """
         result = super()._complete_stmts_vals(stmts_vals, journal, account_number)
-        if not journal.n43_beneficiary_enabled:
-            return result
         StatementLine = self.env["account.bank.statement.line"]
         for statement in result:
             for transaction in statement["transactions"]:
@@ -41,4 +39,13 @@ class AccountStatementImport(models.TransientModel):
                 if candidate._n43_is_outgoing_transfer():
                     partner = candidate._n43_resolved_partner()
                     transaction["partner_id"] = partner.id or False
+                elif not candidate.partner_id or (
+                    candidate.partner_id.commercial_partner_id
+                    in candidate._n43_account_holders()
+                ):
+                    partners, managed = candidate._n43_readable_label_partners()
+                    if managed or len(partners) > 1:
+                        transaction["partner_id"] = (
+                            partners.id if len(partners) == 1 else False
+                        )
         return result

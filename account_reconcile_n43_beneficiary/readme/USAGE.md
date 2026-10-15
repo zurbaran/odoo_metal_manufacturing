@@ -9,3 +9,6 @@ legacy extraction configuration for unmarked historical data.
 
 Unrecognized or conflicting beneficiaries are left unassigned for manual
 review. No invoice, payment or bank reconciliation is created by this addon.
+
+
+See the [migration guide](https://github.com/zurbaran/odoo_metal_manufacturing/blob/19.0/account_reconcile_n43_beneficiary/MIGRATION_ES.md) and [validation report](https://github.com/zurbaran/odoo_metal_manufacturing/blob/19.0/account_reconcile_n43_beneficiary/VALIDATION.md) before rollout.
