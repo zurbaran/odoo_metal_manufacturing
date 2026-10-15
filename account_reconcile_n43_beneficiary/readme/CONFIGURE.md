@@ -1,16 +1,42 @@
-1. Install OCA account_reconcile_oca and l10n_es_account_statement_import_n43 for 19.0.
-2. Open the bank journal, Advanced Settings, and enable Resolve N43 Beneficiary.
-3. Configure additional holders to exclude (the company partner is automatic).
-4. Check the layout: the verified CajaMar case uses complementary record 2305.
-5. Set N43 partner search to None on the journal for the priority scenario.
-6. In the Odoo 19 reconciliation models, define a mapping with a single rule
-   line containing the target partner and no account. This computes mapped_partner_id.
-7. Set the model's Label condition to Match Regex. Match the beneficiary's NAME,
-   e.g. (?i).*TEMPLAGLASS.* or (?i).*VIDRIOS SALINAS.*.
-8. Optionally restrict the journal and amount. Do not match document numbers to
-   determine partner identity. Keep auto-reconciliation disabled.
-9. Unmarked historical entries require explicit legacy opt-in and an extraction
-   regex appropriate for the bank format.
+1. Install OCA **account_reconcile_oca** and the N43 importer for 19.0. Enable
+   **Resolve N43 Beneficiary** in the bank journal and keep N43 partner search
+   at **None** for the priority scenario. Add only actual additional holders.
+2. Check an original bank file. Complementary record `2305` (selection `05`) is
+   the expected CajaMar layout and still needs validation against the real file.
+3. In the native reconciliation model, create EXACTLY ONE counterpart line with
+   the target **Partner** and NO account. Odoo computes `mapped_partner_id`.
+   Keep the trigger **Manual** unless automation has separately been authorized.
+4. Under **Readable Matching > Partner Identification**, select a match type,
+   enter literal text and choose case sensitivity. Examples:
 
-Odoo 18's partner_mapping_line_ids, rule_type and match_nature do not exist
-in the Odoo 19 model. Recreate/adjust the mappings before enabling the addon.
+   | Match type | Text | Case-sensitive | Counterpart partner |
+   | --- | --- | --- | --- |
+   | Starts with | COREMUTUA | No | Mutua Madrileña |
+   | Contains | TEMPLAGLASS | No | Templaglass S.L. |
+   | Contains | VIDRIOS SALINAS | No | Vidrios Salinas, S.L. |
+   | Contains | VBH | No | VBH Iberia, S.L. |
+
+5. Use **Bank Label Condition** for an additional condition on the COMPLETE bank
+   label, independently of identifying the beneficiary. Restrict journal,
+   partners and signed amount through the native fields when appropriate.
+6. N43 supplier matching uses the extracted beneficiary name, excluding the
+   holder and invoice reference. Ordinary CORE matching uses the full label.
+   Distinct applicable partners are ambiguous: no partner is chosen by sequence.
+7. Plain text is literal, including `%`, `_`, brackets and dots. Starts with is
+   anchored; Contains is not; Exactly equals does not accept extra characters.
+   Advanced **Python** regex uses `re.match`, with its original flags. Python
+   expressions are not sent to PostgreSQL. Native advanced conditions remain
+   available and are checked in Python AND PostgreSQL, because native OCA SQL
+   executes them with `~*`. Their engine and search semantics differ.
+8. On upgrading the first 19.0 addon release, its existing native partner
+   mappings retain their previous Python search/IGNORECASE or casefold behavior.
+   No trigger is changed. **Simplify Recognized Prefix Rule** converts only
+   literal anchored prefixes that can be represented without losing meaning.
+   Other expressions remain advanced, with their original definition retained.
+9. For migration FROM 18.0, read `MIGRATION_ES.md` before running OpenUpgrade.
+   The addon recovers original scopes/restrictions from snapshots and the
+   migration's legacy mapping link. It cannot fix an exception during account's
+   earlier migration phase. Original mappings/models are not deleted.
+10. Historical imports require explicit legacy opt-in and a verified extraction
+    pattern. The addon identifies partners; Odoo/OCA still control selection of
+    outstanding payments and reconciliation.
