@@ -88,14 +88,15 @@ class AccountBankStatementLine(models.Model):
         )
         holders = self._n43_account_holders()
         for model in models:
-            partner = model._get_partner_from_mapping(beneficiary_line)
-            if (
-                partner
-                and partner.commercial_partner_id not in holders
-                and (not partner.company_id or partner.company_id == self.company_id)
-                and model._is_applicable_for(self, partner)
-            ):
-                partners |= partner
+            for partner in model._n43_mapping_partners(beneficiary_line):
+                if (
+                    partner.commercial_partner_id not in holders
+                    and (
+                        not partner.company_id or partner.company_id == self.company_id
+                    )
+                    and model._is_applicable_for(self, partner)
+                ):
+                    partners |= partner
         # Conflicting mappings must be reviewed rather than resolved by sequence.
         return partners if len(partners) == 1 else self.env["res.partner"]
 
@@ -105,6 +106,16 @@ class AccountBankStatementLine(models.Model):
             return self.partner_id
         partner = super()._retrieve_partner()
         if not self._n43_is_outgoing_transfer():
+            if not self.partner_id:
+                mapped, managed = self._n43_readable_label_partners()
+                if managed or len(mapped) > 1:
+                    if (
+                        partner
+                        and partner.commercial_partner_id
+                        not in self._n43_account_holders()
+                    ):
+                        mapped |= partner
+                    return mapped if len(mapped) == 1 else self.env["res.partner"]
             return partner
         if partner and partner.commercial_partner_id not in self._n43_account_holders():
             return partner
@@ -116,3 +127,26 @@ class AccountBankStatementLine(models.Model):
         ):
             return self.env["res.partner"]
         return self._n43_partner_from_beneficiary_mappings(beneficiary)
+
+    def _n43_readable_label_partners(self):
+        """Detect conflicts across applicable models, including legacy mappings."""
+        partners = self.env["res.partner"]
+        managed = False
+        models = self.env["account.reconcile.model"].search(
+            [
+                ("company_id", "=", self.company_id.id),
+                ("rule_type", "!=", "writeoff_button"),
+            ]
+        )
+        for model in models:
+            candidates = model._n43_mapping_partners(self)
+            for candidate in candidates:
+                if (
+                    not candidate.company_id or candidate.company_id == self.company_id
+                ) and model._is_applicable_for(self, candidate):
+                    partners |= candidate
+                    managed |= bool(
+                        model.n43_label_match_type
+                        or any(model.partner_mapping_line_ids.mapped("n43_match_type"))
+                    )
+        return partners, managed
