@@ -40,3 +40,10 @@
 10. Historical imports require explicit legacy opt-in and a verified extraction
     pattern. The addon identifies partners; Odoo/OCA still control selection of
     outstanding payments and reconciliation.
+11. Proposal selection also enforces the readable partner criterion: outgoing
+    N43 transfers use the extracted beneficiary; CORE receipts use the full
+    label. The neutral native `.*` is only a bridge to the Python check, not a
+    replacement for the configured text. Journal, partner, company and amount
+    filters remain cumulative. Odoo still excludes partner-only mapping models
+    from proposals. If a counterpart account is subsequently added, the model
+    becomes proposable and its retained readable criterion still applies.

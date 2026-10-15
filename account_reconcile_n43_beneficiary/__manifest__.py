@@ -3,7 +3,7 @@
 {
     "name": "N43 Beneficiary Partner Resolution",
     "summary": "Resolve outgoing N43 beneficiaries through OCA partner mappings",
-    "version": "19.0.1.1.0",
+    "version": "19.0.1.1.1",
     "category": "Accounting",
     "license": "AGPL-3",
     "author": "Antonio Caballero",
