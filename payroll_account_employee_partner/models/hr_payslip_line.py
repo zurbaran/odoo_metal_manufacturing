@@ -23,6 +23,21 @@ class HrPayslipLine(models.Model):
 
         code = account.code or ""
 
+        if credit_account and code in ("475100", "476000"):
+            register = rule.register_id
+
+            if (
+                not register
+                or (register.company_id and register.company_id != company)
+                or not register.partner_id
+            ):
+                raise UserError(
+                    f"La regla {rule.code} necesita un registro "
+                    "de contribución válido con contacto asignado."
+                )
+
+            return register.partner_id.id
+
         is_employee_payable = (
             credit_account
             and code.startswith("465")
