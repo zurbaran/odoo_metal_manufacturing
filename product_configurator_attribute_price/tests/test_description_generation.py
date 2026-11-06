@@ -1,6 +1,7 @@
-from odoo.tests.common import TransactionCase
+from odoo.tests.common import TransactionCase, tagged
 
 
+@tagged("post_install", "-at_install")
 class TestDescriptionGeneration(TransactionCase):
     @classmethod
     def setUpClass(cls):
@@ -31,8 +32,10 @@ class TestDescriptionGeneration(TransactionCase):
             }
         )
         cls.product = cls.product_template.product_variant_id
-        cls.ptav = cls.product_template.attribute_line_ids.product_template_value_ids.filtered(
-            lambda value: value.product_attribute_value_id == cls.attribute_value
+        cls.ptav = (
+            cls.product_template.attribute_line_ids.product_template_value_ids.filtered(
+                lambda value: value.product_attribute_value_id == cls.attribute_value
+            )
         )
         partner = cls.env["res.partner"].create({"name": "Description Test Partner"})
         cls.order = cls.env["sale.order"].create({"partner_id": partner.id})

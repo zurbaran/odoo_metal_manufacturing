@@ -1,6 +1,7 @@
-from odoo.tests.common import TransactionCase
+from odoo.tests.common import TransactionCase, tagged
 
 
+@tagged("post_install", "-at_install")
 class TestConfiguratorSecurity(TransactionCase):
     def test_custom_acls_do_not_grant_permissions(self):
         for xmlid in (

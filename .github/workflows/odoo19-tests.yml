@@ -147,7 +147,7 @@ jobs:
             --db_password=odoo \
             --addons-path=odoo/addons,custom-addons,oca-sale-workflow,oca-product-attribute,oca-l10n-spain,oca-account-financial-reporting,oca-server-ux \
             --init=auto_journal_by_company,mrp_production_child_sale_info,product_blueprint_manager,product_configurator_attribute_price,ui_template_enhancements,web_binary_boe_download_fix \
-            --test-tags=/auto_journal_by_company,/product_blueprint_manager,/product_configurator_attribute_price \
+            --test-tags=/web_binary_boe_download_fix,/auto_journal_by_company,/mrp_production_child_sale_info,/product_blueprint_manager,/product_configurator_attribute_price \
             --stop-after-init \
             --log-level=test \
             > /tmp/odoo19-tests.log 2>&1

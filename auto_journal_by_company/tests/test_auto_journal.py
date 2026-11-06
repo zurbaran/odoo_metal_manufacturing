@@ -1,9 +1,10 @@
 # Copyright 2026 Camarbax
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 
-from odoo.tests.common import TransactionCase
+from odoo.tests.common import TransactionCase, tagged
 
 
+@tagged("post_install", "-at_install")
 class TestAutoJournalByCompany(TransactionCase):
     """Check Odoo 19 journal selection without assuming an empty company."""
 
@@ -36,22 +37,28 @@ class TestAutoJournalByCompany(TransactionCase):
         self.assertEqual(move.journal_id.type, journal_type)
 
     def test_auto_journal_sale_invoice(self):
-        move = self.env["account.move"].with_company(self.company).create(
-            {"move_type": "out_invoice", "company_id": self.company.id}
+        move = (
+            self.env["account.move"]
+            .with_company(self.company)
+            .create({"move_type": "out_invoice", "company_id": self.company.id})
         )
         self._assert_journal_for(move, "sale")
 
     def test_auto_journal_purchase_invoice(self):
-        move = self.env["account.move"].with_company(self.company).create(
-            {"move_type": "in_invoice", "company_id": self.company.id}
+        move = (
+            self.env["account.move"]
+            .with_company(self.company)
+            .create({"move_type": "in_invoice", "company_id": self.company.id})
         )
         self._assert_journal_for(move, "purchase")
 
     def test_onchange_auto_assign_journal(self):
-        move = self.env["account.move"].with_company(self.company).new(
-            {"move_type": "out_invoice", "company_id": self.company.id}
+        move = (
+            self.env["account.move"]
+            .with_company(self.company)
+            .new({"move_type": "out_invoice", "company_id": self.company.id})
         )
-        move._onchange_company_or_type()
+        move._compute_journal_id()
         self._assert_journal_for(move, "sale")
 
     def test_create_respects_existing_journal(self):
@@ -65,11 +72,15 @@ class TestAutoJournalByCompany(TransactionCase):
                 "company_id": self.company.id,
             }
         )
-        move = self.env["account.move"].with_company(self.company).create(
-            {
-                "move_type": "out_invoice",
-                "company_id": self.company.id,
-                "journal_id": other_journal.id,
-            }
+        move = (
+            self.env["account.move"]
+            .with_company(self.company)
+            .create(
+                {
+                    "move_type": "out_invoice",
+                    "company_id": self.company.id,
+                    "journal_id": other_journal.id,
+                }
+            )
         )
         self.assertEqual(move.journal_id, other_journal)

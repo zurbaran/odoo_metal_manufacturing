@@ -1,1 +1,1 @@
-# Empty init: this module only provides JS assets.
+from . import tests

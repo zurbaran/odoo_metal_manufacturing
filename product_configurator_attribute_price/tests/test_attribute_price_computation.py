@@ -1,6 +1,7 @@
-from odoo.tests.common import TransactionCase
+from odoo.tests.common import TransactionCase, tagged
 
 
+@tagged("post_install", "-at_install")
 class TestAttributePriceComputation(TransactionCase):
     @classmethod
     def setUpClass(cls):
@@ -34,8 +35,10 @@ class TestAttributePriceComputation(TransactionCase):
             }
         )
         cls.product = cls.product_template.product_variant_id
-        cls.ptav = cls.product_template.attribute_line_ids.product_template_value_ids.filtered(
-            lambda value: value.product_attribute_value_id == cls.attribute_value
+        cls.ptav = (
+            cls.product_template.attribute_line_ids.product_template_value_ids.filtered(
+                lambda value: value.product_attribute_value_id == cls.attribute_value
+            )
         )
         cls.ptav.write(
             {

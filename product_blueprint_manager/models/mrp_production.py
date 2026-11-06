@@ -30,11 +30,9 @@ class MrpProduction(models.Model):
         #    la línea de venta (sale_line_id) y finalmente al pedido (order_id).
         sale_orders = self.mapped("move_dest_ids.sale_line_id.order_id")
 
-        # 2) Fallback: a través del procurement group (sale_mrp suele rellenar sale_id)
-        #    Si no se han encontrado pedidos vía movimientos, intenta usar el grupo
-        #    de aprovisionamiento, que a menudo guarda la relación con sale.order.
-        if not sale_orders and getattr(self, "procurement_group_id", False):
-            sale_orders = self.procurement_group_id.sale_id
+        # Odoo 19 replaces procurement groups with stock references.
+        if not sale_orders:
+            sale_orders = self.sale_line_id.order_id | self.reference_ids.sale_ids
 
         if not sale_orders:
             # No hay ninguna venta asociada: no podemos saber mmA, mmB, custom, etc.

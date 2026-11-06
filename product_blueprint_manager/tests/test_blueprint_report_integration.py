@@ -1,3 +1,4 @@
+from odoo import Command
 from odoo.tests.common import TransactionCase, tagged
 
 
@@ -15,3 +16,19 @@ class TestBlueprintReport(TransactionCase):
             "product_blueprint_manager.report_sale_order_blueprint",
         )
         self.assertEqual(report_action.get("report_type"), "qweb-pdf")
+
+    def test_mrp_blueprint_uses_odoo19_stock_reference(self):
+        partner = self.env["res.partner"].create({"name": "MRP blueprint partner"})
+        order = self.env["sale.order"].create({"partner_id": partner.id})
+        product = self.env["product.product"].create({"name": "Blueprint assembly"})
+        production = self.env["mrp.production"].create(
+            {
+                "product_id": product.id,
+                "product_qty": 1,
+            }
+        )
+        production.reference_ids.write({"sale_ids": [Command.link(order.id)]})
+        self.assertFalse(production.move_dest_ids)
+        self.assertEqual(
+            production.action_print_blueprint_mrp(), order.action_print_blueprint()
+        )
