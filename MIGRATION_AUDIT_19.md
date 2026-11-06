@@ -83,7 +83,6 @@ repositorio incluye ahora las pruebas nuevas de fabricación y descarga BOE.
 
 | Repositorio | SHA |
 | --- | --- |
-
 | odoo19 | `66af69fda24a7b0dc7b036bf1678b8850862c247` |
 | payroll19 | `2eca6caafc74d4a592ee0ca75606b4c6e3ce75b9` |
 | sale-workflow | `8a5e9df2842e28f1038137389e3c6dccea78bfe5` |
