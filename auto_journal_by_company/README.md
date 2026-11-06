@@ -1,9 +1,13 @@
 # Auto Journal by Company — Odoo 19
 
-Módulo de compatibilidad sin sobrescrituras. Odoo 19 selecciona el diario por
-compañía y tipo mediante `account.move._compute_journal_id()` y
-`_search_default_journal()`, respetando la selección manual válida.
+Mantiene un diario compatible al cambiar la compañía o el tipo de factura en
+el formulario. Conserva los diarios manuales válidos y utiliza el selector
+nativo de Odoo 19, que contempla moneda, tipo de documento y sucursales.
 
-No es necesario instalarlo en bases nuevas. En bases existentes, actualizarlo
-retira la lógica anterior sin eliminar el registro del módulo. Las pruebas
-comprueban la selección nativa, incluso con otra compañía y diario explícito.
+La creación de facturas se deja al núcleo. No se sobrescribe `create`.
+Se mantiene `_auto_assign_journal` y el onchange: al cambiar la compañía de
+una factura en borrador, el núcleo revisado puede conservar el diario de la
+compañía anterior. Una prueba con el formulario real reproduce ese caso.
+
+Las pruebas incluyen facturas de cliente/proveedor, abonos, selección manual,
+compañía explícita diferente de la activa y cambio de compañía en formulario.

@@ -15,8 +15,8 @@ Las dependencias OCA se descargaron de sus ramas 19.0 para instalar y probar.
 | Módulo | Valor frente a Odoo 19 CE | Resultado de la revisión |
 | --- | --- | --- |
 | `account_reconcile_n43_beneficiary` | Mantiene valor: identificación del beneficiario N43, exclusión de titulares y recuperación de reglas antiguas. El motor y los contactos mapeados son nativos/OCA; no se reintroduce el antiguo modelo de mapeo. | API de importación y conciliación revisada; pruebas de reglas, ambigüedades y recuperación incluidas en la ejecución. |
-| `auto_journal_by_company` | Redundante para su objetivo documentado: `account.move._compute_journal_id` y `_search_default_journal` seleccionan diario por compañía y tipo. | Retiradas las sobrescrituras. Se conserva como módulo de compatibilidad para actualizar instalaciones existentes; no instalar en bases nuevas. Pruebas sobre el comportamiento nativo. |
-| `mrp_production_child_sale_info` | Sigue aportando la propagación de la línea de venta del padre al aprovisionamiento de componentes. Copiarla de los valores de aprovisionamiento a la OF ya es nativo. | Corregido acceso a `procurement_group_id`, inexistente en 19.0; usa `reference_ids.sale_ids`. Eliminada sobrescritura redundante de `_prepare_mo_vals`. Añadidas pruebas de componentes/OF hijas y OF sin venta. |
+| `auto_journal_by_company` | La selección inicial es nativa, pero la retirada completa del módulo perdía un caso de cambio de compañía en formulario. | Conservado un onchange mínimo con el selector nativo y respeto a diarios válidos. Eliminada la sobrescritura de `create`. Regresión del cambio de compañía reproducida y corregida. |
+| `mrp_production_child_sale_info` | Sigue aportando propagación de línea de venta a componentes. Odoo 19 dejó de copiarla a compras ordinarias con movimientos destino. | Usa `reference_ids.sale_ids`, delega `_prepare_mo_vals` en `sale_mrp` y restaura `sale_line_id` para compras de componentes, separándolas por origen. Prueba real venta → OF padre/hija → compra → recepción. |
 | `payroll_account_employee_partner` | CE no sustituye la contabilidad de nóminas de OCA ni esta personalización española. | Adaptado y habilitado con la dependencia del [PR OCA/payroll #269](https://github.com/OCA/payroll/pull/269), fijada al SHA `ef16a76b00462717d982b6a4f45082723255b1bf`. Pendiente de integración upstream, pero disponible para instalar y probar. |
 | `product_blueprint_manager` | Gestión y generación de planos SVG/PNG con fórmulas y condiciones; no equivale a adjuntar documentos nativos a un producto. | Corregida búsqueda de venta al imprimir desde OF usando `sale_line_id.order_id` y `reference_ids.sale_ids`; añadida regresión. Revisadas vistas, permisos, fórmulas e informes mediante las pruebas existentes. |
 | `product_configurator_attribute_price` | Las fórmulas sobre valores personalizados y precio acumulado no son el `price_extra` fijo nativo. | Conservado. Integración con `_reset_price_unit`/`technical_price_unit` de 19 revisada; pruebas de cálculos, descripción y seguridad existentes. |
@@ -122,3 +122,50 @@ repositorio incluye ahora las pruebas nuevas de fabricación y descarga BOE.
 | server-ux | `af19073dc86443bad8590811649a54172a81a1ef` |
 | account-reconcile | `e3d99f3dc4a61f44167ce0ce70e9a0a6ad0b7540` |
 | bank-statement-import | `f22941f879c45ac2a258b2e7d88fe16a867e16d9` |
+
+## Segunda revisión: conservación funcional
+
+La revisión inicial y sus pruebas no bastaban para afirmar equivalencia total.
+Se han reproducido y corregido dos diferencias:
+
+1. **Diarios:** con el módulo sin onchange, cambiar la compañía en el formulario
+   real de una factura en borrador conservaba el diario anterior. La prueba
+   `test_native_company_change_on_draft_invoice` falla con esa retirada y pasa
+   restaurando un onchange mínimo que utiliza `_search_default_journal` y el
+   dominio nativo de compañía/sucursales. También se prueban compañía explícita
+   diferente de la activa, abonos y diarios manuales válidos. La creación se
+   mantiene en el núcleo: no necesita la sobrescritura anterior de `create`.
+2. **Compras de componentes:** [Odoo 18](https://github.com/odoo/odoo/blob/18.0/addons/sale_purchase_stock/models/purchase_order.py)
+   copiaba `sale_line_id` a las líneas de compra; [Odoo 19](https://github.com/odoo/odoo/blob/66af69fda24a7b0dc7b036bf1678b8850862c247/addons/sale_purchase_stock/models/purchase_order.py)
+   limita esa copia al dropshipping. La adaptación inicial mantenía el vínculo
+   al pedido mediante referencias, pero perdía el vínculo a su línea. Se restaura
+   únicamente para compras originadas por componentes de OF con venta, mediante
+   una marca de aprovisionamiento. La agrupación previa y la búsqueda de líneas
+   existentes respetan esa línea de venta. Se mantiene la semántica nativa de
+   las recepciones, que no deben computar como entrega del producto terminado.
+
+La prueba real confirma cuatro ventas, las OF padre e hijas, compras separadas
+por línea de origen y recepción. Dos ventas se confirman conjuntamente para
+probar la agrupación de aprovisionamientos, y una venta MTO directa del mismo
+componente comprueba que el flujo ordinario sigue separado. Las pruebas
+anteriores solo creaban directamente una OF hija: ese hueco de cobertura
+ha quedado cerrado.
+
+**Planos:** el cambio conserva la búsqueda por movimientos destino e incorpora
+como alternativa la línea de venta y las referencias de stock de Odoo 19.
+No cambia la generación de planos, fórmulas, filtros ni permisos. Sigue la
+limitación anterior: si hay varias ventas candidatas, imprime la primera;
+no se ha convertido en un selector de ventas/planos.
+
+Resultado de esta segunda revisión: **101 pruebas, 0 fallos y 0 errores**
+en la actualización/regresión conjunta de los ocho módulos. Son cuatro
+pruebas adicionales sobre las 97 anteriores: tres de diarios (compañía
+explícita, abonos y cambio de compañía en formulario) y un flujo completo
+de fabricación/compra. Las pruebas anteriores se conservan.
+
+Criterio de conservación: una función documentada de 18.0 se mantiene en
+19.0. Solo se retira su implementación propia cuando hay una implementación
+nativa equivalente y comprobada para ese flujo. La existencia de un método
+nativo de nombre similar no demuestra por sí sola esa equivalencia. Las
+regresiones detectadas en esta segunda revisión corrigen la conclusión
+demasiado amplia sobre diarios y compras de componentes.
