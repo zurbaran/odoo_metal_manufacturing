@@ -1,6 +1,6 @@
 {
     "name": "Payroll Accounting Employee Partner",
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.0.1",
     "category": "Human Resources/Payroll",
     "summary": "Correct employee partners and payroll fiscal tag commands",
     "author": "Antonio Caballero",
@@ -8,5 +8,5 @@
     "license": "AGPL-3",
     "depends": ["payroll_account"],
     "data": [],
-    "installable": False,
+    "installable": True,
 }

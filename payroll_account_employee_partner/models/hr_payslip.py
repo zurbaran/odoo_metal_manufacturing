@@ -12,7 +12,11 @@ class HrPayslip(models.Model):
 
         Supports both OCA recordsets and valid Odoo Many2many commands.
         """
-        tax_ids, tags, repartition_id = super()._get_tax_details(line)
+        # Rules use company-dependent accounts in the OCA 19.0 migration.
+        company = line.slip_id.company_id
+        tax_ids, tags, repartition_id = super(
+            HrPayslip, self.with_company(company)
+        )._get_tax_details(line.with_company(company))
 
         if not tags:
             return tax_ids, tags, repartition_id
@@ -51,7 +55,9 @@ class HrPayslip(models.Model):
 
         for record in self:
             if record.struct_id.code != "ES_FORM_ALT_2026":
-                super(HrPayslip, record).action_payslip_done()
+                super(
+                    HrPayslip, record.with_company(record.company_id)
+                ).action_payslip_done()
                 continue
 
             slip = record.with_company(record.company_id)

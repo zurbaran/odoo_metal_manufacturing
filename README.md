@@ -35,4 +35,4 @@ Cuando un cambio realizado en `18.0` debe aplicarse también en `17.0` o `16.0`,
 ## Revisión de migración 19.0
 
 Consulta [el informe por módulo](MIGRATION_AUDIT_19.md), incluidas las
-duplicidades retiradas y la dependencia pendiente de nóminas.
+duplicidades retiradas y la dependencia de nóminas fijada al PR OCA #269.
