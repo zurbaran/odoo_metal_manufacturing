@@ -1,8 +1,8 @@
 {
-    "name": "Binary download fix for AEAT BOE exports",
-    "version": "19.0.1.0.2",
+    "name": "Binary download fix for AEAT BOE exports (innecesario)",
+    "version": "19.0.1.0.3",
     "category": "Technical",
-    "summary": "Compatibility module: binary downloads use native Odoo 19",
+    "summary": "INNECESARIO en Odoo/OCA 19.0 actualizados; ver VALIDATION.md",
     "author": "Antonio Caballero",
     "license": "AGPL-3",
     "maintainer": "Antonio Caballero",
