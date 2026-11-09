@@ -1,43 +1,31 @@
-========================================
-Binary download fix for AEAT BOE exports
-========================================
+Binary download fix for AEAT BOE exports — 18.0
+================================================================================
 
-Objetivo
-========
+Estado: INNECESARIO en las revisiones actualizadas comprobadas
+-------------------------------------------------------------
 
-Este módulo corrige un problema de descarga de ficheros generados por
-wizards (como los de ``l10n_es_aeat``) en Odoo 18 Community.
+El 9 de noviembre de 2026 se ha comprobado Odoo 18 CE y OCA 18.0
+sin instalar este módulo: exportación real del modelo 130, botón Exportar y
+descarga desde el campo binario del asistente BOE, con contenido y nombre
+correctos. No es necesario instalarlo en nuevos despliegues actualizados.
 
-En ciertos casos, el botón de descarga de un campo binario en modo
-sólo lectura dispara una petición ``GET /web/content/`` sin parámetros,
-lo que provoca un error 404 y el típico mensaje en la interfaz:
+Se conserva el parche original por compatibilidad con instalaciones antiguas.
+Esta marca no lo desactiva ni desinstala automáticamente.
 
-*RPC_ERROR: Arbitrary Uncaught Python Exception*
+Antes de retirarlo de una instalación existente, comprobar su versión de
+Odoo/OCA y el flujo de descarga sin el parche en una copia. No se da por
+resuelto el fallo de instalaciones antiguas o personalizadas sin comprobarlas.
 
-Causa
-=====
+La generación del archivo corresponde a OCA; la descarga del campo binario
+la realiza Odoo mediante POST a /web/content. Tu parche fuerza una URL GET
+para el modelo l10n.es.aeat.report.export_to_boe y el campo data. Ese GET es
+válido; no hay evidencia de que el parche estuviese roto por usarlo.
 
-En Odoo 18, el componente ``BinaryField`` usa un helper de descarga
-basado en ``/web/content`` que, en algunos escenarios (como el wizard
-``l10n.es.aeat.report.export_to_boe``), no envía correctamente los
-parámetros necesarios en la petición, dando lugar a un 404.
-corrige un bug introducido en el archivo:
-addons/web/static/src/views/fields/binary/binary_field.js
+OCA corrigió además la carga del nombre del archivo en el asistente BOE.
+Ese problema relacionado no demuestra por sí solo la causa del antiguo 404.
 
-Solución
-========
+Consultar VALIDATION.md para los resultados de ambas versiones, revisiones
+exactas, historial y prueba de navegador reproducible. La declaración usada
+es sintética; esta comprobación no valida el cálculo fiscal del modelo.
 
-Este módulo aplica un *patch* al componente ``BinaryField`` de ``web``
-para que, al descargar, construya explícitamente la URL REST:
-
-``/web/content/<model>/<id>/<field>/<filename>?download=true``
-
-y utilice ``downloadFile._download(url)`` para realizar la descarga.
-
-De esta forma:
-
-- Se evita el ``GET /web/content/`` vacío (404).
-- Se aprovecha la ruta REST estándar ya implementada en el core de Odoo.
-- No se modifica ningún archivo del core, sólo se parchea el comportamiento
-  del campo binario mediante JavaScript.
-
+Autor: Antonio Caballero. Licencia AGPL-3.
