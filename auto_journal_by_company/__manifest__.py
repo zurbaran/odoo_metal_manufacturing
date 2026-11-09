@@ -1,6 +1,6 @@
 {
     "name": "Auto Journal by Company",
-    "version": "19.0.2.1.4",
+    "version": "19.0.2.1.5",
     "category": "Accounting",
     "summary": "Keep a compatible invoice journal when changing company",
     "author": "Antonio Caballero",

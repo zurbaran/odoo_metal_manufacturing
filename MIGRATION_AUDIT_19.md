@@ -21,7 +21,7 @@ Las dependencias OCA se descargaron de sus ramas 19.0 para instalar y probar.
 | `product_blueprint_manager` | Gestión y generación de planos SVG/PNG con fórmulas y condiciones; no equivale a adjuntar documentos nativos a un producto. | Corregida búsqueda de venta al imprimir desde OF usando `sale_line_id.order_id` y `reference_ids.sale_ids`; añadida regresión. Revisadas vistas, permisos, fórmulas e informes mediante las pruebas existentes. |
 | `product_configurator_attribute_price` | Las fórmulas sobre valores personalizados y precio acumulado no son el `price_extra` fijo nativo. | Conservado. Integración con `_reset_price_unit`/`technical_price_unit` de 19 revisada; pruebas de cálculos, descripción y seguridad existentes. |
 | `ui_template_enhancements` | Personalización de marca, correos y maquetación; Odoo dispone de plantillas, pero no de estas modificaciones concretas. | Conservado; instalación verifica las referencias y XPath. La apariencia final de correos/PDF con datos reales requiere revisión visual. |
-| `web_binary_boe_download_fix` | Sin necesidad demostrada en 19.0: `BinaryField` ya envía los parámetros a `/web/content` con `download`. | Retirado el parche. `downloadFile(url)` trata la URL como contenido de archivo, no como una petición HTTP. Conservado como módulo de compatibilidad sin activos; no instalar en bases nuevas. |
+| `web_binary_boe_download_fix` | Sin necesidad demostrada en 19.0: `BinaryField` ya envía los parámetros a `/web/content` con `download`. | Retirado por equivalencia comprobada con el componente nativo en navegador (POST con base64/tamaño). `downloadFile(url)` sí es un GET válido: la explicación anterior que lo consideraba roto era incorrecta. Conservado como módulo de compatibilidad sin activos. |
 
 ## Nóminas: adaptación al PR OCA/payroll #269
 
@@ -55,7 +55,8 @@ migración de `account`: el hook del módulo se ejecuta después y no puede
 corregir fallos anteriores de esa migración. Probar primero una copia de la BD.
 
 Se ha comprobado por HTTP la descarga nativa de los bytes y nombre de un
-archivo del asistente BOE. No se han ejecutado pruebas de navegador ni revisión
+archivo del asistente BOE. En la revisión del 9 de noviembre se añadió una
+prueba de navegador del componente nativo de descarga. No se ha hecho revisión
 visual de los PDF/correos. No se certifican las reglas legales de la estructura
 salarial 2026. La impresión mediante wkhtmltopdf y la
 descarga BOE en navegador deben validarse con los datos/configuración reales.
@@ -169,3 +170,34 @@ nativa equivalente y comprobada para ese flujo. La existencia de un método
 nativo de nombre similar no demuestra por sí sola esa equivalencia. Las
 regresiones detectadas en esta segunda revisión corrigen la conclusión
 demasiado amplia sobre diarios y compras de componentes.
+
+## Revisión específica de eliminaciones — 9 de noviembre de 2026
+
+Se revisaron los 20 archivos con líneas retiradas en el diff publicado
+`11eac25f0b2bb43d5ab18efacd568108b474b577` →
+`6d6435549e23e1f73fbf25d4bcd207c9a0b8bab9`.
+La justificación detallada está en `DELETION_REVIEW_19.md`.
+
+Se corrige otra diferencia del helper de diarios: el antiguo avisaba si no
+había diario compatible y continuaba; el selector nativo lanza UserError.
+La prueba reprodujo esa diferencia y ahora se conserva el aviso no bloqueante
+al llamar al helper. La creación nativa sigue exigiendo un diario válido.
+Se conservan mensajes de diagnóstico de evaluación, selección y diario
+mantenido. Se restaura la llamada al onchange propio en su prueba original.
+
+Se corrige expresamente la afirmación sobre `downloadFile(url)`: sí descarga
+la URL con GET. El parche no estaba roto por ese motivo. La retirada se
+justifica ahora mediante una prueba Chromium aislada que ejecuta el handler
+real `BinaryField.onFileDownload` con tamaño binario y base64, y el helper GET
+anterior. Los tres devuelven los mismos bytes y nombre del archivo BOE.
+La prueba intercepta/observa XMLHttpRequest, sin falsear sus respuestas HTTP;
+no automatiza la selección de archivo ni una descarga al disco del usuario.
+
+Se comprueban además facturas generadas realmente desde pedidos de venta y
+compra para justificar la eliminación de la sobrescritura `create`.
+
+Validación final de esta revisión: **104 pruebas, 0 fallos, 0 errores y sin
+pruebas omitidas** en actualización/regresión conjunta. Incluye el navegador
+Chromium, facturas desde venta/compra y el aviso del helper sin diario.
+El número cuenta métodos de prueba, no las cifras de fixtures/setup que Odoo
+también muestra en el resumen por módulo. Ruff y `git diff --check`: correctos.

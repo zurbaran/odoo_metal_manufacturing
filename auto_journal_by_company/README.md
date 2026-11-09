@@ -11,3 +11,10 @@ compañía anterior. Una prueba con el formulario real reproduce ese caso.
 
 Las pruebas incluyen facturas de cliente/proveedor, abonos, selección manual,
 compañía explícita diferente de la activa y cambio de compañía en formulario.
+
+Si el helper se llama sin que exista un diario compatible, mantiene el aviso
+no bloqueante de 18.0. La creación y publicación nativas siguen exigiendo un
+diario válido. Se conservan mensajes de evaluación, diario mantenido,
+asignación y aviso; los mensajes posteriores al `create` propio se retiran
+con esa sobrescritura. Las pruebas incluyen facturas generadas desde venta
+y compra, además de la creación directa.

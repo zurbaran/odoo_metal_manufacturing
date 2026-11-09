@@ -124,7 +124,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip wheel setuptools
           python -m pip install -r odoo/requirements.txt
-          python -m pip install cairosvg unidecode
+          python -m pip install cairosvg unidecode websocket-client
 
       - name: Wait for PostgreSQL
         env:
@@ -147,6 +147,7 @@ jobs:
       - name: Run Odoo module tests
         shell: bash
         run: |
+          google-chrome --version
           set +e
           python odoo/odoo-bin \
             --database=odoo19_test \
