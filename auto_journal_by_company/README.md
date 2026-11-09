@@ -1,39 +1,20 @@
-# README.md
+# Auto Journal by Company — Odoo 19
 
-# Auto Journal by Company
+Mantiene un diario compatible al cambiar la compañía o el tipo de factura en
+el formulario. Conserva los diarios manuales válidos y utiliza el selector
+nativo de Odoo 19, que contempla moneda, tipo de documento y sucursales.
 
-Este módulo asigna automáticamente el diario contable (`account.journal`) en facturas de cliente y proveedor (`account.move`) en función de:
+La creación de facturas se deja al núcleo. No se sobrescribe `create`.
+Se mantiene `_auto_assign_journal` y el onchange: al cambiar la compañía de
+una factura en borrador, el núcleo revisado puede conservar el diario de la
+compañía anterior. Una prueba con el formulario real reproduce ese caso.
 
-- La empresa (`company_id`)
-- El tipo de movimiento (`move_type`): venta o compra
+Las pruebas incluyen facturas de cliente/proveedor, abonos, selección manual,
+compañía explícita diferente de la activa y cambio de compañía en formulario.
 
-## Funcionalidad
-
-- Soporta facturas creadas manualmente desde la interfaz.
-- Soporta facturas creadas desde presupuestos (`sale.order`) y órdenes de compra (`purchase.order`).
-- Añade `logging` informativo para trazabilidad.
-
-## Instalación
-
-Coloca este módulo en tu carpeta de addons y ejecuta:
-
-```bash
-./odoo-bin -d <base_de_datos> -i auto_journal_by_company
-```
-
-## Pruebas
-
-Este módulo incluye pruebas automáticas:
-
-```bash
-./odoo-bin -d <base_de_datos_test> -i auto_journal_by_company --test-enable --stop-after-init
-```
-
-## Requisitos
-
-- Odoo 17 Community Edition
-- Módulo base `account`
-
-## Autor
-
-Antonio Caballero
+Si el helper se llama sin que exista un diario compatible, mantiene el aviso
+no bloqueante de 18.0. La creación y publicación nativas siguen exigiendo un
+diario válido. Se conservan mensajes de evaluación, diario mantenido,
+asignación y aviso; los mensajes posteriores al `create` propio se retiran
+con esa sobrescritura. Las pruebas incluyen facturas generadas desde venta
+y compra, además de la creación directa.

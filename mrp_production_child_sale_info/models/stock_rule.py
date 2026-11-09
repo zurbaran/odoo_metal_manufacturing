@@ -1,35 +1,13 @@
-from odoo import models
+from odoo import api, models
 
 
 class StockRule(models.Model):
     _inherit = "stock.rule"
 
-    def _prepare_mo_vals(
-        self,
-        product_id,
-        product_qty,
-        product_uom,
-        location_id,
-        name,
-        origin,
-        company_id,
-        values,
-        bom,
-    ):
-        vals = super()._prepare_mo_vals(
-            product_id,
-            product_qty,
-            product_uom,
-            location_id,
-            name,
-            origin,
-            company_id,
-            values,
-            bom,
+    @api.model
+    def _get_procurements_to_merge_groupby(self, procurement):
+        # Preserve the originating sales line BEFORE native buy procurements
+        # are merged, as well as when matching existing purchase lines.
+        return super()._get_procurements_to_merge_groupby(procurement) + (
+            procurement.values.get("mrp_component_sale_line_id") or False,
         )
-        sale_line = values.get("sale_line_id")
-        if sale_line:
-            vals["sale_line_id"] = (
-                sale_line.id if hasattr(sale_line, "id") else sale_line
-            )
-        return vals

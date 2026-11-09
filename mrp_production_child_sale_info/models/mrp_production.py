@@ -1,4 +1,4 @@
-from odoo import api, models
+from odoo import Command, api, models
 
 
 class MrpProduction(models.Model):
@@ -8,12 +8,8 @@ class MrpProduction(models.Model):
     def create(self, vals_list):
         productions = super().create(vals_list)
         for production in productions:
-            if (
-                production.sale_line_id
-                and production.procurement_group_id
-                and not production.procurement_group_id.sale_id
-            ):
-                production.procurement_group_id.sale_id = (
-                    production.sale_line_id.order_id
+            if production.sale_line_id:
+                production.reference_ids.write(
+                    {"sale_ids": [Command.link(production.sale_line_id.order_id.id)]}
                 )
         return productions

@@ -1,9 +1,8 @@
 {
-    "name": "Binary download fix for AEAT BOE exports",
-    "version": "19.0.1.0.1",
+    "name": "Binary download fix for AEAT BOE exports (innecesario)",
+    "version": "19.0.1.0.3",
     "category": "Technical",
-    "summary": """Corrige la descarga de campos binarios
-      (BOE AEAT y similares) en Odoo 19""",
+    "summary": "INNECESARIO en Odoo/OCA 19.0 actualizados; ver VALIDATION.md",
     "author": "Antonio Caballero",
     "license": "AGPL-3",
     "maintainer": "Antonio Caballero",
@@ -13,11 +12,6 @@
         "l10n_es_aeat",
     ],
     "data": [],
-    "assets": {
-        "web.assets_backend": [
-            "web_binary_boe_download_fix/static/src/js/boe_binary_download_patch.esm.js",
-        ],
-    },
     "installable": True,
     "application": False,
 }

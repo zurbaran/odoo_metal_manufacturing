@@ -52,6 +52,15 @@ jobs:
           path: odoo
           fetch-depth: 1
 
+      # OCA/payroll PR #269, reviewed but not merged into 19.0 yet.
+      - name: Checkout pinned OCA payroll accounting migration
+        uses: actions/checkout@v7
+        with:
+          repository: OCA/payroll
+          ref: ef16a76b00462717d982b6a4f45082723255b1bf
+          path: oca-payroll
+          fetch-depth: 1
+
       - name: Checkout OCA/sale-workflow
         uses: actions/checkout@v7
         with:
@@ -115,7 +124,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip wheel setuptools
           python -m pip install -r odoo/requirements.txt
-          python -m pip install cairosvg unidecode
+          python -m pip install cairosvg unidecode websocket-client
 
       - name: Wait for PostgreSQL
         env:
@@ -138,6 +147,7 @@ jobs:
       - name: Run Odoo module tests
         shell: bash
         run: |
+          google-chrome --version
           set +e
           python odoo/odoo-bin \
             --database=odoo19_test \
@@ -145,9 +155,9 @@ jobs:
             --db_port=5432 \
             --db_user=odoo \
             --db_password=odoo \
-            --addons-path=odoo/addons,custom-addons,oca-sale-workflow,oca-product-attribute,oca-l10n-spain,oca-account-financial-reporting,oca-server-ux \
-            --init=auto_journal_by_company,mrp_production_child_sale_info,product_blueprint_manager,product_configurator_attribute_price,ui_template_enhancements,web_binary_boe_download_fix \
-            --test-tags=/auto_journal_by_company,/product_blueprint_manager,/product_configurator_attribute_price \
+            --addons-path=odoo/addons,custom-addons,oca-sale-workflow,oca-product-attribute,oca-l10n-spain,oca-account-financial-reporting,oca-server-ux,oca-payroll \
+            --init=payroll_account_employee_partner,auto_journal_by_company,mrp_production_child_sale_info,product_blueprint_manager,product_configurator_attribute_price,ui_template_enhancements,web_binary_boe_download_fix \
+            --test-tags=/payroll_account_employee_partner,/web_binary_boe_download_fix,/auto_journal_by_company,/mrp_production_child_sale_info,/product_blueprint_manager,/product_configurator_attribute_price \
             --stop-after-init \
             --log-level=test \
             > /tmp/odoo19-tests.log 2>&1

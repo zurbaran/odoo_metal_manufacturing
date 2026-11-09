@@ -1,6 +1,6 @@
 {
     "name": "MRP Child MO Sale Propagation",
-    "version": "19.0.1.0.1",
+    "version": "19.0.1.0.3",
     "summary": (
         "Propaga sale_line_id y sale_id a las OF hijas y a los componentes comprados"
     ),
