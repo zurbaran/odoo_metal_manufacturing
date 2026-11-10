@@ -201,3 +201,29 @@ pruebas omitidas** en actualización/regresión conjunta. Incluye el navegador
 Chromium, facturas desde venta/compra y el aviso del helper sin diario.
 El número cuenta métodos de prueba, no las cifras de fixtures/setup que Odoo
 también muestra en el resumen por módulo. Ruff y `git diff --check`: correctos.
+
+## Corrección de carga normal — 10 de noviembre de 2026
+
+El import explícito `from . import tests` en los `__init__.py` raíz de
+`mrp_production_child_sale_info` y `web_binary_boe_download_fix` cargaba
+`odoo.tests.common` fuera del modo de pruebas. En Odoo 19 eso genera un
+mensaje ERROR con la pila de importación. Se reprodujo en un proceso nuevo
+sin `--test-tags`: el registro terminó de cargar y el proceso salió con 0;
+el mensaje por sí solo no demuestra un bloqueo de la migración.
+
+Se retiran los dos imports de pruebas de los inicializadores de producción.
+Se mantienen íntegros `tests/__init__.py`, los casos y sus aserciones: el
+cargador de pruebas de Odoo los descubre e importa cuando se activa ese modo.
+No se modifican modelos, propagación de ventas, compras ni reglas de negocio.
+
+La CI incorpora otro proceso de arranque sin modo de pruebas y comprueba que
+no aparezca `Importing test framework`. Las verificaciones anteriores se
+habían ejecutado en modo de pruebas y no detectaban este defecto.
+
+Validación de la corrección: actualización de los dos módulos en un proceso
+sin modo de pruebas, salida 0 y sin el mensaje anterior. Después se ejecutó
+la regresión conjunta: **104 pruebas, 0 fallos y 0 errores**. Se ejecutaron
+los tres métodos de `TestSalePropagation`, incluida la venta real que genera
+una OF hija y la compra de componentes; también las pruebas de descarga BOE.
+Los archivos de modelos y pruebas no tienen cambios respecto a la rama 19.0.
+Estas comprobaciones utilizan una base de pruebas, no la base Camarbax19.

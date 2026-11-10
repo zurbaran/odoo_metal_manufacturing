@@ -174,11 +174,28 @@ jobs:
           fi
           exit "$status"
 
+      - name: Check normal startup without test framework imports
+        shell: bash
+        run: |
+          python odoo/odoo-bin \
+            --database=odoo19_test \
+            --db_host=localhost --db_port=5432 \
+            --db_user=odoo --db_password=odoo \
+            --addons-path=odoo/addons,custom-addons,oca-sale-workflow,oca-product-attribute,oca-l10n-spain,oca-account-financial-reporting,oca-server-ux,oca-payroll \
+            --stop-after-init --no-http \
+            > /tmp/odoo19-normal-startup.log 2>&1
+          if grep -q "Importing test framework" /tmp/odoo19-normal-startup.log; then
+            cat /tmp/odoo19-normal-startup.log
+            exit 1
+          fi
+
       - name: Upload Odoo test log
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: odoo19-test-log
-          path: /tmp/odoo19-tests.log
+          path: |
+            /tmp/odoo19-tests.log
+            /tmp/odoo19-normal-startup.log
           if-no-files-found: ignore
           retention-days: 7
