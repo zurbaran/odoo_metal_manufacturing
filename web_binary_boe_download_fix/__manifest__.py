@@ -1,6 +1,6 @@
 {
     "name": "Binary download fix for AEAT BOE exports (innecesario)",
-    "version": "19.0.1.0.3",
+    "version": "19.0.1.0.4",
     "category": "Technical",
     "summary": "INNECESARIO en Odoo/OCA 19.0 actualizados; ver VALIDATION.md",
     "author": "Antonio Caballero",
